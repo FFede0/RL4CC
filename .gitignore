@@ -1,3 +1,7 @@
+# Configuration files (except the templates)
+config_files/*
+!config_files/*.template
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
