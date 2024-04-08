@@ -26,6 +26,32 @@ import os
 class AlgoConfigGenerator(ABC):
   def __init__(self):
     self.algo = None
+    self.base_algo_config = None
+    self._protected_keys = [
+      # (key, key group)
+      ("rollout_fragment_length", "rollouts"),
+      ("batch_mode", "rollouts"),
+      ("train_batch_size", "training"),
+      ("min_sample_timesteps_per_iteration", "reporting"),
+      ("min_train_timesteps_per_iteration", "reporting"),
+      ("num_gpus", "resources"),
+      ("num_cpus_per_local_worker", "resources")
+    ]
+    self._suggested_keys = [
+      # (key, key group)
+      ("duration_per_worker",  "rollouts"),
+      ("duration_unit",  "rollouts"),
+      ("batch_size",  "training"),
+      ("num_trained_batches",  "training"),
+      ("num_gpus_master",  "resources"),
+      ("num_cpus_master",  "resources")
+    ]
+  
+  def generate_default_config(self) -> AlgorithmConfig:
+    """
+    Get the default `AlgorithmConfig` according to the class algorithm
+    """
+    self.base_algo_config = get_trainable_cls(self.algo).get_default_config()
   
   def generate_algo_config(
       self, 
@@ -39,33 +65,119 @@ class AlgoConfigGenerator(ABC):
     configuration dictionaries
     """
     algo_config = (
-      get_trainable_cls(self.algo)
-      .get_default_config()
+      self.base_algo_config
       # environment
       .environment(environment, env_config=env_config)
     )
-    # set ray config parameters
+    # process the parameters dictionaries
+    if ray_config is not None or exp_config is not None:
+      all_params = self.process_config_dictionaries(
+        ray_config, exp_config, env_config
+      )
+      # update the algorithm config
+      algo_config.update_from_dict(all_params)
+    return algo_config
+  
+  def process_config_dictionaries(
+      self, ray_config: dict, exp_config: dict, env_config: dict
+    ) -> dict:
+    all_params = {}
+    # merge sub-dictionaries of ray_config
     if ray_config is not None:
-      # resources
-      algo_config.resources(**ray_config["resources"])
-      # framework
-      algo_config.framework(ray_config["framework"])
-      # rollouts
-      algo_config.rollouts(**ray_config["rollouts"]) 
-      # reporting
-      algo_config.reporting(**ray_config["reporting"])
-      # training
-      algo_config.training(**ray_config["training"])
-      # exploration
-      api = ray_config.get("rl_module", {}).get("_enable_rl_module_api", False)
-      if not api:
-        algo_config.exploration(**ray_config["exploration"])
+      for key, value in ray_config.items():
+        if isinstance(value, dict):
+          all_params.update(value)
+        else:
+          all_params.update({key: value})
+    # manage "special" keys
+    all_params = self.update_special_keys(all_params, exp_config, env_config)
+    return all_params
+  
+  def update_special_keys(
+      self, all_params: dict, exp_config: dict, env_config: dict
+    ):
+    # check the presence of protected/suggested keys
+    using_suggested_keys, _ = self.validate_key_usage(all_params)
+    if using_suggested_keys:
+      # fix the value of keys that should not be overridden
+      all_params["min_sample_timesteps_per_iteration"] = 0
+      all_params["min_train_timesteps_per_iteration"] = 0
+      # if suggested keys are provided, these should be converted into the 
+      # appropriate standard keys
+      self.convert_rollout_parameters(all_params, env_config)
+      self.convert_resources_parameters(all_params)
+      self.convert_training_parameters(all_params)
+  
+  def validate_key_usage(self, all_params: dict):
+    # check if the user is setting any suggested key
+    using_suggested_keys = any(k in all_params for k,_ in self._suggested_keys)
+    # check if the user is setting any protected key
+    using_protected_keys = False
+    for pk,_ in self._protected_keys:
+      if pk in all_params:
+        using_protected_keys = True
+        # prevent the user from simultaneously setting protected and 
+        # suggested keys
+        if using_suggested_keys:
+          raise KeyError(
+            "ERROR: mixing protected and suggested keys is forbidden"
+          )
+        # raise a warning otherwise
+        else:
+          pv = all_params[pk]
+          print(
+            f"WARNING: manually setting protected key {pk} with value {pv}"
+          )
+    return using_suggested_keys, using_protected_keys
+  
+  def convert_rollout_parameters(self, all_params: dict, env_config: dict):
+    # duration unit
+    unit = self.base_algo_config["batch_mode"]
+    if "duration_unit" in all_params:
+      unit = all_params.pop("duration_unit")
+      if unit == "step":
+        all_params["batch_mode"] = "truncated_episodes"
+        unit = "truncated_episodes"
+      elif unit == "episode":
+        all_params["batch_mode"] = "complete_episodes"
+        unit = "complete_episodes"
+      else:
+        raise ValueError(f"ERROR: invalid `duration_unit` {unit}")
+    # duration
+    if "duration_per_worker" in all_params:
+      duration = all_params.pop("duration_per_worker")
+      if unit == "truncated_episodes":
+        all_params["rollout_fragment_length"] = duration
+      elif unit == "complete_episodes":
+        min_time = env_config["min_time"]
+        max_time = env_config["max_time"]
+        time_step = env_config["time_step"]
+        n_steps = (max_time - min_time) // time_step
+        all_params["rollout_fragment_length"] = duration * n_steps
+
+  def convert_resources_parameters(self, all_params):
+    # master CPUs
+    if "num_cpus_master" in all_params:
+      num_cpus = all_params.pop("num_cpus_master")
+      all_params["num_cpus_per_local_worker"] = num_cpus
+    # master GPUs
+    if "num_gpus_master" in all_params:
+      num_gpus = all_params.pop("num_gpus_master")
+      all_params["num_gpus"] = num_gpus
+  
+  @abstractmethod
+  def convert_training_parameters(self, all_params: dict):
+    pass
+
+  def generate_logdir(
+      self, ray_config: dict, exp_config: dict, environment_name: str
+    ) -> dict:
     # if a logdir is provided, set it (default: ~/ray_results/<experiment>)
     debugging_config = {}
     if exp_config is not None and "logdir" in exp_config:
       now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
       exp_logdir = os.path.join(
-        exp_config["logdir"], f"{self.algo}_{environment.name}_{now}"
+        exp_config["logdir"], f"{self.algo}_{environment_name}_{now}"
       )
       os.makedirs(exp_logdir, exist_ok=True)
       # extract base debugging configuration...
@@ -75,14 +187,7 @@ class AlgoConfigGenerator(ABC):
       if "logger_config" not in debugging_config:
         debugging_config["logger_config"] = {}
       debugging_config["logger_config"]["logdir"] = exp_logdir
-    # debugging
-    if len(debugging_config) > 0:
-      algo_config.debugging(**debugging_config)
-    return algo_config
-  
-  @abstractmethod
-  def get_default_config(self) -> Tuple[dict, dict]:
-    pass
+    return debugging_config
 
 ##############################################################################
 # PPO
@@ -91,7 +196,40 @@ class PPOConfigGenerator(AlgoConfigGenerator):
   def __init__(self):
     super().__init__()
     self.algo = "PPO"
-    
+    self.generate_default_config()
+    # algorithm-specific protected/suggested keys
+    self._protected_keys += [
+      ("sgd_minibatch_size", "training"),
+      ("num_sgd_iter", "training")
+    ]
+
+  def convert_training_parameters(self, all_params: dict):
+    # train batch size
+    n_steps = self.base_algo_config["train_batch_size"]
+    if "rollout_fragment_length" in all_params:
+      nw = all_params.get(
+        "num_rollout_workers",
+        max(self.base_algo_config["num_rollout_workers"], 1)
+      )
+      n_steps = nw * all_params["rollout_fragment_length"]
+      all_params["train_batch_size"] = n_steps
+      print(
+        f"INFO: {nw} rollout workers will collect overall {n_steps} steps"
+      )
+    # sgd batch size
+    if "batch_size" in all_params:
+      batch_size = all_params.pop("batch_size")
+      all_params["sgd_minibatch_size"] = batch_size
+      print(
+        f"INFO: training batches will have size: {batch_size}"
+      )
+    # number of sgd iterations
+    if "num_trained_batches" in all_params:
+      num_batches = all_params.pop("num_trained_batches")
+      all_params["num_sgd_iter"] = num_batches
+      print(
+       f"INFO: {num_batches} batches will be extracted for training"
+      )
 
 ##############################################################################
 # DQN
@@ -100,3 +238,43 @@ class DQNConfigGenerator(AlgoConfigGenerator):
   def __init__(self):
     super().__init__()
     self.algo = "DQN"
+    self.generate_default_config()
+    # algorithm-specific protected/suggested keys
+    self._protected_keys += [
+      ("training_intensity", "training")
+    ]
+  
+  def convert_training_parameters(self, all_params: dict):
+    # train batch size
+    batch_size = self.base_algo_config["train_batch_size"]
+    if "batch_size" in all_params:
+      batch_size = all_params.pop("batch_size")
+      all_params["train_batch_size"] = batch_size
+      print(
+        f"INFO: training batches will have size {batch_size}"
+      )
+    # training intensity
+    if "num_trained_batches" in all_params:
+      num_batches = all_params.pop("num_trained_batches")
+      # number of sampled steps
+      nw = all_params.get(
+        "num_rollout_workers",
+        max(1, self.base_algo_config["num_rollout_workers"])
+      )
+      rfl = all_params.get(
+        "rollout_fragment_length",
+        self.base_algo_config["rollout_fragment_length"]
+      )
+      n_sampled_steps = nw * rfl
+      print(
+        f"INFO: {nw} workers will collect overall {n_sampled_steps} steps"
+      )
+      # number of trained steps & intensity
+      if num_batches > 1:
+        n_trained_steps = batch_size * num_batches
+        all_params["training_intensity"] = n_trained_steps // n_sampled_steps
+        print(
+          f"INFO: total number of trained steps is {n_trained_steps}"
+        )
+      else:
+        all_params["training_intensity"] = None
