@@ -50,7 +50,7 @@ class AlgoConfigGenerator(ABC):
   
   def generate_default_config(self) -> AlgorithmConfig:
     """
-    Get the default `AlgorithmConfig` according to the class algorithm
+    Generates the default `AlgorithmConfig` according to the class algorithm
     """
     self.base_algo_config = get_trainable_cls(self.algo).get_default_config()
   
@@ -62,7 +62,7 @@ class AlgoConfigGenerator(ABC):
       exp_config: dict = None
     ) -> AlgorithmConfig:
     """
-    Define the `AlgorithmConfig` considering the provided environment and 
+    Defines the `AlgorithmConfig` considering the provided environment and 
     configuration dictionaries
     """
     algo_config = (
@@ -82,6 +82,10 @@ class AlgoConfigGenerator(ABC):
   def process_config_dictionaries(
       self, ray_config: dict, exp_config: dict, env_config: dict
     ) -> dict:
+    """
+    Processes the configuration dictionaries, extracting the relevant 
+    information to define an `AlgorithmConfig`
+    """
     all_params = {}
     # merge sub-dictionaries of ray_config
     if ray_config is not None:
@@ -97,6 +101,10 @@ class AlgoConfigGenerator(ABC):
   def update_special_keys(
       self, all_params: dict, exp_config: dict, env_config: dict
     ):
+    """
+    Updates the work-in-progress dictionary of parameters by converting the 
+    provided keys if necessary
+    """
     # check the presence of protected/suggested keys
     using_suggested_keys, _ = self.validate_key_usage(all_params)
     if using_suggested_keys:
@@ -111,6 +119,10 @@ class AlgoConfigGenerator(ABC):
       self.convert_training_parameters(all_params)
   
   def validate_key_usage(self, all_params: dict):
+    """
+    Checks if the user is setting any protected/suggested key and throws 
+    appropriate errors/warnings
+    """
     # check if the user is setting any suggested key
     using_suggested_keys = any(k in all_params for k,_ in self._suggested_keys)
     # check if the user is setting any protected key
@@ -140,6 +152,10 @@ class AlgoConfigGenerator(ABC):
     return using_suggested_keys, using_protected_keys
   
   def convert_rollout_parameters(self, all_params: dict, env_config: dict):
+    """
+    Defines the appropriate parameters related to the definition and 
+    behavior of rollout workers, according to the provided keys
+    """
     # duration unit
     unit = self.base_algo_config["batch_mode"]
     if "duration_unit" in all_params:
@@ -165,6 +181,10 @@ class AlgoConfigGenerator(ABC):
         all_params["rollout_fragment_length"] = duration * n_steps
 
   def convert_resources_parameters(self, all_params):
+    """
+    Defines the appropriate parameters related to the resources requirement, 
+    according to the provided keys
+    """
     # master CPUs
     if "num_cpus_master" in all_params:
       num_cpus = all_params.pop("num_cpus_master")
@@ -176,11 +196,19 @@ class AlgoConfigGenerator(ABC):
   
   @abstractmethod
   def convert_training_parameters(self, all_params: dict):
+    """
+    Defines the appropriate parameters related to the definition and 
+    behavior of the policy training algorithm, according to the provided keys
+    """
     pass
 
   def generate_logdir(
       self, ray_config: dict, exp_config: dict, environment_name: str
     ) -> dict:
+    """
+    Defines the appropriate parameters related to experiment and result 
+    logging, according to the provided keys
+    """
     # if a logdir is provided, set it (default: ~/ray_results/<experiment>)
     debugging_config = {}
     if exp_config is not None and "logdir" in exp_config:
@@ -213,6 +241,10 @@ class PPOConfigGenerator(AlgoConfigGenerator):
     ]
 
   def convert_training_parameters(self, all_params: dict):
+    """
+    Defines the appropriate parameters related to the definition and 
+    behavior of the policy training algorithm, according to the provided keys
+    """
     # train batch size
     n_steps = self.base_algo_config["train_batch_size"]
     if "rollout_fragment_length" in all_params:
@@ -254,6 +286,10 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     ]
   
   def convert_training_parameters(self, all_params: dict):
+    """
+    Defines the appropriate parameters related to the definition and 
+    behavior of the policy training algorithm, according to the provided keys
+    """
     # train batch size
     batch_size = self.base_algo_config["train_batch_size"]
     if "batch_size" in all_params:
