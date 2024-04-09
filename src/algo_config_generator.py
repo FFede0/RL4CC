@@ -19,7 +19,6 @@ from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Tuple
 import os
 
 
@@ -32,10 +31,12 @@ class AlgoConfigGenerator(ABC):
       ("rollout_fragment_length", "rollouts"),
       ("batch_mode", "rollouts"),
       ("train_batch_size", "training"),
+      ("min_time_s_per_iteration", "reporting"),
       ("min_sample_timesteps_per_iteration", "reporting"),
       ("min_train_timesteps_per_iteration", "reporting"),
       ("num_gpus", "resources"),
-      ("num_cpus_per_local_worker", "resources")
+      ("num_cpus_per_local_worker", "resources"),
+      ("logger_config", "debugging")
     ]
     self._suggested_keys = [
       # (key, key group)
@@ -100,6 +101,7 @@ class AlgoConfigGenerator(ABC):
     using_suggested_keys, _ = self.validate_key_usage(all_params)
     if using_suggested_keys:
       # fix the value of keys that should not be overridden
+      all_params["min_time_s_per_iteration"] = 0
       all_params["min_sample_timesteps_per_iteration"] = 0
       all_params["min_train_timesteps_per_iteration"] = 0
       # if suggested keys are provided, these should be converted into the 
@@ -116,18 +118,25 @@ class AlgoConfigGenerator(ABC):
     for pk,_ in self._protected_keys:
       if pk in all_params:
         using_protected_keys = True
-        # prevent the user from simultaneously setting protected and 
-        # suggested keys
-        if using_suggested_keys:
-          raise KeyError(
-            "ERROR: mixing protected and suggested keys is forbidden"
-          )
-        # raise a warning otherwise
+        if pk != "logger_config":
+          # prevent the user from simultaneously setting protected and 
+          # suggested keys
+          if using_suggested_keys:
+            raise KeyError(
+              "ERROR: mixing protected and suggested keys is forbidden"
+            )
+          # raise a warning otherwise
+          else:
+            pv = all_params[pk]
+            print(
+              f"WARNING: manually setting protected key {pk} with value {pv}"
+            )
         else:
-          pv = all_params[pk]
-          print(
-            f"WARNING: manually setting protected key {pk} with value {pv}"
-          )
+          # prevent the user from manually setting the logging directory
+          if "logdir" in all_params[pk]:
+            raise KeyError(
+              "ERROR: set general logging directory from `exp_config.json`"
+            )
     return using_suggested_keys, using_protected_keys
   
   def convert_rollout_parameters(self, all_params: dict, env_config: dict):
