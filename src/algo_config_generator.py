@@ -19,6 +19,7 @@ from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
 from abc import ABC, abstractmethod
 from datetime import datetime
+import inspect
 import os
 
 
@@ -53,6 +54,17 @@ class AlgoConfigGenerator(ABC):
     Generates the default `AlgorithmConfig` according to the class algorithm
     """
     self.base_algo_config = get_trainable_cls(self.algo).get_default_config()
+    # save a dictionary of algo methods and corresponding parameters (useful 
+    # to print the `AlgorithmConfig`)
+    self.algo_methods = {}
+    for f_name in dir(self.base_algo_config):
+      try:
+        f = getattr(self.base_algo_config, f_name)
+        if callable(f) and not f_name.startswith("_"):
+          f_details = inspect.getfullargspec(f)
+          self.algo_methods[f_name] = f_details.args + f_details.kwonlyargs
+      except Exception as e:
+        self.algo_methods[f_name] = str(e)
   
   def generate_algo_config(
       self, 
@@ -225,6 +237,27 @@ class AlgoConfigGenerator(ABC):
         debugging_config["logger_config"] = {}
       debugging_config["logger_config"]["logdir"] = exp_logdir
     return debugging_config
+  
+  def to_json(self, algo_config: AlgorithmConfig) -> dict:
+    """
+    Converts the given `AlgorithmConfig` into a dictionary
+    """
+    all_params = algo_config.serialize()
+    # split according to the dictionary of class method parameters
+    ray_config = {}
+    added = []
+    for method, method_params in self.algo_methods.items():
+      for param in method_params:
+        if param in all_params:
+          if method not in ray_config:
+            ray_config[method] = {}
+          ray_config[method][param] = all_params[param]
+          added.append(param)
+    # add those that could not be classified
+    ray_config["not_classified"] = {
+      k: v for k,v in all_params.items() if k not in added
+    }
+    return ray_config
 
 ##############################################################################
 # PPO
