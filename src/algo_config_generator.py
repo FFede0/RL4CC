@@ -27,6 +27,7 @@ import os
 
 class AlgoConfigGenerator(ABC):
   def __init__(self):
+    self.logger = Logger()
     self.algo = None
     self.base_algo_config = None
     self._protected_keys = [
@@ -130,12 +131,9 @@ class AlgoConfigGenerator(ABC):
       all_params["min_sample_timesteps_per_iteration"] = 0
       all_params["min_train_timesteps_per_iteration"] = 0
     else:
-      print(
-        """
-        WARNING: 
-        `min_*_per_iteration` variables are not forced to 0
-        Set them manually or check the default
-        """
+      msg = "`min_*_per_iteration` variables are not forced to 0. "
+      self.logger.warn(
+        msg + "Set them manually or check the default"
       )
     # if suggested keys are provided, these should be converted into the 
     # appropriate standard keys
@@ -173,8 +171,8 @@ class AlgoConfigGenerator(ABC):
           # raise a warning otherwise
           else:
             pv = all_params[pk]
-            print(
-              f"WARNING: manually setting protected key {pk} with value {pv}"
+            self.logger.warn(
+              f"manually setting protected key `{pk}` with value: {pv}"
             )
         else:
           # prevent the user from manually setting the logging directory
@@ -330,22 +328,22 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       )
       n_steps = nw * all_params["rollout_fragment_length"]
       all_params["train_batch_size"] = n_steps
-      print(
-        f"INFO: {nw} rollout workers will collect overall {n_steps} steps"
+      self.logger.log(
+        f"{nw} rollout workers will collect overall {n_steps} steps"
       )
     # sgd batch size
     if "batch_size" in all_params:
       batch_size = all_params.pop("batch_size")
       all_params["sgd_minibatch_size"] = batch_size
-      print(
-        f"INFO: training batches will have size: {batch_size}"
+      self.logger.log(
+        f"training batches will have size: {batch_size}"
       )
     # number of sgd iterations
     if "num_train_batches" in all_params:
       num_batches = all_params.pop("num_train_batches")
       all_params["num_sgd_iter"] = num_batches
-      print(
-       f"INFO: {num_batches} batches will be extracted for training"
+      self.logger.log(
+       f"{num_batches} batches will be extracted for training"
       )
 
 ##############################################################################
@@ -391,8 +389,8 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     if "batch_size" in all_params:
       batch_size = all_params.pop("batch_size")
       all_params["train_batch_size"] = batch_size
-      print(
-        f"INFO: training batches will have size {batch_size}"
+      self.logger.log(
+        f"training batches will have size {batch_size}"
       )
     # training intensity
     if "num_train_batches" in all_params:
@@ -407,15 +405,15 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         self.base_algo_config.get_rollout_fragment_length()
       )
       n_sampled_steps = nw * rfl
-      print(
-        f"INFO: {nw} worker(s) will collect overall {n_sampled_steps} step(s)"
+      self.logger.log(
+        f"{nw} worker(s) will collect overall {n_sampled_steps} step(s)"
       )
       # number of trained steps & intensity
       if num_batches > 1:
         n_trained_steps = batch_size * num_batches
         all_params["training_intensity"] = n_trained_steps // n_sampled_steps
-        print(
-          f"INFO: total number of trained steps is {n_trained_steps}"
+        self.logger.log(
+          f"the total number of trained steps is: {n_trained_steps}"
         )
       else:
         all_params["training_intensity"] = None
