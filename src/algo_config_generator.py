@@ -84,7 +84,7 @@ class AlgoConfigGenerator(ABC):
     )
     # process the parameters dictionaries
     if ray_config is not None or exp_config is not None:
-      exp_config["ENV_NAME"] = environment.__name__
+      env_config["ENV_NAME"] = environment.__name__
       all_params = self.process_config_dictionaries(
         ray_config, exp_config, env_config
       )
@@ -119,24 +119,36 @@ class AlgoConfigGenerator(ABC):
     provided keys if necessary
     """
     # check the presence of protected/suggested keys
-    using_suggested_keys, _ = self.validate_key_usage(all_params)
-    if using_suggested_keys:
-      # fix the value of keys that should not be overridden
+    using_suggested_keys, using_protected_keys = self.validate_key_usage(
+      all_params
+    )
+    # fix the value of keys that should not be overridden (unless they may 
+    # have been manually specified)
+    if not using_protected_keys:
       all_params["min_time_s_per_iteration"] = 0
       all_params["min_sample_timesteps_per_iteration"] = 0
       all_params["min_train_timesteps_per_iteration"] = 0
-      # if suggested keys are provided, these should be converted into the 
-      # appropriate standard keys
+    else:
+      print(
+        """
+        WARNING: 
+        `min_*_per_iteration` variables are not forced to 0
+        Set them manually or check the default
+        """
+      )
+    # if suggested keys are provided, these should be converted into the 
+    # appropriate standard keys
+    if using_suggested_keys:
       self.convert_rollout_parameters(all_params, env_config)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
-      # manage the debugging configuration, creating the experiment logdir 
-      # if required
-      exp_logdir = self.generate_logdir(exp_config, env_config)
-      if exp_logdir is not None:
-        if "logger_config" not in all_params or all_params["logger_config"] is None:
-          all_params["logger_config"] = {}
-        all_params["logger_config"]["logdir"] = exp_logdir
+    # manage the debugging configuration, creating the experiment logdir 
+    # if required
+    exp_logdir = self.generate_logdir(exp_config, env_config)
+    if exp_logdir is not None:
+      if "logger_config" not in all_params or all_params["logger_config"] is None:
+        all_params["logger_config"] = {}
+      all_params["logger_config"]["logdir"] = exp_logdir
   
   def validate_key_usage(self, all_params: dict):
     """
@@ -230,7 +242,8 @@ class AlgoConfigGenerator(ABC):
     if exp_config is not None and "logdir" in exp_config:
       now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
       exp_logdir = os.path.join(
-        exp_config["logdir"], f"{self.algo}_{env_config['ENV_NAME']}_{now}"
+        os.path.abspath(exp_config["logdir"]), 
+        f"{self.algo}_{env_config['ENV_NAME']}_{now}"
       )
       os.makedirs(exp_logdir, exist_ok=True)
     return exp_logdir
