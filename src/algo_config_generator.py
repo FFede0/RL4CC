@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from src.environment import BaseEnvironment
+from src.logger import Logger
 
 from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
@@ -44,7 +45,7 @@ class AlgoConfigGenerator(ABC):
       ("duration_per_worker",  "rollouts"),
       ("duration_unit",  "rollouts"),
       ("batch_size",  "training"),
-      ("num_trained_batches",  "training"),
+      ("num_train_batches",  "training"),
       ("num_gpus_master",  "resources"),
       ("num_cpus_master",  "resources")
     ]
@@ -340,8 +341,8 @@ class PPOConfigGenerator(AlgoConfigGenerator):
         f"INFO: training batches will have size: {batch_size}"
       )
     # number of sgd iterations
-    if "num_trained_batches" in all_params:
-      num_batches = all_params.pop("num_trained_batches")
+    if "num_train_batches" in all_params:
+      num_batches = all_params.pop("num_train_batches")
       all_params["num_sgd_iter"] = num_batches
       print(
        f"INFO: {num_batches} batches will be extracted for training"
@@ -394,8 +395,8 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         f"INFO: training batches will have size {batch_size}"
       )
     # training intensity
-    if "num_trained_batches" in all_params:
-      num_batches = all_params.pop("num_trained_batches")
+    if "num_train_batches" in all_params:
+      num_batches = all_params.pop("num_train_batches")
       # number of sampled steps
       nw = all_params.get(
         "num_rollout_workers",
@@ -403,11 +404,11 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       )
       rfl = all_params.get(
         "rollout_fragment_length",
-        self.base_algo_config["rollout_fragment_length"]
+        self.base_algo_config.get_rollout_fragment_length()
       )
       n_sampled_steps = nw * rfl
       print(
-        f"INFO: {nw} workers will collect overall {n_sampled_steps} steps"
+        f"INFO: {nw} worker(s) will collect overall {n_sampled_steps} step(s)"
       )
       # number of trained steps & intensity
       if num_batches > 1:
