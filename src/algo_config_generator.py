@@ -20,6 +20,7 @@ from ray.tune.registry import get_trainable_cls
 from abc import ABC, abstractmethod
 from datetime import datetime
 import inspect
+import json
 import os
 
 
@@ -238,26 +239,38 @@ class AlgoConfigGenerator(ABC):
       debugging_config["logger_config"]["logdir"] = exp_logdir
     return debugging_config
   
-  def to_json(self, algo_config: AlgorithmConfig) -> dict:
+  def to_dict(self, algo_config: AlgorithmConfig) -> dict:
     """
     Converts the given `AlgorithmConfig` into a dictionary
     """
     all_params = algo_config.serialize()
     # split according to the dictionary of class method parameters
     ray_config = {}
-    added = []
     for method, method_params in self.algo_methods.items():
       for param in method_params:
         if param in all_params:
           if method not in ray_config:
             ray_config[method] = {}
-          ray_config[method][param] = all_params[param]
-          added.append(param)
+          ray_config[method][param] = all_params.pop(param)
     # add those that could not be classified
-    ray_config["not_classified"] = {
-      k: v for k,v in all_params.items() if k not in added
-    }
+    ray_config["not_classified"] = {}
+    for param, value in all_params.items():
+      key = self.base_algo_config._translate_special_keys(param, False)
+      added = False
+      for method, method_params in self.algo_methods.items():
+        if key in method_params:
+          ray_config[method][key] = value
+          added = True
+      if not added:
+        ray_config["not_classified"][param] = value
     return ray_config
+  
+  def to_json(self, algo_config: AlgorithmConfig) -> str:
+    """
+    Converts the given `AlgorithmConfig` into a string with json format
+    """
+    algo_dict = self.to_dict(algo_config)
+    return json.dumps(algo_dict, indent = 2)
 
 ##############################################################################
 # PPO
