@@ -85,6 +85,7 @@ class AlgoConfigGenerator(ABC):
     )
     # process the parameters dictionaries
     if ray_config is not None or exp_config is not None:
+      exp_config["ENV_NAME"] = environment.__name__
       all_params = self.process_config_dictionaries(
         ray_config, exp_config, env_config
       )
@@ -130,6 +131,13 @@ class AlgoConfigGenerator(ABC):
       self.convert_rollout_parameters(all_params, env_config)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
+      # manage the debugging configuration, creating the experiment logdir 
+      # if required
+      exp_logdir = self.generate_logdir(exp_config, env_config)
+      if exp_logdir is not None:
+        if "logger_config" not in all_params or all_params["logger_config"] is None:
+          all_params["logger_config"] = {}
+        all_params["logger_config"]["logdir"] = exp_logdir
   
   def validate_key_usage(self, all_params: dict):
     """
@@ -160,7 +168,7 @@ class AlgoConfigGenerator(ABC):
           # prevent the user from manually setting the logging directory
           if "logdir" in all_params[pk]:
             raise KeyError(
-              "ERROR: set general logging directory from `exp_config.json`"
+              "ERROR: set a general logging directory from `exp_config.json`"
             )
     return using_suggested_keys, using_protected_keys
   
@@ -215,29 +223,18 @@ class AlgoConfigGenerator(ABC):
     """
     pass
 
-  def generate_logdir(
-      self, ray_config: dict, exp_config: dict, environment_name: str
-    ) -> dict:
+  def generate_logdir(self, exp_config: dict, env_config: dict) -> str:
     """
-    Defines the appropriate parameters related to experiment and result 
-    logging, according to the provided keys
+    Generate the experiment `logdir` if an appropriate parameter is provided
     """
-    # if a logdir is provided, set it (default: ~/ray_results/<experiment>)
-    debugging_config = {}
+    exp_logdir = None
     if exp_config is not None and "logdir" in exp_config:
       now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
       exp_logdir = os.path.join(
-        exp_config["logdir"], f"{self.algo}_{environment_name}_{now}"
+        exp_config["logdir"], f"{self.algo}_{env_config['ENV_NAME']}_{now}"
       )
       os.makedirs(exp_logdir, exist_ok=True)
-      # extract base debugging configuration...
-      if ray_config is not None and "debugging" in ray_config:
-        debugging_config = ray_config["debugging"]
-      # ...and update it
-      if "logger_config" not in debugging_config:
-        debugging_config["logger_config"] = {}
-      debugging_config["logger_config"]["logdir"] = exp_logdir
-    return debugging_config
+    return exp_logdir
   
   def to_dict(self, algo_config: AlgorithmConfig) -> dict:
     """
