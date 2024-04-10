@@ -37,8 +37,7 @@ class AlgoConfigGenerator(ABC):
       ("min_sample_timesteps_per_iteration", "reporting"),
       ("min_train_timesteps_per_iteration", "reporting"),
       ("num_gpus", "resources"),
-      ("num_cpus_per_local_worker", "resources"),
-      ("logger_config", "debugging")
+      ("num_cpus_per_local_worker", "resources")
     ]
     self._suggested_keys = [
       # (key, key group)
@@ -109,7 +108,7 @@ class AlgoConfigGenerator(ABC):
         else:
           all_params.update({key: value})
     # manage "special" keys
-    all_params = self.update_special_keys(all_params, exp_config, env_config)
+    self.update_special_keys(all_params, exp_config, env_config)
     return all_params
   
   def update_special_keys(
