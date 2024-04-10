@@ -48,23 +48,23 @@ class AlgoConfigGenerator(ABC):
       ("num_gpus_master",  "resources"),
       ("num_cpus_master",  "resources")
     ]
+    # save a dictionary of algo methods and corresponding parameters (useful 
+    # to print the `AlgorithmConfig`)
+    self.algo_methods = {}
+    for f_name in dir(AlgorithmConfig):
+      try:
+        f = getattr(AlgorithmConfig, f_name)
+        if callable(f) and not f_name.startswith("_"):
+          f_info = inspect.getfullargspec(f)
+          self.algo_methods[f_name] = set(f_info.args + f_info.kwonlyargs)
+      except Exception as e:
+        self.algo_methods[f_name] = {str(e)}
   
   def generate_default_config(self) -> AlgorithmConfig:
     """
     Generates the default `AlgorithmConfig` according to the class algorithm
     """
     self.base_algo_config = get_trainable_cls(self.algo).get_default_config()
-    # save a dictionary of algo methods and corresponding parameters (useful 
-    # to print the `AlgorithmConfig`)
-    self.algo_methods = {}
-    for f_name in dir(self.base_algo_config):
-      try:
-        f = getattr(self.base_algo_config, f_name)
-        if callable(f) and not f_name.startswith("_"):
-          f_details = inspect.getfullargspec(f)
-          self.algo_methods[f_name] = f_details.args + f_details.kwonlyargs
-      except Exception as e:
-        self.algo_methods[f_name] = str(e)
   
   def generate_algo_config(
       self, 
@@ -272,6 +272,26 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       ("sgd_minibatch_size", "training"),
       ("num_sgd_iter", "training")
     ]
+    # update the dictionary of algo methods and corresponding parameters
+    to_inspect = [
+      super(type(self.base_algo_config), self.base_algo_config),
+      self.base_algo_config
+    ]
+    for f_name in dir(self.base_algo_config):
+      for elem in to_inspect:
+        try:
+          f = getattr(elem, f_name)
+          if callable(f) and not f_name.startswith("_"):
+            f_info = inspect.getfullargspec(f)
+            info_set = set(f_info.args + f_info.kwonlyargs)
+            if f_name not in self.algo_methods:
+              self.algo_methods[f_name] = info_set
+            else:
+              self.algo_methods[f_name] = self.algo_methods[f_name].union(
+                info_set
+              )
+        except Exception as e:
+          self.algo_methods[f_name] = {str(e)}
 
   def convert_training_parameters(self, all_params: dict):
     """
@@ -317,6 +337,26 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     self._protected_keys += [
       ("training_intensity", "training")
     ]
+    # update the dictionary of algo methods and corresponding parameters
+    to_inspect = [
+      super(type(self.base_algo_config), self.base_algo_config),
+      self.base_algo_config
+    ]
+    for f_name in dir(self.base_algo_config):
+      for elem in to_inspect:
+        try:
+          f = getattr(elem, f_name)
+          if callable(f) and not f_name.startswith("_"):
+            f_info = inspect.getfullargspec(f)
+            info_set = set(f_info.args + f_info.kwonlyargs)
+            if f_name not in self.algo_methods:
+              self.algo_methods[f_name] = info_set
+            else:
+              self.algo_methods[f_name] = self.algo_methods[f_name].union(
+                info_set
+              )
+        except Exception as e:
+          self.algo_methods[f_name] = {str(e)}
   
   def convert_training_parameters(self, all_params: dict):
     """
