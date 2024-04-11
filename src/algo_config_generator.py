@@ -338,7 +338,7 @@ class PPOConfigGenerator(AlgoConfigGenerator):
     Saves a dictionary of algo methods and corresponding parameters (useful 
     to print the `AlgorithmConfig`)
     """
-    self.algo_methods = super().save_algo_methods_dict()
+    super().save_algo_methods_dict()
     # if the `{self.algo}Config` class does not inherit directly from 
     # `AlgorithmConfig`, we have to inspect also the parent
     to_inspect = [
@@ -449,7 +449,7 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     Saves a dictionary of algo methods and corresponding parameters (useful 
     to print the `AlgorithmConfig`)
     """
-    self.algo_methods = super().save_algo_methods_dict()
+    super().save_algo_methods_dict()
     # if the `{self.algo}Config` class does not inherit directly from 
     # `AlgorithmConfig`, we have to inspect also the parent
     to_inspect = [
