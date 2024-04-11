@@ -16,6 +16,7 @@ limitations under the License.
 from src.environment import BaseEnvironment
 from src.logger import Logger
 
+from ray.rllib.algorithms.dqn.dqn import calculate_rr_weights
 from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
 from abc import ABC, abstractmethod
@@ -92,6 +93,8 @@ class AlgoConfigGenerator(ABC):
       )
       # update the algorithm config
       algo_config.update_from_dict(all_params)
+    # validate the number of collected and trained steps
+    self.validate_collection_and_training_size(algo_config)
     return algo_config
   
   def process_config_dictionaries(
@@ -224,14 +227,6 @@ class AlgoConfigGenerator(ABC):
     if "num_gpus_master" in all_params:
       num_gpus = all_params.pop("num_gpus_master")
       all_params["num_gpus"] = num_gpus
-  
-  @abstractmethod
-  def convert_training_parameters(self, all_params: dict):
-    """
-    Defines the appropriate parameters related to the definition and 
-    behavior of the policy training algorithm, according to the provided keys
-    """
-    pass
 
   def generate_logdir(self, exp_config: dict, env_config: dict) -> str:
     """
@@ -246,6 +241,39 @@ class AlgoConfigGenerator(ABC):
       )
       os.makedirs(exp_logdir, exist_ok=True)
     return exp_logdir
+  
+  def check_num_training_step_calls(self, algo_config: AlgorithmConfig):
+    """
+    Checks if the `training_step` function will be called more than once 
+    according to the given `AlgorithmConfig`
+    """
+    mins = algo_config["min_sample_timesteps_per_iteration"]
+    mint = algo_config["min_train_timesteps_per_iteration"]
+    if mins > 0 or mint > 0:
+      msg = f"To collect at least {mins} step(s) and train at least {mint} "
+      msg += f"step(s) in each call to `{self.algo}.train()`, the "
+      msg += f"`{self.algo}.training_step()` method may be executed "
+      self.logger.warn(
+        msg + "more than once"
+      )
+  
+  @abstractmethod
+  def convert_training_parameters(self, all_params: dict):
+    """
+    Defines the appropriate parameters related to the definition and 
+    behavior of the policy training algorithm, according to the provided keys
+    """
+    pass
+
+  @abstractmethod
+  def validate_collection_and_training_size(
+      self, algo_config: AlgorithmConfig
+    ):
+    """
+    Computes the number of collected and trained steps according to the 
+    given `AlgorithmConfig`
+    """
+    pass
   
   def to_dict(self, algo_config: AlgorithmConfig) -> dict:
     """
@@ -345,6 +373,40 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       self.logger.log(
        f"{num_batches} batches will be extracted for training"
       )
+  
+  def validate_collection_and_training_size(
+      self, algo_config: AlgorithmConfig
+    ):
+    """
+    Computes the number of collected and trained steps according to the 
+    given `AlgorithmConfig`
+    """
+    self.logger.breakline()
+    self.logger.log(
+      f"*** collected/trained steps in each `{self.algo}.training_step()` ***"
+    )
+    # number of rollout workers
+    nw = algo_config["num_rollout_workers"]
+    # number of collected steps
+    ncs = 0
+    for wid in range(max(nw, 1)):
+      # number of collected steps (per worker)
+      rfl = algo_config.get_rollout_fragment_length()
+      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)")
+      ncs += rfl
+    tbs = algo_config["train_batch_size"]
+    self.logger.log(
+      f"{ncs} step(s) collected to reach the required number {tbs}"
+    )
+    # number of steps sampled from experience
+    sgdbs = algo_config["sgd_minibatch_size"]
+    sgdit = algo_config["num_sgd_iter"]
+    self.logger.log(
+      f"{sgdit} batch(es) of size {sgdbs} sampled from experience to train"
+    )
+    self.logger.breakline()
+    # check if the `training_step` function will be called more than once
+    self.check_num_training_step_calls(algo_config)
 
 ##############################################################################
 # DQN
@@ -417,3 +479,44 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         )
       else:
         all_params["training_intensity"] = None
+  
+  def validate_collection_and_training_size(
+      self, algo_config: AlgorithmConfig
+    ):
+    """
+    Computes the number of collected and trained steps according to the 
+    given `AlgorithmConfig`
+    """
+    self.logger.breakline()
+    self.logger.log(
+      f"*** collected/trained steps in each `{self.algo}.training_step()` ***"
+    )
+    # number of rollout workers
+    nw = algo_config["num_rollout_workers"]
+    # proportion between collection and training
+    citer, titer = calculate_rr_weights(algo_config)
+    # number of collected steps
+    ncs = 0
+    for wid in range(max(nw, 1)):
+      # number of collected steps (per worker)
+      rfl = algo_config.get_rollout_fragment_length()
+      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)")
+      ncs += rfl
+    self.logger.log(
+      f"{ncs} step(s) collected in each of the {citer} collection iteration(s)"
+    )
+    # wait before start training?
+    wait_n_steps = algo_config["num_steps_sampled_before_learning_starts"]
+    if wait_n_steps > 0:
+      self.logger.log(
+        f"{wait_n_steps} steps have to be sampled before learning starts"
+      )
+    # number of steps sampled from a replay buffer
+    tbs = algo_config["train_batch_size"]
+    C = algo_config["replay_buffer_config"]["capacity"]
+    self.logger.log(
+      f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})"
+    )
+    self.logger.breakline()
+    # check if the `training_step` function will be called more than once
+    self.check_num_training_step_calls(algo_config)
