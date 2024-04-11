@@ -92,6 +92,13 @@ class Logger:
       full_message = self.prepare_logging(message, "ERROR", 0)
       print(full_message, file = self.err_stream, flush = True)
     
+    def breakline(self):
+      """
+      Prints a line of --- to interrupt the message
+      """
+      full_message = self.prepare_logging("-" * 80, "", 0)
+      print(full_message, file = self.out_stream, flush = True)
+    
     @staticmethod
     def parse_wrapper(wrapper: list):
       """
