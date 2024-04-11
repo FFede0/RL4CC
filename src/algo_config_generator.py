@@ -312,7 +312,10 @@ class AlgoConfigGenerator(ABC):
         if param in all_params:
           if method not in ray_config:
             ray_config[method] = {}
-          ray_config[method][param] = all_params.pop(param)
+          value = all_params.pop(param)
+          if param == "rl_module_spec":
+            value = str(value.__class__)
+          ray_config[method][param] = value
     # add those that could not be classified
     ray_config["not_classified"] = {}
     for param, value in all_params.items():
@@ -322,6 +325,8 @@ class AlgoConfigGenerator(ABC):
         if key in method_params:
           if method not in ray_config:
             ray_config[method] = {}
+          if key == "rl_module_spec":
+            value = str(value.__class__)
           ray_config[method][key] = value
           added = True
       if not added:
