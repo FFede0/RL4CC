@@ -415,6 +415,12 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       f"{sgdit} batch(es) of size {sgdbs} sampled from experience to train"
     )
     self.logger.breakline()
+    # check if parameters are coherent
+    if sgdbs > tbs:
+      msg = f"The training `batch_size` ({sgdbs}) must be <= the number of "
+      raise ValueError(
+        msg + f"collected steps ({tbs})"
+      )
     # check if the `training_step` function will be called more than once
     self.check_num_training_step_calls(algo_config)
 
