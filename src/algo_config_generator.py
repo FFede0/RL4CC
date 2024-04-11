@@ -59,17 +59,34 @@ class AlgoConfigGenerator(ABC):
     to print the `AlgorithmConfig`)
     """
     self.algo_methods = {}
-    # loop over all members/methods of `AlgorithmConfig`
-    for f_name in dir(AlgorithmConfig):
-      try:
-        # if the current element is a public method...
-        f = getattr(AlgorithmConfig, f_name)
-        if callable(f) and not f_name.startswith("_"):
-          # ...save the list of arguments and keyword arguments
-          f_info = inspect.getfullargspec(f)
-          self.algo_methods[f_name] = set(f_info.args + f_info.kwonlyargs)
-      except Exception as e:
-        self.algo_methods[f_name] = {str(e)}
+    # to get the complete list of methods and corresponding parameters, we 
+    # have to inspect all parents of the `{self.algo}Config` class up to 
+    # `AlgorithmConfig`
+    all_parents = inspect.getmro(self.base_algo_config.__class__)
+    found_AlgorithmConfig = False
+    idx = 0
+    while not found_AlgorithmConfig:
+      class_to_inspect = all_parents[idx]
+      # loop over all members/methods of the current class
+      for f_name in dir(class_to_inspect):
+        try:
+          # if the current element is a public method...
+          f = getattr(class_to_inspect, f_name)
+          if callable(f) and not f_name.startswith("_"):
+            # ...save the list of arguments and keyword arguments
+            f_info = inspect.getfullargspec(f)
+            info_set = set(f_info.args + f_info.kwonlyargs)
+            if f_name not in self.algo_methods:
+              self.algo_methods[f_name] = info_set
+            else:
+              self.algo_methods[f_name] = self.algo_methods[f_name].union(
+                info_set
+              )
+        except Exception as e:
+          self.algo_methods[f_name] = {str(e)}
+      # check if we have reached the last parent to inspect
+      found_AlgorithmConfig = (class_to_inspect.__name__ == "AlgorithmConfig")
+      idx += 1
   
   def generate_default_config(self) -> AlgorithmConfig:
     """
@@ -303,6 +320,8 @@ class AlgoConfigGenerator(ABC):
       added = False
       for method, method_params in self.algo_methods.items():
         if key in method_params:
+          if method not in ray_config:
+            ray_config[method] = {}
           ray_config[method][key] = value
           added = True
       if not added:
@@ -333,35 +352,6 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       ("num_sgd_iter", "training")
     ]
   
-  def save_algo_methods_dict(self):
-    """
-    Saves a dictionary of algo methods and corresponding parameters (useful 
-    to print the `AlgorithmConfig`)
-    """
-    super().save_algo_methods_dict()
-    # if the `{self.algo}Config` class does not inherit directly from 
-    # `AlgorithmConfig`, we have to inspect also the parent
-    to_inspect = [
-      super(type(self.base_algo_config), self.base_algo_config),
-      self.base_algo_config
-    ]
-    # update the dictionary with algorithm-specific or overridden parameters
-    for f_name in dir(self.base_algo_config):
-      for elem in to_inspect:
-        try:
-          f = getattr(elem, f_name)
-          if callable(f) and not f_name.startswith("_"):
-            f_info = inspect.getfullargspec(f)
-            info_set = set(f_info.args + f_info.kwonlyargs)
-            if f_name not in self.algo_methods:
-              self.algo_methods[f_name] = info_set
-            else:
-              self.algo_methods[f_name] = self.algo_methods[f_name].union(
-                info_set
-              )
-        except Exception as e:
-          self.algo_methods[f_name] = {str(e)}
-
   def convert_training_parameters(self, all_params: dict):
     """
     Defines the appropriate parameters related to the definition and 
@@ -443,35 +433,6 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     self._protected_keys += [
       ("training_intensity", "training")
     ]
-  
-  def save_algo_methods_dict(self):
-    """
-    Saves a dictionary of algo methods and corresponding parameters (useful 
-    to print the `AlgorithmConfig`)
-    """
-    super().save_algo_methods_dict()
-    # if the `{self.algo}Config` class does not inherit directly from 
-    # `AlgorithmConfig`, we have to inspect also the parent
-    to_inspect = [
-      super(type(self.base_algo_config), self.base_algo_config),
-      self.base_algo_config
-    ]
-    # update the dictionary with algorithm-specific or overridden parameters
-    for f_name in dir(self.base_algo_config):
-      for elem in to_inspect:
-        try:
-          f = getattr(elem, f_name)
-          if callable(f) and not f_name.startswith("_"):
-            f_info = inspect.getfullargspec(f)
-            info_set = set(f_info.args + f_info.kwonlyargs)
-            if f_name not in self.algo_methods:
-              self.algo_methods[f_name] = info_set
-            else:
-              self.algo_methods[f_name] = self.algo_methods[f_name].union(
-                info_set
-              )
-        except Exception as e:
-          self.algo_methods[f_name] = {str(e)}
   
   def convert_training_parameters(self, all_params: dict):
     """
