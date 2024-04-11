@@ -31,6 +31,7 @@ class AlgoConfigGenerator(ABC):
     self.logger = Logger()
     self.algo = None
     self.base_algo_config = None
+    self.algo_methods = None
     self._protected_keys = [
       # (key, key group)
       ("rollout_fragment_length", "rollouts"),
@@ -51,13 +52,20 @@ class AlgoConfigGenerator(ABC):
       ("num_gpus_master",  "resources"),
       ("num_cpus_master",  "resources")
     ]
-    # save a dictionary of algo methods and corresponding parameters (useful 
-    # to print the `AlgorithmConfig`)
+  
+  def save_algo_methods_dict(self):
+    """
+    Saves a dictionary of algo methods and corresponding parameters (useful 
+    to print the `AlgorithmConfig`)
+    """
     self.algo_methods = {}
+    # loop over all members/methods of `AlgorithmConfig`
     for f_name in dir(AlgorithmConfig):
       try:
+        # if the current element is a public method...
         f = getattr(AlgorithmConfig, f_name)
         if callable(f) and not f_name.startswith("_"):
+          # ...save the list of arguments and keyword arguments
           f_info = inspect.getfullargspec(f)
           self.algo_methods[f_name] = set(f_info.args + f_info.kwonlyargs)
       except Exception as e:
@@ -315,17 +323,29 @@ class PPOConfigGenerator(AlgoConfigGenerator):
   def __init__(self):
     super().__init__()
     self.algo = "PPO"
+    # generate default `AlgorithmConfig`
     self.generate_default_config()
+    # save a dictionary of algo methods and corresponding parameters
+    self.save_algo_methods_dict()
     # algorithm-specific protected/suggested keys
     self._protected_keys += [
       ("sgd_minibatch_size", "training"),
       ("num_sgd_iter", "training")
     ]
-    # update the dictionary of algo methods and corresponding parameters
+  
+  def save_algo_methods_dict(self):
+    """
+    Saves a dictionary of algo methods and corresponding parameters (useful 
+    to print the `AlgorithmConfig`)
+    """
+    self.algo_methods = super().save_algo_methods_dict()
+    # if the `{self.algo}Config` class does not inherit directly from 
+    # `AlgorithmConfig`, we have to inspect also the parent
     to_inspect = [
       super(type(self.base_algo_config), self.base_algo_config),
       self.base_algo_config
     ]
+    # update the dictionary with algorithm-specific or overridden parameters
     for f_name in dir(self.base_algo_config):
       for elem in to_inspect:
         try:
@@ -415,16 +435,28 @@ class DQNConfigGenerator(AlgoConfigGenerator):
   def __init__(self):
     super().__init__()
     self.algo = "DQN"
+    # generate default `AlgorithmConfig`
     self.generate_default_config()
+    # save a dictionary of algo methods and corresponding parameters
+    self.save_algo_methods_dict()
     # algorithm-specific protected/suggested keys
     self._protected_keys += [
       ("training_intensity", "training")
     ]
-    # update the dictionary of algo methods and corresponding parameters
+  
+  def save_algo_methods_dict(self):
+    """
+    Saves a dictionary of algo methods and corresponding parameters (useful 
+    to print the `AlgorithmConfig`)
+    """
+    self.algo_methods = super().save_algo_methods_dict()
+    # if the `{self.algo}Config` class does not inherit directly from 
+    # `AlgorithmConfig`, we have to inspect also the parent
     to_inspect = [
       super(type(self.base_algo_config), self.base_algo_config),
       self.base_algo_config
     ]
+    # update the dictionary with algorithm-specific or overridden parameters
     for f_name in dir(self.base_algo_config):
       for elem in to_inspect:
         try:
