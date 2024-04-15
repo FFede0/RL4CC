@@ -144,8 +144,12 @@ class Algorithm:
       raise FileNotFoundError(f"env_config.json not found in {config_dir}")
     # read ray configuration file
     ray_config = load_config_file(os.path.join(config_dir, "ray_config.json"))
-    # read experiment configuration file
+    # read experiment configuration file (and related information)
     exp_config = load_config_file(os.path.join(config_dir, "exp_config.json"))
+    if exp_config is not None:
+      self.checkpoint_interval = exp_config.get("checkpoint_interval", np.inf)
+      self.plot_interval = exp_config.get("plot_interval", np.inf)
+      self.evaluation_interval = exp_config.get("evaluation_interval", np.inf)
     return env_config, ray_config, exp_config
   
   def print_algo_config(self, to_file: bool = True):
