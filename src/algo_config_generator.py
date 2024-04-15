@@ -28,7 +28,7 @@ import os
 
 class AlgoConfigGenerator(ABC):
   def __init__(self):
-    self.logger = Logger()
+    self.logger = Logger(name="RL4CC-AlgoConfigGenerator")
     self.algo = None
     self.base_algo_config = None
     self.algo_methods = None
