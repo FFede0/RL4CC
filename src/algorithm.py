@@ -55,6 +55,9 @@ class Algorithm:
     self.write_config_files(env_config, exp_config, self.algo.logdir)
   
   def training_loop(self):
+    """
+    `Algorithm` training loop
+    """
     start = datetime.now()
     self.logger.log(f"training loop --> START")
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
@@ -105,6 +108,11 @@ class Algorithm:
     self.logger.log(f"average time per iteration: {avg_time_per_iter}")
   
   def define_stopping_criterion(self, exp_config: dict):
+    """
+    Define a `stop()` function to check whether the training loop should be 
+    terminated, according to the stopping criteria specified in the experiment 
+    configuration file
+    """
     # check that stopping criteria are provided
     if exp_config is None or "stopping_criteria" not in exp_config:
       raise KeyError(
@@ -122,6 +130,10 @@ class Algorithm:
     self.stop = stop_on_max_iter
   
   def save_checkpoint(self, last_iteration: dict):
+    """
+    Save an `Algorithm` checkpoint (the checkpoint directory name is given 
+    by the last iteration number)
+    """
     save_result = self.algo.save(
       checkpoint_dir = os.path.join(
         self.algo.logdir, f"checkpoints/{last_iteration}"
