@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from src.environment import BaseEnvironment
+from src.utilities import not_defined
 from src.logger import Logger
 
 from ray.rllib.algorithms.dqn.dqn import calculate_rr_weights
@@ -173,9 +174,14 @@ class AlgoConfigGenerator(ABC):
     # if required
     exp_logdir = self.generate_logdir(exp_config, env_config)
     if exp_logdir is not None:
-      if "logger_config" not in all_params or all_params["logger_config"] is None:
+      if not_defined("logger_config", all_params):
         all_params["logger_config"] = {}
       all_params["logger_config"]["logdir"] = exp_logdir
+    # manage the evaluation configuration, so that at least the final 
+    # evaluation can be surely performed (force the local (non-eval) worker 
+    # to have an environment to evaluate on)
+    if not_defined("evaluation_interval", all_params):
+      all_params["create_env_on_driver"] = True
   
   def validate_key_usage(self, all_params: dict):
     """
