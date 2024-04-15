@@ -2,7 +2,7 @@ from src.utilities import load_config_file, write_config_file
 from src.generators_factory import ACGfactory
 from src.environment import BaseEnvironment
 
-from ray.rllib.algorithms.algorithm import Algorithm
+from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from typing import Tuple
 import json
 import os
@@ -16,7 +16,11 @@ class Algorithm:
       self, 
       environment: BaseEnvironment,
       config_dir: str
-    ) -> Algorithm:
+    ) -> RayAlgorithm:
+    """
+    Build the `Algorithm` according to the provided environment class and 
+    directory of configuration files
+    """
     # load the configuration files from the provided directory
     env_config, ray_config, exp_config = self.load_config_files(config_dir)
     # generate `AlgorithmConfig`
@@ -30,7 +34,7 @@ class Algorithm:
     self.print_algo_config(algo)
     return algo
   
-  def print_algo_config(self, algo: Algorithm, to_file: bool = True):
+  def print_algo_config(self, algo: RayAlgorithm, to_file: bool = True):
     """
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
