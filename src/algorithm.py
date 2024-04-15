@@ -13,10 +13,8 @@ class Algorithm:
     self.algo_config_generator = ACGfactory.create(algo)
 
   def build(
-      self, 
-      environment: BaseEnvironment,
-      config_dir: str
-    ) -> RayAlgorithm:
+      self, environment: BaseEnvironment, config_dir: str
+    ):
     """
     Build the `Algorithm` according to the provided environment class and 
     directory of configuration files
@@ -27,22 +25,23 @@ class Algorithm:
     algo_config = self.algo_config_generator.generate_algo_config(
       environment, env_config, ray_config, exp_config
     )
-    # build `Algorithm`
-    algo = algo_config.build()
+    # build and save `RayAlgorithm`
+    self.algo = algo_config.build()
     # save the configuration files
-    self.write_config_files(env_config, exp_config, algo.logdir)
-    self.print_algo_config(algo)
-    return algo
+    self.write_config_files(env_config, exp_config, self.algo.logdir)
+    self.print_algo_config()
   
-  def print_algo_config(self, algo: RayAlgorithm, to_file: bool = True):
+  def print_algo_config(self, to_file: bool = True):
     """
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
     """
-    jj = self.algo_config_generator.to_json(algo.config)
+    jj = self.algo_config_generator.to_json(self.algo.config)
     if to_file:
       write_config_file(
-        jj, os.path.join(algo.logdir, "complete_config"), "ray_config.json"
+        jj, 
+        os.path.join(self.algo.logdir, "complete_config"), 
+        "ray_config.json"
       )
     else:
       print(jj)
