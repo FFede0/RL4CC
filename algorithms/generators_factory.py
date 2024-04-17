@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from src.algo_config_generator import AlgoConfigGenerator
-from src.algo_config_generator import PPOConfigGenerator
-from src.algo_config_generator import DQNConfigGenerator
+from algorithms.generators.algo_config_generator import AlgoConfigGenerator
+from algorithms.generators.ppo_config_generator import PPOConfigGenerator
+from algorithms.generators.dqn_config_generator import DQNConfigGenerator
 
 
 class AlgoConfigGeneratorsFactory:

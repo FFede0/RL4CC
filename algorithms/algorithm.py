@@ -13,10 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from src.utilities import load_config_file, write_config_file
-from src.generators_factory import ACGfactory
-from src.environment import BaseEnvironment
-from src.logger import Logger
+from utilities.common import load_config_file, write_config_file
+from algorithms.generators_factory import ACGfactory
+from environment.base_environment import BaseEnvironment
+from utilities.logger import Logger
 
 from datetime import datetime
 from typing import Tuple
