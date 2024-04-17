@@ -287,6 +287,33 @@ class AlgoConfigGenerator(ABC):
         msg + "more than once"
       )
   
+  def validate_collection_and_training_size(
+      self, algo_config: AlgorithmConfig
+    ):
+    """
+    Computes the number of sampled and trained steps according to the 
+    given `AlgorithmConfig` and checks whether the values are coherent
+    """
+    self.logger.breakline()
+    self.logger.log(
+      f"*** sampled/trained steps in each `{self.algo}.training_step()` ***"
+    )
+    tot_sampled = self.count_sampled_steps(algo_config)
+    tot_trained = self.count_trained_steps(algo_config)
+    self.logger.breakline()
+    # raise a WARNING if the number of collected and trained steps are too 
+    # unbalanced
+    if tot_trained < tot_sampled * 0.9:
+      self.logger.warn(
+        f"only {tot_trained} steps are trained over the {tot_sampled} sampled"
+      )
+    elif tot_trained > tot_sampled * 1.1:
+      self.logger.warn(
+        f"{tot_trained} steps trained over only {tot_sampled} new samples"
+      )
+    # check if the `training_step` function will be called more than once
+    self.check_num_training_step_calls(algo_config)
+  
   @abstractmethod
   def convert_training_parameters(self, all_params: dict):
     """
@@ -296,12 +323,16 @@ class AlgoConfigGenerator(ABC):
     pass
 
   @abstractmethod
-  def validate_collection_and_training_size(
-      self, algo_config: AlgorithmConfig
-    ):
+  def count_sampled_steps(self, algo_config: AlgorithmConfig) -> int:
     """
-    Computes the number of collected and trained steps according to the 
-    given `AlgorithmConfig`
+    Counts the number of sampled steps according to the given `AlgorithmConfig`
+    """
+    pass
+
+  @abstractmethod
+  def count_trained_steps(self, algo_config: AlgorithmConfig) -> int:
+    """
+    Counts the number of trained steps according to the given `AlgorithmConfig`
     """
     pass
   

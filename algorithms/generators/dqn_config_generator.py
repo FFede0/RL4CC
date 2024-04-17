@@ -42,9 +42,6 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     if "batch_size" in all_params:
       batch_size = all_params.pop("batch_size")
       all_params["train_batch_size"] = batch_size
-      self.logger.log(
-        f"training batches will have size {batch_size}"
-      )
     # training intensity
     if "num_train_batches" in all_params:
       num_batches = all_params.pop("num_train_batches")
@@ -58,34 +55,21 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         self.base_algo_config.get_rollout_fragment_length()
       )
       n_sampled_steps = nw * rfl
-      self.logger.log(
-        f"{nw} worker(s) will collect overall {n_sampled_steps} step(s)"
-      )
       # number of trained steps & intensity
       if num_batches > 1:
         n_trained_steps = batch_size * num_batches
         all_params["training_intensity"] = n_trained_steps // n_sampled_steps
-        self.logger.log(
-          f"the total number of trained steps is: {n_trained_steps}"
-        )
       else:
         all_params["training_intensity"] = None
   
-  def validate_collection_and_training_size(
-      self, algo_config: AlgorithmConfig
-    ):
+  def count_sampled_steps(self, algo_config: AlgorithmConfig) -> int:
     """
-    Computes the number of collected and trained steps according to the 
-    given `AlgorithmConfig`
+    Counts the number of sampled steps according to the given `AlgorithmConfig`
     """
-    self.logger.breakline()
-    self.logger.log(
-      f"*** collected/trained steps in each `{self.algo}.training_step()` ***"
-    )
     # number of rollout workers
     nw = algo_config["num_rollout_workers"]
     # proportion between collection and training
-    citer, titer = calculate_rr_weights(algo_config)
+    citer, _ = calculate_rr_weights(algo_config)
     # number of collected steps
     ncs = 0
     for wid in range(max(nw, 1)):
@@ -102,12 +86,18 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       self.logger.log(
         f"{wait_n_steps} steps have to be sampled before learning starts"
       )
+    return ncs * citer
+  
+  def count_trained_steps(self, algo_config: AlgorithmConfig) -> int:
+    """
+    Counts the number of trained steps according to the given `AlgorithmConfig`
+    """
+    # proportion between collection and training
+    _, titer = calculate_rr_weights(algo_config)
     # number of steps sampled from a replay buffer
     tbs = algo_config["train_batch_size"]
     C = algo_config["replay_buffer_config"]["capacity"]
     self.logger.log(
       f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})"
     )
-    self.logger.breakline()
-    # check if the `training_step` function will be called more than once
-    self.check_num_training_step_calls(algo_config)
+    return tbs * titer

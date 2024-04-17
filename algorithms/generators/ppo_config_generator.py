@@ -46,35 +46,19 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       )
       n_steps = nw * all_params["rollout_fragment_length"]
       all_params["train_batch_size"] = n_steps
-      self.logger.log(
-        f"{nw} rollout workers will collect overall {n_steps} steps"
-      )
     # sgd batch size
     if "batch_size" in all_params:
       batch_size = all_params.pop("batch_size")
       all_params["sgd_minibatch_size"] = batch_size
-      self.logger.log(
-        f"training batches will have size: {batch_size}"
-      )
     # number of sgd iterations
     if "num_train_batches" in all_params:
       num_batches = all_params.pop("num_train_batches")
       all_params["num_sgd_iter"] = num_batches
-      self.logger.log(
-       f"{num_batches} batches will be extracted for training"
-      )
   
-  def validate_collection_and_training_size(
-      self, algo_config: AlgorithmConfig
-    ):
+  def count_sampled_steps(self, algo_config: AlgorithmConfig) -> int:
     """
-    Computes the number of collected and trained steps according to the 
-    given `AlgorithmConfig`
+    Counts the number of sampled steps according to the given `AlgorithmConfig`
     """
-    self.logger.breakline()
-    self.logger.log(
-      f"*** collected/trained steps in each `{self.algo}.training_step()` ***"
-    )
     # number of rollout workers
     nw = algo_config["num_rollout_workers"]
     # number of collected steps
@@ -88,18 +72,23 @@ class PPOConfigGenerator(AlgoConfigGenerator):
     self.logger.log(
       f"{ncs} step(s) collected to reach the required number {tbs}"
     )
+    return tbs
+  
+  def count_trained_steps(self, algo_config: AlgorithmConfig) -> int:
+    """
+    Counts the number of trained steps according to the given `AlgorithmConfig`
+    """
     # number of steps sampled from experience
     sgdbs = algo_config["sgd_minibatch_size"]
     sgdit = algo_config["num_sgd_iter"]
     self.logger.log(
       f"{sgdit} batch(es) of size {sgdbs} sampled from experience to train"
     )
-    self.logger.breakline()
     # check if parameters are coherent
+    tbs = algo_config["train_batch_size"]
     if sgdbs > tbs:
       msg = f"The training `batch_size` ({sgdbs}) must be <= the number of "
       raise ValueError(
         msg + f"collected steps ({tbs})"
       )
-    # check if the `training_step` function will be called more than once
-    self.check_num_training_step_calls(algo_config)
+    return sgdbs * sgdit
