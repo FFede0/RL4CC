@@ -224,10 +224,10 @@ class AlgoConfigGenerator(ABC):
     unit = self.base_algo_config["batch_mode"]
     if "duration_unit" in all_params:
       unit = all_params.pop("duration_unit")
-      if unit == "step":
+      if unit == "steps":
         all_params["batch_mode"] = "truncated_episodes"
         unit = "truncated_episodes"
-      elif unit == "episode":
+      elif unit == "episodes":
         all_params["batch_mode"] = "complete_episodes"
         unit = "complete_episodes"
       else:
