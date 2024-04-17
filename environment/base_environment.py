@@ -24,11 +24,7 @@ class BaseEnvironment(gym.Env):
   Base environment dealing only with the simulation time management
   """
   def __init__(self, env_config: EnvContext):
-    # simulation time management
-    self.min_time = env_config["min_time"]
-    self.max_time = env_config["max_time"]
-    self.time_step = env_config["time_step"]
-    self.current_time = self.min_time
+    seed = self.load_configuration(env_config)
     # observation space
     self.observation_space = Box(
       low = self.min_time, 
@@ -38,8 +34,20 @@ class BaseEnvironment(gym.Env):
     # define action space {do nothing}
     self.action_space = Discrete(1)
     # reset
-    seed = None
     self.reset(seed=seed)
+  
+  def load_configuration(self, env_config: EnvContext) -> int:
+    """
+    Initialize environment loading info from the provided configuration dict
+    """
+    # simulation time management
+    self.min_time = env_config["min_time"]
+    self.max_time = env_config["max_time"]
+    self.time_step = env_config["time_step"]
+    self.current_time = self.min_time
+    # seed for randomization (None)
+    seed = None
+    return seed
   
   def observation(self):
     obs = np.array([self.current_time])
