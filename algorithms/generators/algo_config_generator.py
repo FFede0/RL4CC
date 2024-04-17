@@ -41,7 +41,8 @@ class AlgoConfigGenerator(ABC):
       ("min_sample_timesteps_per_iteration", "reporting"),
       ("min_train_timesteps_per_iteration", "reporting"),
       ("num_gpus", "resources"),
-      ("num_cpus_per_local_worker", "resources")
+      ("num_cpus_per_local_worker", "resources"),
+      ("evaluation_interval", "evaluation")
     ]
     self._suggested_keys = [
       # (key, key group)
@@ -179,6 +180,8 @@ class AlgoConfigGenerator(ABC):
     # manage the evaluation configuration, so that at least the final 
     # evaluation can be surely performed (force the local (non-eval) worker 
     # to have an environment to evaluate on)
+    if exp_config is not None and "evaluation_interval" in exp_config:
+      all_params["evaluation_interval"] = exp_config["evaluation_interval"]
     if not_defined("evaluation_interval", all_params):
       all_params["create_env_on_driver"] = True
   
@@ -194,7 +197,18 @@ class AlgoConfigGenerator(ABC):
     for pk,_ in self._protected_keys:
       if pk in all_params:
         using_protected_keys = True
-        if pk != "logger_config":
+        # prevent the user from improperly setting the evaluation interval
+        if pk == "evaluation_interval":
+          raise KeyError(
+            "ERROR: set the evaluation interval from `exp_config.json`"
+          )
+        # prevent the user from manually setting the logging directory
+        elif pk == "logger_config":
+          if "logdir" in all_params[pk]:
+            raise KeyError(
+              "ERROR: set a general logging directory from `exp_config.json`"
+            )
+        else:
           # prevent the user from simultaneously setting protected and 
           # suggested keys
           if using_suggested_keys:
@@ -206,12 +220,6 @@ class AlgoConfigGenerator(ABC):
             pv = all_params[pk]
             self.logger.warn(
               f"manually setting protected key `{pk}` with value: {pv}"
-            )
-        else:
-          # prevent the user from manually setting the logging directory
-          if "logdir" in all_params[pk]:
-            raise KeyError(
-              "ERROR: set a general logging directory from `exp_config.json`"
             )
     return using_suggested_keys, using_protected_keys
   
