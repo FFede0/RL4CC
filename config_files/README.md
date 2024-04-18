@@ -133,6 +133,8 @@ Example:
 }
 ```
 
+#### Configure hyperparameter tuning
+
 To configure a Ray `Tuner`, a `tuner` sub-dictionary should be added 
 in `exp_config.json`. It is used to specify, e.g., the number of times to 
 sample from the hyperparameter space and the policy for fault tolerance when 
