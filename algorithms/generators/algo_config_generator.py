@@ -42,7 +42,8 @@ class AlgoConfigGenerator(ABC):
       ("min_train_timesteps_per_iteration", "reporting"),
       ("num_gpus", "resources"),
       ("num_cpus_per_local_worker", "resources"),
-      ("evaluation_interval", "evaluation")
+      ("evaluation_interval", "evaluation"),
+      ("evaluation_duration", "evaluation")
     ]
     self._suggested_keys = [
       # (key, key group)
@@ -51,7 +52,8 @@ class AlgoConfigGenerator(ABC):
       ("batch_size",  "training"),
       ("num_train_batches",  "training"),
       ("num_gpus_master",  "resources"),
-      ("num_cpus_master",  "resources")
+      ("num_cpus_master",  "resources"),
+      ("evaluation_duration_per_worker", "evaluation")
     ]
   
   def save_algo_methods_dict(self):
@@ -168,6 +170,7 @@ class AlgoConfigGenerator(ABC):
     # appropriate standard keys
     if using_suggested_keys:
       self.convert_rollout_parameters(all_params, env_config)
+      self.convert_evaluation_parameters(all_params, env_config, exp_config)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
     # manage the debugging configuration, creating the experiment logdir 
@@ -177,13 +180,6 @@ class AlgoConfigGenerator(ABC):
       if not_defined("logger_config", all_params):
         all_params["logger_config"] = {}
       all_params["logger_config"]["logdir"] = exp_logdir
-    # manage the evaluation configuration, so that at least the final 
-    # evaluation can be surely performed (force the local (non-eval) worker 
-    # to have an environment to evaluate on)
-    if exp_config is not None and "evaluation_interval" in exp_config:
-      all_params["evaluation_interval"] = exp_config["evaluation_interval"]
-    if not_defined("evaluation_interval", all_params):
-      all_params["create_env_on_driver"] = True
   
   def validate_key_usage(self, all_params: dict):
     """
@@ -212,8 +208,9 @@ class AlgoConfigGenerator(ABC):
           # prevent the user from simultaneously setting protected and 
           # suggested keys
           if using_suggested_keys:
+            msg = "ERROR: mixing protected and suggested keys is forbidden"
             raise KeyError(
-              "ERROR: mixing protected and suggested keys is forbidden"
+              msg + f" (protected key: `{pk}`)"
             )
           # raise a warning otherwise
           else:
@@ -251,6 +248,48 @@ class AlgoConfigGenerator(ABC):
         time_step = env_config["time_step"]
         n_steps = (max_time - min_time) // time_step
         all_params["rollout_fragment_length"] = duration * n_steps
+  
+  def convert_evaluation_parameters(
+      self, all_params: dict, env_config: dict, exp_config: dict
+    ):
+    """
+    Defines the appropriate parameters related to the evaluation length, 
+    according to the provided keys
+    """
+    # evaluation interval
+    if exp_config is not None and "evaluation_interval" in exp_config:
+      all_params["evaluation_interval"] = exp_config["evaluation_interval"]
+    # duration unit
+    unit = all_params.get(
+      "evaluation_duration_unit",
+      self.base_algo_config["evaluation_duration_unit"]
+    )
+    if unit != "timesteps" and unit != "episodes":
+      raise ValueError(f"ERROR: invalid `evaluation_duration_unit` {unit}")
+    # duration
+    num_workers = all_params.get(
+      "evaluation_num_workers",
+      max(1, self.base_algo_config["evaluation_num_workers"])
+    )
+    duration = self.base_algo_config["evaluation_duration"]
+    if "evaluation_duration_per_worker" in all_params:
+      duration = all_params.pop("evaluation_duration_per_worker") * num_workers
+      if unit == "episodes":
+        min_time = env_config["min_time"]
+        max_time = env_config["max_time"]
+        time_step = env_config["time_step"]
+        n_steps = (max_time - min_time) // time_step
+        duration *= n_steps
+      all_params["evaluation_duration"] = duration
+    # guarantee that at least the final evaluation can be surely performed 
+    # (force the local (non-eval) worker to have an environment to evaluate on)
+    if not_defined("evaluation_interval", all_params):
+      all_params["create_env_on_driver"] = True
+      msg = "no `evaluation_interval` is set in `exp_config.json`. "
+      msg += "A final evaluation will still be performed, with "
+      self.logger.warn(
+        msg + f"{num_workers} worker(s) collecting overall {duration} {unit}"
+      )
 
   def convert_resources_parameters(self, all_params):
     """
