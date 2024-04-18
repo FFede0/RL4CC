@@ -1,0 +1,164 @@
+## Expected structure of the configuration files
+
+Each experiment is controlled by **three** configuration files, in `JSON` 
+format, which provide information about the `Environment`, the 
+Ray `Algorithm`, and the experiment to run (including, possibly, details 
+about the Ray `Tuner`).
+
+The corresponding structure is detailed in the following.
+
+### `Environment` configuration file
+
+The `env_config.json` file includes only three mandatory parameters, which 
+are related to the simulation time management within the Environment. 
+
+These are:
+- `min_time`: the start time of the simulation (in seconds);
+- `max_time`: the end time of the simulation (in seconds);
+- `time_step`: the time elapsed between two subsequent calls to 
+`Environment.step()` (in seconds).
+
+The interval `[min_time, max_time]` corresponds to an **episode**; therefore, 
+a sample configuration as:
+
+```
+{
+  "min_time": 0,
+  "max_time": 3600,
+  "time_step": 10
+}
+```
+
+can be used to represent a scenario where episodes last 1 hour each and a 
+new agent decision is taken every 10 seconds.
+
+### Ray `Algorithm` configuration file
+
+The `ray_config.json` file includes parameters related to the definition 
+of a Ray [`AlgorithmConfig`](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms) object. 
+
+Parameters should be grouped in sub-dictionaries following the callbacks 
+structure of `AlgorithmConfig`. The most relevant families of parameters are:
+- `framework`, for the Deep Learning framework options;
+- `rollouts`, for parameters related to the configuration of rollout workers, 
+i.e., to how experience trajectories are collected;
+- `evaluation`, to configure the `Algorithm` evaluation;
+- `resources`, to determine which types and how many resources are devoted 
+to experience collection and algorithm training;
+- `training`, to set both common training parameters (e.g., the learning 
+rate) and algorithm-specific properties.
+
+A more comprehensive list is provided in 
+[the Ray documentation](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms).
+
+:warning::warning::warning: **Important note:** to simplify the management of 
+some parameters related to the experience sampling and training, RL4CC offers 
+the possibility of setting higher-level *suggested* keywords insted of 
+using directly the ones defined in Ray. These are:
+- In the `rollouts` section:
+  - `duration_unit`: it can take the value `episodes`, if rollout workers 
+  should collect entire episodes during the experience sampling phase, or 
+  `timesteps`, if episodes can be truncated during the experience sampling;
+  - `duration_per_worker`: how many episodes/steps should be collected by 
+  each rollout worker.
+- In the `training` section:
+  - `batch_size`: dimension of each batch extracted from the collected 
+  experience (or the replay buffer, if defined) during the training phase;
+  - `num_train_batches`: how many batches should be trained in each iteration.
+- in the `resources` section:
+  - `num_gpus_master`: number of GPUs assigned to the master node;
+  - `num_cpus_master`: number of CPUs assigned to the master node.
+- in the `evaluation` section:
+  - `evaluation_duration_per_worker`: how many episodes/steps should be collected by each evaluation worker.
+
+These keywords mask a lower-level management performed by Ray, where different 
+algorithms use different parameters to control the same elements. An 
+**expert** user is free to set directly the Ray *protected* keywords, but 
+the two approaches cannot be mixed.
+
+:warning::warning::warning: **Important note:** there are few elements that, 
+differently from what is explained in the Ray documentation **should not** be 
+managed through `ray_config.json`. These are:
+- `env` and `env_config`, from the `environment` parameters group;
+- `evaluation_interval`, from the `evaluation` parameters group;
+- `logdir`, from the `logger_config` dictionary in the `debugging` parameters 
+group.
+
+In particular, `env` and `env_config` are indirectly controlled through the 
+[`env_config.json`](#environment-configuration-file) file and the `Environment` 
+passed to the algorithm (or the algorithm configuration) initializer, while `evaluation_interval` and `logdir` are set from the 
+[experiment configuration file](#experiment-configuration-file).
+
+Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and 
+[DQN](ray_config_dqn.json.template) are provided.
+
+### Experiment configuration file
+
+The `exp_config.json` includes parameters related to the training experiment 
+(i.e., the stopping criteria) and/or the configuration of the Ray `Tuner` for 
+automatic hyperparameter tuning.
+
+The only **mandatory section** is `stopping_criteria`, which is a dictionary 
+used to list the (possibly, multiple) stopping criteria to be considered 
+during the training. The available termination conditions are:
+- `max_iterations`: the maximum number of training iterations.
+
+Additional (optional) parameters are:
+- `logdir`: the base directory where all the experiments outputs should be 
+saved. If, e.g., `OUTPUT` is provided as `logdir`, a subdirectory is created 
+there with the following name: `f"{algo}_{environment}_{now}"`, where `algo` 
+is the name of the Ray `Algorithm`, `environment` is the name of the chosen 
+`Environment` and `now` is given by 
+`datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')`. The default base result 
+directory if no value is provided here is `~/ray_results`.
+- `from_checkpoint`: path to the directory where the checkpoint to be 
+restored is saved.
+- `evaluation_interval`: after how many iterations the evaluation should be 
+performed. **Important note:** one evaluation step is always performed at the 
+end of the training loop, even if no parameter is provided here.
+- `checkpoint_interval`: after how many iterations an algorithm checkpoint 
+should be saved. **Important note:** one checkpoint is always saved at the 
+end of the training loop, even if no parameter is provided here.
+- `plot_interval`: TBA
+
+Example: 
+
+```
+{
+  "logdir": "OUTPUT",
+  "evaluation_interval": 5,
+  "stopping_criteria": {
+    "max_iterations": 10
+  }
+}
+```
+
+To configure a Ray `Tuner`, a `tuner` sub-dictionary should be added 
+in `exp_config.json`. It is used to specify, e.g., the number of times to 
+sample from the hyperparameter space and the policy for fault tolerance when 
+resuming a stopped experiment from the existing state. In particular, the 
+`resume_errored` and `restart_errored` fields are related to the possibility 
+of resuming or restarting an experiment left in the `ERRORED` state, 
+respectively. The `resume_unfinished` field is related to the possibilty of 
+resuming an experiment left in the `RUNNING` state. 
+
+**Note:** experiments left in the `TERMINATED` state cannot be resumed: you 
+have to start a new experiment from scratch if you want to test new parameters.
+
+Concerning the `num_tune_samples` parameter, if this is -1, (virtually) 
+infinite samples are generated until a stopping condition is met.
+
+Example of `tuner` sub-dictionary:
+
+```
+{
+  "stopping_criteria": {...},
+  ...,
+  "tuner": {
+    "num_tune_samples": 2,
+    "resume_errored": true,
+    "restart_errored": false,
+    "resume_unfinished": true
+  }
+}
+```
