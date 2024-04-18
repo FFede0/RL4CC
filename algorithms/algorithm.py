@@ -18,6 +18,7 @@ from algorithms.generators_factory import ACGfactory
 from environment.base_environment import BaseEnvironment
 from utilities.logger import Logger
 
+from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from datetime import datetime
 from typing import Tuple
 import numpy as np
@@ -43,12 +44,26 @@ class Algorithm:
     """
     # load the configuration files from the provided directory
     env_config, ray_config, exp_config = self.load_config_files(config_dir)
-    # generate `AlgorithmConfig`
-    algo_config = self.algo_config_generator.generate_algo_config(
-      environment, env_config, ray_config, exp_config
-    )
-    # build and save `RayAlgorithm`
-    self.algo = algo_config.build()
+    # load the Ray `Algorithm` from a checkpoint (if provided)
+    if exp_config is not None and "from_checkpoint" in exp_config:
+      chkpt_path = exp_config["from_checkpoint"]
+      if not os.path.exists(chkpt_path) or not os.path.isdir(chkpt_path):
+        raise FileNotFoundError(
+          f"ERROR: checkpoint path {chkpt_path} does not exist or is invalid"
+        )
+      self.algo = RayAlgorithm.from_checkpoint(chkpt_path)
+      logdir = self.algo.logdir
+      self.logger.warn(
+        f"Algorithm restored from checkpoint; the output directory is {logdir}"
+      )
+    # otherwise...
+    else:
+      # ...generate `AlgorithmConfig`
+      algo_config = self.algo_config_generator.generate_algo_config(
+        environment, env_config, ray_config, exp_config
+      )
+      # ...build and save the Ray `Algorithm`
+      self.algo = algo_config.build()
     # define the stopping criterion
     self.define_stopping_criterion(exp_config)
     # save the configuration files
@@ -64,9 +79,9 @@ class Algorithm:
     it = 1
     while not self.stop(it):
       # train
-      self.logger.log(f"starting iteration {it}")
+      self.logger.log(f"starting iteration {it}", 2)
       result = self.algo.train()
-      self.logger.log("iteration completed")
+      self.logger.log("iteration completed", 2)
       self.update_progress_file("last_iteration", result['training_iteration'])
       # save checkpoint at the beginning and every `checkpoint_interval` 
       # iterations
@@ -86,11 +101,11 @@ class Algorithm:
     # save last checkpoint
     self.save_checkpoint(result['training_iteration'])
     # perform final evaluation
-    self.logger.log(f"starting final evaluation")
+    self.logger.log(f"starting final evaluation", 1)
     self.update_evaluation_metrics_file(
       result["training_iteration"], self.algo.evaluate()
     )
-    self.logger.log(f"final evaluation performed")
+    self.logger.log(f"final evaluation performed", 1)
     # stop
     self.algo.stop()
     end = datetime.now()
@@ -143,7 +158,7 @@ class Algorithm:
     last_checkpoint_dir = save_result.checkpoint.path
     self.logger.log(
       "an Algorithm checkpoint has been created inside directory: "
-      f"'{last_checkpoint_dir}'"
+      f"'{last_checkpoint_dir}'", 1
     )
     self.update_progress_file("last_checkpoint_dir", last_checkpoint_dir)
   
