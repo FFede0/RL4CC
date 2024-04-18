@@ -42,6 +42,7 @@ class AlgoConfigGenerator(ABC):
       ("min_train_timesteps_per_iteration", "reporting"),
       ("num_gpus", "resources"),
       ("num_cpus_per_local_worker", "resources"),
+      ("logger_config", "debugging"),
       ("evaluation_interval", "evaluation"),
       ("evaluation_duration", "evaluation")
     ]
