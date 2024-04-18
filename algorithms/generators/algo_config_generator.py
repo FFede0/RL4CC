@@ -168,6 +168,7 @@ class AlgoConfigGenerator(ABC):
       all_params["min_time_s_per_iteration"] = 0
       all_params["min_sample_timesteps_per_iteration"] = 0
       all_params["min_train_timesteps_per_iteration"] = 0
+      all_params["metrics_num_episodes_for_smoothing"] = 1
     else:
       msg = "`min_*_per_iteration` variables are not forced to 0. "
       self.logger.warn(
