@@ -18,6 +18,12 @@ define training experiments, supported by a factory of Ray `AlgorithmConfig`
 - a `Tuner` class, to be used as entrypoint to define automatic hyperparameter 
 tuning (TBA)
 
+- a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages 
+in a standard format.
+
+Detailed information about these components are provided in the following 
+sections.
+
 ## How to start a training experiment
 
 To define and start a training experiment exploiting one of the available 
@@ -91,6 +97,33 @@ training iteration. By default, this will store:
 ## How to start hyperparameter tuning
 
 TBA
+
+## The RL4CC Logger
+
+The RL4CC `Logger` can be configured to print messages with different 
+verbosity levels, using either the `sys.stdout`/`err` streams or 
+suitably-defined file streams according to the information specified in the 
+[`exp_config.json` file](config_files/README.md#configure-experiment-logging).
+
+The format of logged messages is:
+
+```
+{TIME} [{LOGGER_NAME}] (level {LEVEL}) {MESSAGE_TYPE}: {MESSAGE}
+```
+
+where:
+- `TIME` is given by `datetime.datetime.now()`.
+- The `LOGGER_NAME` is provided as parameter in the `Logger` constructor 
+(default: `RL4CCLogger`).
+- The message `LEVEL` is 0 for warnings and errors (which are always printed 
+regardless the verbosity level specified by the user), while it is specified 
+as parameter when calling the `Logger.log()` method for generic messages. As 
+mentioned in the 
+[`exp_config.json` file](config_files/README.md#configure-experiment-logging), 
+generic messages are printed only if the corresponding `LEVEL` is lower than 
+the verbosity imposed by the user.
+- The `MESSAGE_TYPE` is `INFO` when calling `Logger.log()`, `WARNING` when 
+calling `Logger.warn()` and `ERROR` when calling `Logger.error()`.
 
 ## How to add new RL methods
 

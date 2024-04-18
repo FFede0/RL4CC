@@ -133,6 +133,19 @@ Example:
 }
 ```
 
+#### Configure experiment logging
+
+To configure the RL4CC `Logger` verbosity level and the output/error stream 
+it considers, a `logger` sub-dictionary should be added, including the 
+following parameters:
+- `verbosity`: an integer between 0 (minimum verbosity) and 3 (maximum 
+verbosity), which controls how many messages are printed during the 
+experiment. Indeed, while warnings and errors are always printed, generic 
+information are printed only if the verbosity is higher than the corresponding 
+message level.
+- `file_streams`: `True` to log on files instead of using `sys.stdout` and 
+`sys.stderr`.
+
 #### Configure hyperparameter tuning
 
 To configure a Ray `Tuner`, a `tuner` sub-dictionary should be added 
