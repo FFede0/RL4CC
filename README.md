@@ -125,6 +125,8 @@ the verbosity imposed by the user.
 - The `MESSAGE_TYPE` is `INFO` when calling `Logger.log()`, `WARNING` when 
 calling `Logger.warn()` and `ERROR` when calling `Logger.error()`.
 
+:warning::warning::warning: file streams TBA
+
 ## How to add new RL methods
 
 To expand the module with generators for new algorithms:

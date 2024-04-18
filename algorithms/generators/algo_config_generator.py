@@ -109,6 +109,10 @@ class AlgoConfigGenerator(ABC):
     Defines the `AlgorithmConfig` considering the provided environment and 
     configuration dictionaries
     """
+    # Logger verbosity
+    if exp_config is not None and "logger" in exp_config:
+      self.logger.verbose = exp_config["logger"].get("verbosity", 0)
+    # start from the base config
     algo_config = (
       self.base_algo_config
       # environment

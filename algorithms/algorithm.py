@@ -163,6 +163,9 @@ class Algorithm:
       self.checkpoint_interval = exp_config.get("checkpoint_interval", np.inf)
       self.plot_interval = exp_config.get("plot_interval", np.inf)
       self.evaluation_interval = exp_config.get("evaluation_interval", np.inf)
+      # Logger verbosity
+      if "logger" in exp_config:
+        self.logger.verbose = exp_config["logger"].get("verbosity", 0)
     return env_config, ray_config, exp_config
   
   def print_algo_config(self, to_file: bool = True):
