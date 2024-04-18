@@ -86,6 +86,7 @@ class Algorithm:
     # save last checkpoint
     self.save_checkpoint(result['training_iteration'])
     # perform final evaluation
+    self.logger.log(f"starting final evaluation")
     self.update_evaluation_metrics_file(
       result["training_iteration"], self.algo.evaluate()
     )
@@ -99,10 +100,10 @@ class Algorithm:
     experiment_duration = end - start
     avg_time_per_iter = (end - start) / (it - 1)
     self.update_progress_file(
-      "experiment_duration_s", experiment_duration.seconds
+      "experiment_duration_s", experiment_duration.total_seconds()
     )
     self.update_progress_file(
-      "avg_time_per_iter_s", avg_time_per_iter.seconds
+      "avg_time_per_iter_s", avg_time_per_iter.total_seconds()
     )
     self.logger.log(f"training loop took: {experiment_duration}")
     self.logger.log(f"average time per iteration: {avg_time_per_iter}")
