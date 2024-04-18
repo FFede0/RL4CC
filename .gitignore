@@ -1,5 +1,6 @@
-# Configuration files (except the templates)
+# Configuration files (except the README and some templates)
 config_files/*
+!config_files/README.md
 !config_files/*.template
 
 # MacOS files
