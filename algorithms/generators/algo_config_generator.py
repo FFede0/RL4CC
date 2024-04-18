@@ -232,7 +232,7 @@ class AlgoConfigGenerator(ABC):
     unit = self.base_algo_config["batch_mode"]
     if "duration_unit" in all_params:
       unit = all_params.pop("duration_unit")
-      if unit == "steps":
+      if unit == "timesteps":
         all_params["batch_mode"] = "truncated_episodes"
         unit = "truncated_episodes"
       elif unit == "episodes":
