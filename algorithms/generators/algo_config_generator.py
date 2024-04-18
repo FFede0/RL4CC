@@ -44,7 +44,9 @@ class AlgoConfigGenerator(ABC):
       ("num_cpus_per_local_worker", "resources"),
       ("logger_config", "debugging"),
       ("evaluation_interval", "evaluation"),
-      ("evaluation_duration", "evaluation")
+      ("evaluation_duration", "evaluation"),
+      ("env", "environment"),
+      ("env_config", "environment")
     ]
     self._suggested_keys = [
       # (key, key group)
@@ -198,8 +200,13 @@ class AlgoConfigGenerator(ABC):
     for pk,_ in self._protected_keys:
       if pk in all_params:
         using_protected_keys = True
+        # prevent the user from improperly setting the environment config
+        if pk == "env" or pk == "env_config":
+          raise KeyError(
+            "ERROR: `env` and `env_config` cannot be manually configured"
+          )
         # prevent the user from improperly setting the evaluation interval
-        if pk == "evaluation_interval":
+        elif pk == "evaluation_interval":
           raise KeyError(
             "ERROR: set the evaluation interval from `exp_config.json`"
           )
