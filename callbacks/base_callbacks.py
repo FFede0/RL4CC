@@ -116,7 +116,9 @@ class BaseCallbacks(DefaultCallbacks):
     # normally, RLlib would aggregate any custom metric into a mean, max and 
     # min of the given metric
     if "custom_metrics" in result:
-      for key, val in result["custom_metrics"]:
+      keys = list(result["custom_metrics"].keys())
+      vals = list(result["custom_metrics"].values())
+      for key, val in zip(keys, vals):
         result["custom_metrics"][f"{key}_avg"] = np.mean(val)
         result["custom_metrics"][f"{key}_min"] = np.min(val)
         result["custom_metrics"][f"{key}_max"] = np.max(val)
