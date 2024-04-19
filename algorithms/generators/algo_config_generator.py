@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from environment.environments_factory import ENVfactory
+from callbacks.callbacks_factory import CBfactory
 from utilities.common import not_defined
 from utilities.logger import Logger
 
@@ -48,7 +49,8 @@ class AlgoConfigGenerator(ABC):
       ("evaluation_interval", "evaluation"),
       ("evaluation_duration", "evaluation"),
       ("env", "environment"),
-      ("env_config", "environment")
+      ("env_config", "environment"),
+      ("callbacks_class", "callbacks")
     ]
     self._suggested_keys = [
       # (key, key group)
@@ -58,7 +60,8 @@ class AlgoConfigGenerator(ABC):
       ("num_train_batches",  "training"),
       ("num_gpus_master",  "resources"),
       ("num_cpus_master",  "resources"),
-      ("evaluation_duration_per_worker", "evaluation")
+      ("evaluation_duration_per_worker", "evaluation"),
+      ("callbacks_class_name", "callbacks")
     ]
   
   def save_algo_methods_dict(self):
@@ -189,6 +192,7 @@ class AlgoConfigGenerator(ABC):
     # if suggested keys are provided, these should be converted into the 
     # appropriate standard keys
     if using_suggested_keys:
+      self.convert_callbacks_parameters(all_params)
       self.convert_rollout_parameters(all_params, env_config)
       self.convert_evaluation_parameters(all_params, env_config, eval_interval)
       self.convert_resources_parameters(all_params)
@@ -244,6 +248,13 @@ class AlgoConfigGenerator(ABC):
               f"manually setting protected key `{pk}` with value: {pv}"
             )
     return using_suggested_keys, using_protected_keys
+
+  def convert_callbacks_parameters(self, all_params: dict):
+    """
+    Define callbacks class
+    """
+    callbacks_class_name = all_params.pop("callbacks_class_name")
+    all_params["callbacks_class"] = CBfactory.get_type(callbacks_class_name)
   
   def convert_rollout_parameters(self, all_params: dict, env_config: dict):
     """
