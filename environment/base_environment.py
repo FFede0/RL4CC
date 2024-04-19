@@ -51,7 +51,10 @@ class BaseEnvironment(gym.Env):
   
   def observation(self):
     obs = np.array([self.current_time])
-    obs_info = {"current_time": self.current_time}
+    obs_info = {
+      "current_time": self.current_time,
+      "reward": self.compute_reward()
+    }
     return obs, obs_info
 
   def reset(self, seed: int = None, options = None):
