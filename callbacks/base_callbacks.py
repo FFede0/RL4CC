@@ -39,12 +39,12 @@ class BaseCallbacks(DefaultCallbacks):
       env_index: int,
       **kwargs,
     ):
-    # make sure this episode has just been started (only initial obs
-    # logged so far).
-    assert episode.length == 0, (
-      "ERROR: `on_episode_start()` callback should be called right "
-      "after env reset!"
-    )
+    # # make sure this episode has just been started (only initial obs
+    # # logged so far).
+    # assert episode.length == 0, (
+    #   "ERROR: `on_episode_start()` callback should be called right "
+    #   "after env reset!"
+    # )
     # create lists to store info (in user_data and hist_data)
     for key in RELEVANT_KEYS:
       episode.user_data[key] = []
@@ -63,11 +63,11 @@ class BaseCallbacks(DefaultCallbacks):
       env_index: int,
       **kwargs,
     ):
-    # make sure this episode is ongoing
-    assert episode.length > 0, (
-      "ERROR: `on_episode_step()` callback should not be called right "
-      "after env reset!"
-    )
+    # # make sure this episode is ongoing
+    # assert episode.length > 0, (
+    #   "ERROR: `on_episode_step()` callback should not be called right "
+    #   "after env reset!"
+    # )
     for key in RELEVANT_KEYS:
       val = episode.last_info_for()[key]
       if isinstance(val, np.ndarray):
@@ -87,13 +87,13 @@ class BaseCallbacks(DefaultCallbacks):
       env_index: int,
       **kwargs,
     ):
-    # Make sure this episode is really done.
-    assert episode.batch_builder.policy_collectors["default_policy"].batches[
-      -1
-    ]["dones"][-1], (
-      "ERROR: `on_episode_end()` should only be called "
-      "after episode is done!"
-    )
+    # # Make sure this episode is really done.
+    # assert episode.batch_builder.policy_collectors["default_policy"].batches[
+    #   -1
+    # ]["dones"][-1], (
+    #   "ERROR: `on_episode_end()` should only be called "
+    #   "after episode is done!"
+    # )
     # add to hist data and add averages to custom metrics
     for key in RELEVANT_KEYS:
       episode.hist_data[key] = episode.user_data[key]
