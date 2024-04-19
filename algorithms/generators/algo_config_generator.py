@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from environment.base_environment import BaseEnvironment
+from environment.environments_factory import ENVfactory
 from utilities.common import not_defined
 from utilities.logger import Logger
 
@@ -27,8 +27,10 @@ import os
 
 
 class AlgoConfigGenerator(ABC):
-  def __init__(self):
-    self.logger = Logger(name="RL4CC-AlgoConfigGenerator")
+  def __init__(
+      self, logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator")
+    ):
+    self.logger = logger
     self.algo = None
     self.base_algo_config = None
     self.algo_methods = None
@@ -102,29 +104,29 @@ class AlgoConfigGenerator(ABC):
   
   def generate_algo_config(
       self, 
-      environment: BaseEnvironment,
       env_config: dict,
       ray_config: dict = None,
-      exp_config: dict = None
+      base_logdir: str = None,
+      eval_interval: int = None
     ) -> AlgorithmConfig:
     """
     Defines the `AlgorithmConfig` considering the provided environment and 
     configuration dictionaries
     """
-    # Logger verbosity
-    if exp_config is not None and "logger" in exp_config:
-      self.logger.verbose = exp_config["logger"].get("verbosity", 0)
-    # start from the base config
+    if "env_name" not in env_config:
+      raise KeyError("ERROR: cannot create an environment without a name")
+    # start config generation
     algo_config = (
       self.base_algo_config
       # environment
-      .environment(environment, env_config=env_config)
+      .environment(
+        ENVfactory.get_type(env_config["env_name"]), env_config=env_config
+      )
     )
-    # process the parameters dictionaries
-    if ray_config is not None or exp_config is not None:
-      env_config["ENV_NAME"] = environment.__name__
-      all_params = self.process_config_dictionaries(
-        ray_config, exp_config, env_config
+    # process the parameters
+    if ray_config is not None:
+      all_params = self.process_config_parameters(
+        ray_config, env_config, base_logdir, eval_interval
       )
       # update the algorithm config
       algo_config.update_from_dict(all_params)
@@ -132,11 +134,15 @@ class AlgoConfigGenerator(ABC):
     self.validate_collection_and_training_size(algo_config)
     return algo_config
   
-  def process_config_dictionaries(
-      self, ray_config: dict, exp_config: dict, env_config: dict
+  def process_config_parameters(
+      self, 
+      ray_config: dict, 
+      env_config: dict, 
+      base_logdir: str = None, 
+      eval_interval: int = None
     ) -> dict:
     """
-    Processes the configuration dictionaries, extracting the relevant 
+    Processes the configuration parameters, extracting the relevant 
     information to define an `AlgorithmConfig`
     """
     all_params = {}
@@ -148,11 +154,17 @@ class AlgoConfigGenerator(ABC):
         else:
           all_params.update({key: value})
     # manage "special" keys
-    self.update_special_keys(all_params, exp_config, env_config)
+    self.update_special_keys(
+      all_params, env_config, base_logdir, eval_interval
+    )
     return all_params
   
   def update_special_keys(
-      self, all_params: dict, exp_config: dict, env_config: dict
+      self, 
+      all_params: dict, 
+      env_config: dict, 
+      base_logdir: str = None, 
+      eval_interval: int = None
     ):
     """
     Updates the work-in-progress dictionary of parameters by converting the 
@@ -178,13 +190,13 @@ class AlgoConfigGenerator(ABC):
     # appropriate standard keys
     if using_suggested_keys:
       self.convert_rollout_parameters(all_params, env_config)
-      self.convert_evaluation_parameters(all_params, env_config, exp_config)
+      self.convert_evaluation_parameters(all_params, env_config, eval_interval)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
     # manage the debugging configuration, creating the experiment logdir 
     # if required
-    exp_logdir = self.generate_logdir(exp_config, env_config)
-    if exp_logdir is not None:
+    if base_logdir is not None:
+      exp_logdir = self.generate_logdir(base_logdir, env_config["env_name"])
       if not_defined("logger_config", all_params):
         all_params["logger_config"] = {}
       all_params["logger_config"]["logdir"] = exp_logdir
@@ -200,7 +212,6 @@ class AlgoConfigGenerator(ABC):
     using_protected_keys = False
     for pk,_ in self._protected_keys:
       if pk in all_params:
-        using_protected_keys = True
         # prevent the user from improperly setting the environment config
         if pk == "env" or pk == "env_config":
           raise KeyError(
@@ -218,6 +229,7 @@ class AlgoConfigGenerator(ABC):
               "ERROR: set a general logging directory from `exp_config.json`"
             )
         else:
+          using_protected_keys = True
           # prevent the user from simultaneously setting protected and 
           # suggested keys
           if using_suggested_keys:
@@ -263,15 +275,15 @@ class AlgoConfigGenerator(ABC):
         all_params["rollout_fragment_length"] = duration * n_steps
   
   def convert_evaluation_parameters(
-      self, all_params: dict, env_config: dict, exp_config: dict
+      self, all_params: dict, env_config: dict, eval_interval: int = None
     ):
     """
     Defines the appropriate parameters related to the evaluation length, 
     according to the provided keys
     """
     # evaluation interval
-    if exp_config is not None and "evaluation_interval" in exp_config:
-      all_params["evaluation_interval"] = exp_config["evaluation_interval"]
+    if eval_interval is not None:
+      all_params["evaluation_interval"] = eval_interval
     # duration unit
     unit = all_params.get(
       "evaluation_duration_unit",
@@ -318,18 +330,15 @@ class AlgoConfigGenerator(ABC):
       num_gpus = all_params.pop("num_gpus_master")
       all_params["num_gpus"] = num_gpus
 
-  def generate_logdir(self, exp_config: dict, env_config: dict) -> str:
+  def generate_logdir(self, base_logdir: str, env_name: str) -> str:
     """
     Generate the experiment `logdir` if an appropriate parameter is provided
     """
-    exp_logdir = None
-    if exp_config is not None and "logdir" in exp_config:
-      now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
-      exp_logdir = os.path.join(
-        os.path.abspath(exp_config["logdir"]), 
-        f"{self.algo}_{env_config['ENV_NAME']}_{now}"
-      )
-      os.makedirs(exp_logdir, exist_ok=True)
+    now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
+    exp_logdir = os.path.join(
+      os.path.abspath(base_logdir), f"{self.algo}_{env_name}_{now}"
+    )
+    os.makedirs(exp_logdir, exist_ok=True)
     return exp_logdir
   
   def check_num_training_step_calls(self, algo_config: AlgorithmConfig):
