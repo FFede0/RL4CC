@@ -266,8 +266,8 @@ class AlgoConfigGenerator(ABC):
     if "duration_unit" in all_params:
       unit = all_params.pop("duration_unit")
       if unit == "timesteps":
-        all_params["batch_mode"] = "truncated_episodes"
-        unit = "truncated_episodes"
+        all_params["batch_mode"] = "truncate_episodes"
+        unit = "truncate_episodes"
       elif unit == "episodes":
         all_params["batch_mode"] = "complete_episodes"
         unit = "complete_episodes"
@@ -276,7 +276,7 @@ class AlgoConfigGenerator(ABC):
     # duration
     if "duration_per_worker" in all_params:
       duration = all_params.pop("duration_per_worker")
-      if unit == "truncated_episodes":
+      if unit == "truncate_episodes":
         all_params["rollout_fragment_length"] = duration
       elif unit == "complete_episodes":
         min_time = env_config["min_time"]
