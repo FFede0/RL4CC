@@ -13,9 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from callbacks.callbacks_factory import CallbacksFactory
-from utilities.common import write_config_file
 from algorithms.generators_factory import ACGfactory
+from utilities.common import write_config_file
 from utilities.logger import Logger
 
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm

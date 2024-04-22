@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from callbacks.callbacks_factory import CallbacksFactory
-
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.evaluation import Episode, RolloutWorker
 from ray.rllib.policy.sample_batch import SampleBatch
@@ -24,14 +22,15 @@ from ray.rllib.env import BaseEnv
 from typing import Dict, Tuple
 import numpy as np
 
-RELEVANT_KEYS = [
-  "current_time",
-  "reward"
-]
 
-
-@CallbacksFactory.register("BaseCallbacks")
 class BaseCallbacks(DefaultCallbacks):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    self.RELEVANT_KEYS = [
+      "current_time",
+      "reward"
+    ]
+  
   def on_episode_start(
       self,
       *,
@@ -49,7 +48,7 @@ class BaseCallbacks(DefaultCallbacks):
     #   "after env reset!"
     # )
     # create lists to store info (in user_data and hist_data)
-    for key in RELEVANT_KEYS:
+    for key in self.RELEVANT_KEYS:
       episode.user_data[key] = []
       episode.hist_data[key] = []
     # add worker index
@@ -71,7 +70,7 @@ class BaseCallbacks(DefaultCallbacks):
     #   "ERROR: `on_episode_step()` callback should not be called right "
     #   "after env reset!"
     # )
-    for key in RELEVANT_KEYS:
+    for key in self.RELEVANT_KEYS:
       val = episode.last_info_for()[key]
       if isinstance(val, np.ndarray):
         val = val.tolist()
@@ -98,7 +97,7 @@ class BaseCallbacks(DefaultCallbacks):
     #   "after episode is done!"
     # )
     # add to hist data and add averages to custom metrics
-    for key in RELEVANT_KEYS:
+    for key in self.RELEVANT_KEYS:
       episode.hist_data[key] = episode.user_data[key]
       episode.custom_metrics[f"{key}_avg"] = np.mean(episode.user_data[key])
     # add worker index
