@@ -44,10 +44,49 @@ be considered, the `env_config.json` and `ray_config.json`) as detailed
 `exp_config.json` file;
 3. call the `TrainingExperiment.run()` method.
 
-Example:
+Example (when using the pre-defined `BaseEnvironment` and `BaseCallbacks` 
+classes):
 
 ```
 exp = TrainingExperiment("config_files/exp_config.json")
+exp.run()
+```
+
+### Training experiments with custom Environment/Callbacks implementations
+
+To use custom implementations of the Environment/Callbacks classes, these 
+need to be added to the corresponding factories. Moreover, **the updated** 
+**factories must be provided as parameters** when initializing a 
+training experiment object. 
+
+As an example, suppose that your code directory follows the structure:
+
+```
+.
+├── RL4CC
+├── src
+│   ├── my_custom_environment.py
+│   └── my_custom_callbacks.py
+└── main.py
+```
+
+and that the `MyCustomEnvironment` and `MyCustomCallbacks` are correctly 
+decorated to register them in the corresponding factories. 
+To guarantee that these classes are properly loaded when starting the 
+experiment, your main.py file should include something as:
+
+```
+from src.my_custom_environment import MyCustomEnvironment
+from src.my_custom_callbacks import MyCustomCallbacks
+
+from RL4CC.environments.environments_factory import EnvironmentsFactory
+from RL4CC.callbacks.callbacks_factory import CallbacksFactory
+
+exp = TrainingExperiment(
+  "config_files/exp_config.json",
+  EnvironmentsFactory,
+  CallbacksFactory
+)
 exp.run()
 ```
 
