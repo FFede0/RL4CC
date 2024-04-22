@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from environment.environments_factory import EnvironmentsFactory
-from callbacks.callbacks_factory import CallbacksFactory
 from utilities.common import not_defined
 from utilities.logger import Logger
 
@@ -29,10 +27,7 @@ import os
 
 class AlgoConfigGenerator(ABC):
   def __init__(
-      self, 
-      logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator"),
-      environments_factory = EnvironmentsFactory,
-      callbacks_factory = CallbacksFactory
+      self, logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator")
     ):
     self.logger = logger
     self.algo = None
@@ -52,8 +47,7 @@ class AlgoConfigGenerator(ABC):
       ("evaluation_interval", "evaluation"),
       ("evaluation_duration", "evaluation"),
       ("env", "environment"),
-      ("env_config", "environment"),
-      ("callbacks_class", "callbacks")
+      ("env_config", "environment")
     ]
     self._suggested_keys = [
       # (key, key group)
@@ -63,12 +57,8 @@ class AlgoConfigGenerator(ABC):
       ("num_train_batches",  "training"),
       ("num_gpus_master",  "resources"),
       ("num_cpus_master",  "resources"),
-      ("evaluation_duration_per_worker", "evaluation"),
-      ("callbacks_class_name", "callbacks")
+      ("evaluation_duration_per_worker", "evaluation")
     ]
-    # save factories
-    self.environments_factory = environments_factory
-    self.callbacks_factory = callbacks_factory
   
   def save_algo_methods_dict(self):
     """
@@ -129,7 +119,7 @@ class AlgoConfigGenerator(ABC):
       self.base_algo_config
       # environment
       .environment(
-        self.environments_factory.get_type(env_config["env_name"]), 
+        env_config["env_name"], 
         env_config=env_config
       )
     )
@@ -199,7 +189,6 @@ class AlgoConfigGenerator(ABC):
     # if suggested keys are provided, these should be converted into the 
     # appropriate standard keys
     if using_suggested_keys:
-      self.convert_callbacks_parameters(all_params)
       self.convert_rollout_parameters(all_params, env_config)
       self.convert_evaluation_parameters(all_params, env_config, eval_interval)
       self.convert_resources_parameters(all_params)
@@ -256,15 +245,6 @@ class AlgoConfigGenerator(ABC):
             )
     return using_suggested_keys, using_protected_keys
 
-  def convert_callbacks_parameters(self, all_params: dict):
-    """
-    Define callbacks class
-    """
-    callbacks_class_name = all_params.pop("callbacks_class_name")
-    all_params["callbacks_class"] = self.callbacks_factory.get_type(
-      callbacks_class_name
-    )
-  
   def convert_rollout_parameters(self, all_params: dict, env_config: dict):
     """
     Defines the appropriate parameters related to the definition and 

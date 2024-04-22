@@ -13,8 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from environment.environments_factory import EnvironmentsFactory
-from callbacks.callbacks_factory import CallbacksFactory
 from experiments.base_experiment import BaseExperiment
 from algorithms.algorithm import Algorithm
 from utilities.common import not_defined
@@ -25,13 +23,8 @@ import json
 import os
 
 class TrainingExperiment(BaseExperiment):
-  def __init__(
-      self, 
-      exp_config_file: str,
-      environments_factory = EnvironmentsFactory,
-      callbacks_factory = CallbacksFactory
-    ):
-    super().__init__(exp_config_file, environments_factory, callbacks_factory)
+  def __init__(self, exp_config_file: str):
+    super().__init__(exp_config_file)
   
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
@@ -49,9 +42,7 @@ class TrainingExperiment(BaseExperiment):
       env_config = self.env_config,
       ray_config = self.ray_config,
       base_logdir = self.logdir,
-      eval_interval = self.evaluation_interval,
-      environments_factory = self.environments_factory,
-      callbacks_factory = self.callbacks_factory
+      eval_interval = self.evaluation_interval
     )
     self.logdir = algo.logdir
     # save experiment configuration files

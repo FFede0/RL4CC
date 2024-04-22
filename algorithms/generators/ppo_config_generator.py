@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from algorithms.generators.algo_config_generator import AlgoConfigGenerator
-from environment.environments_factory import EnvironmentsFactory
-from callbacks.callbacks_factory import CallbacksFactory
 from utilities.logger import Logger
 
 from ray.rllib.algorithms import AlgorithmConfig
@@ -23,12 +21,9 @@ from ray.rllib.algorithms import AlgorithmConfig
 
 class PPOConfigGenerator(AlgoConfigGenerator):
   def __init__(
-      self, 
-      logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator"),
-      environments_factory = EnvironmentsFactory,
-      callbacks_factory = CallbacksFactory
+      self, logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator")
     ):
-    super().__init__(logger, environments_factory, callbacks_factory)
+    super().__init__(logger)
     self.algo = "PPO"
     # generate default `AlgorithmConfig`
     self.generate_default_config()

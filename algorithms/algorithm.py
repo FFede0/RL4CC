@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from environment.environments_factory import EnvironmentsFactory
 from callbacks.callbacks_factory import CallbacksFactory
 from utilities.common import write_config_file
 from algorithms.generators_factory import ACGfactory
@@ -33,16 +32,11 @@ class Algorithm:
       ray_config: dict = None,
       base_logdir: str = None,
       eval_interval: int = None, 
-      logger: Logger = Logger(name="RL4CC-Algorithm"),
-      environments_factory = EnvironmentsFactory,
-      callbacks_factory = CallbacksFactory
+      logger: Logger = Logger(name="RL4CC-Algorithm")
     ):
     self.logger = logger
     self.algo_config_generator = ACGfactory.create(
-      algo_name,
-      logger = self.logger,
-      environments_factory = environments_factory,
-      callbacks_factory = callbacks_factory
+      algo_name, logger = self.logger
     )
     # load the Ray `Algorithm` from a checkpoint (if provided)
     if checkpoint_path is not None:
