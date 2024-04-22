@@ -13,32 +13,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from callbacks.base_callbacks import BaseCallbacks
 
 
 class CallbacksFactory:
   """
   Factory of `Callbacks`
   """
-  def __init__(self):
-    self.all_callbacks = {}
+  all_callbacks = {}
   
-  def register(self, name: str, callbacks: BaseCallbacks):
+  @classmethod
+  def register(cls, name: str):
     """
     Register the given `callbacks` under the provided name
     """
-    self.all_callbacks[name] = callbacks
+    def inner_wrapper(wrapped_class):
+      cls.all_callbacks[name] = wrapped_class
+      return wrapped_class
+    return inner_wrapper
   
-  def get_type(self, name: str):
+  @classmethod
+  def get_type(cls, name: str):
     """
     Get the callbacks type according to the given name
     """
-    callbacks = self.all_callbacks.get(name)
+    callbacks = cls.all_callbacks.get(name)
     if not callbacks:
         raise ValueError(name)
     return callbacks
-
-
-## Factory initialization
-CBfactory = CallbacksFactory()
-CBfactory.register("BaseCallbacks", BaseCallbacks)

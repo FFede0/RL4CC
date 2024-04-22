@@ -13,41 +13,40 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from environment.base_environment import BaseEnvironment
 
 
 class EnvironmentsFactory:
   """
   Factory of `Environment`s
   """
-  def __init__(self):
-    self.environments = {}
+  environments = {}
   
-  def register(self, name: str, environment: BaseEnvironment):
+  @classmethod
+  def register(cls, name: str):
     """
     Register the given `environment` under the provided name
     """
-    self.environments[name] = environment
+    def inner_wrapper(wrapped_class):
+      cls.environments[name] = wrapped_class
+      return wrapped_class
+    return inner_wrapper
   
-  def create(self, name: str, **kwargs):
+  @classmethod
+  def create(cls, name: str, **kwargs):
     """
     Create a new environment according to the given name
     """
-    environment = self.environments.get(name)
+    environment = cls.environments.get(name)
     if not environment:
         raise ValueError(name)
     return environment(**kwargs)
   
-  def get_type(self, name):
+  @classmethod
+  def get_type(cls, name):
     """
     Get the environment type according to the given name
     """
-    environment = self.environments.get(name)
+    environment = cls.environments.get(name)
     if not environment:
         raise ValueError(name)
     return environment
-
-
-## Factory initialization
-ENVfactory = EnvironmentsFactory()
-ENVfactory.register("BaseEnvironment", BaseEnvironment)

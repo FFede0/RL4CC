@@ -13,12 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from environment.environments_factory import EnvironmentsFactory
+
 from ray.rllib.env.env_context import EnvContext
 from gymnasium.spaces import Discrete, Box
 import gymnasium as gym
 import numpy as np
 
 
+@EnvironmentsFactory.register("BaseEnvironment")
 class BaseEnvironment(gym.Env):
   """
   Base environment dealing only with the simulation time management

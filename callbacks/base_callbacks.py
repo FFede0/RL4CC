@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from callbacks.callbacks_factory import CallbacksFactory
+
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray.rllib.evaluation import Episode, RolloutWorker
 from ray.rllib.policy.sample_batch import SampleBatch
@@ -28,6 +30,7 @@ RELEVANT_KEYS = [
 ]
 
 
+@CallbacksFactory.register("BaseCallbacks")
 class BaseCallbacks(DefaultCallbacks):
   def on_episode_start(
       self,
