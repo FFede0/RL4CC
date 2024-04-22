@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from utilities.common import load_config_file, write_config_file
+from environment.environments_factory import EnvironmentsFactory
+from callbacks.callbacks_factory import CallbacksFactory
 from utilities.logger import Logger
 
 from abc import ABC, abstractmethod
@@ -23,7 +25,12 @@ import os
 
 
 class BaseExperiment(ABC):
-  def __init__(self, exp_config_file: str):
+  def __init__(
+      self, 
+      exp_config_file: str,
+      environments_factory = EnvironmentsFactory,
+      callbacks_factory = CallbacksFactory
+    ):
     # load experiment configuration file
     self.exp_config = load_config_file(exp_config_file)
     if self.exp_config is None:
@@ -53,6 +60,9 @@ class BaseExperiment(ABC):
     )
     # stopping criteria
     self.define_stopping_criteria()
+    # save factories
+    self.environments_factory = environments_factory
+    self.callbacks_factory = callbacks_factory
   
   def validate_experiment_configuration(self):
     # if a previous checkpoint path is provided...
@@ -87,13 +97,13 @@ class BaseExperiment(ABC):
     # write environment configuration file
     if self.env_config is not None:
       write_config_file(
-        json.dumps(self.env_config), 
+        json.dumps(self.env_config, indent = 2), 
         os.path.join(self.logdir, "complete_config"), 
         "env_config.json"
       )
     # write experiment configuration file
     write_config_file(
-      json.dumps(self.exp_config), 
+      json.dumps(self.exp_config, indent = 2), 
       os.path.join(self.logdir, "complete_config"), 
       "exp_config.json"
     )

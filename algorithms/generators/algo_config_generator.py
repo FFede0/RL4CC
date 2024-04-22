@@ -13,8 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from environment.environments_factory import ENVfactory
-from callbacks.callbacks_factory import CBfactory
+from environment.environments_factory import EnvironmentsFactory
+from callbacks.callbacks_factory import CallbacksFactory
 from utilities.common import not_defined
 from utilities.logger import Logger
 
@@ -29,7 +29,10 @@ import os
 
 class AlgoConfigGenerator(ABC):
   def __init__(
-      self, logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator")
+      self, 
+      logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator"),
+      environments_factory = EnvironmentsFactory,
+      callbacks_factory = CallbacksFactory
     ):
     self.logger = logger
     self.algo = None
@@ -63,6 +66,9 @@ class AlgoConfigGenerator(ABC):
       ("evaluation_duration_per_worker", "evaluation"),
       ("callbacks_class_name", "callbacks")
     ]
+    # save factories
+    self.environments_factory = environments_factory
+    self.callbacks_factory = callbacks_factory
   
   def save_algo_methods_dict(self):
     """
@@ -123,7 +129,8 @@ class AlgoConfigGenerator(ABC):
       self.base_algo_config
       # environment
       .environment(
-        ENVfactory.get_type(env_config["env_name"]), env_config=env_config
+        self.environments_factory.get_type(env_config["env_name"]), 
+        env_config=env_config
       )
     )
     # process the parameters
@@ -254,7 +261,9 @@ class AlgoConfigGenerator(ABC):
     Define callbacks class
     """
     callbacks_class_name = all_params.pop("callbacks_class_name")
-    all_params["callbacks_class"] = CBfactory.get_type(callbacks_class_name)
+    all_params["callbacks_class"] = self.callbacks_factory.get_type(
+      callbacks_class_name
+    )
   
   def convert_rollout_parameters(self, all_params: dict, env_config: dict):
     """
