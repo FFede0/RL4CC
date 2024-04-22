@@ -11,12 +11,21 @@ that should be used as base class when defining more complex problems. It
 is created by loading the parameters included in the 
 [`env_config.json` file](config_files/README.md#environment-configuration-file).
 
-- an [`Algorithm`](algorithms/algorithm.py) class, to be used as entrypoint to 
-define training experiments, supported by a factory of Ray `AlgorithmConfig` 
+- an [`Algorithm`](algorithms/algorithm.py) class, used to define RL 
+algorithms for training/hyperparameter tuning experiments, supported by a 
+factory of Ray `AlgorithmConfig` 
 [generators](algorithms/generators_factory.py).
 
-- a `Tuner` class, to be used as entrypoint to define automatic hyperparameter 
-tuning (TBA)
+- a simple [`Callbacks`](callbacks/base_callbacks.py) implementation, 
+that should be used as base class when defining more complex problems.
+
+- a [`TrainingExperiment`](experiments/train.py) class, to be used as 
+entrypoint to define training experiments, as explained in 
+the following [section](#how-to-start-a-training-experiment).
+
+- a `TuningExperiment` class, to be used as entrypoint to define automatic 
+hyperparameter tuning, as explained in 
+the following [section](#how-to-start-hyperparameter-tuning).
 
 - a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages 
 in a standard format.
@@ -28,19 +37,18 @@ sections.
 
 To define and start a training experiment exploiting one of the available 
 algorithms:
-1. in a suitable directory, define the `env_config.json`, `ray_config.json` 
-and `exp_config.json` files as detailed [here](config_files/README.md)
-2. build an `Algorithm` object by providing the path to the directory of 
-configuration files
-3. call the `Algorithm.training_loop()`
+1. define the `exp_config.json` file (and, if no previous checkpoint should 
+be considered, the `env_config.json` and `ray_config.json`) as detailed 
+[in the README](config_files/README.md);
+2. initialize a `TrainingExperiment` object by providing the path to the 
+`exp_config.json` file;
+3. call the `TrainingExperiment.run()` method.
 
-Example (for the PPO algorithm, using the provided `BaseEnvironment` and 
-assuming configuration files to be saved in `./config_files/test1`):
+Example:
 
 ```
-PPO = Algorithm("PPO")
-PPO.build(BaseEnvironment, "config_files/test1")
-PPO.training_loop()
+exp = TrainingExperiment("config_files/exp_config.json")
+exp.run()
 ```
 
 ### Expected outputs

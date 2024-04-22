@@ -1,18 +1,25 @@
 ## Expected structure of the configuration files
 
-Each experiment is controlled by **three** configuration files, in `JSON` 
-format, which provide information about the `Environment`, the 
-Ray `Algorithm`, and the experiment to run (including, possibly, details 
-about the Ray `Tuner`).
+Each experiment is controlled by one base configuration file, in `JSON` 
+format, denoted in the following as `exp_config.json`. It includes information 
+about the experiment to run (e.g., the name of the algorithm to use, 
+whether to start from an existing checkpoint, and, possibly, details 
+about the Ray `Tuner`). 
+
+If the experiment should start from scratch (i.e., no previous checkpoints 
+are available), the configuration is completed by two additional files, which 
+provide information about the `Environment` and the Ray `Algorithm`.
 
 The corresponding structure is detailed in the following.
 
 ### `Environment` configuration file
 
-The `env_config.json` file includes only three mandatory parameters, which 
-are related to the simulation time management within the Environment. 
+The `env_config.json` file includes **four** mandatory parameters, which 
+are related to Environment name and the simulation time management within it. 
 
 These are:
+- `env_name`: the name of the Environment, as it appears in the corresponding 
+[factory](../environment/environments_factory.py);
 - `min_time`: the start time of the simulation (in seconds);
 - `max_time`: the end time of the simulation (in seconds);
 - `time_step`: the time elapsed between two subsequent calls to 
@@ -23,6 +30,7 @@ a sample configuration as:
 
 ```
 {
+  "env_name": "BaseEnvironment",
   "min_time": 0,
   "max_time": 3600,
   "time_step": 10
@@ -31,6 +39,9 @@ a sample configuration as:
 
 can be used to represent a scenario where episodes last 1 hour each and a 
 new agent decision is taken every 10 seconds.
+
+**Important note:** these parameters should be set even in a non-episodic 
+environment. Use `max_time` to represent the Environment horizon.
 
 ### Ray `Algorithm` configuration file
 
@@ -70,6 +81,9 @@ using directly the ones defined in Ray. These are:
   - `num_cpus_master`: number of CPUs assigned to the master node.
 - in the `evaluation` section:
   - `evaluation_duration_per_worker`: how many episodes/steps should be collected by each evaluation worker.
+- In the `callbacks` section:
+  - `callbacks_class_name`: the name of the Callbacks class to use (as it 
+  appears in the corresponding [factory](../callbacks/callbacks_factory.py)).
 
 These keywords mask a lower-level management performed by Ray, where different 
 algorithms use different parameters to control the same elements. An 
@@ -95,10 +109,11 @@ Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and
 ### Experiment configuration file
 
 The `exp_config.json` includes parameters related to the training experiment 
-(i.e., the stopping criteria) and/or the configuration of the Ray `Tuner` for 
-automatic hyperparameter tuning.
+(i.e., the Algorithm to use or the stopping criteria) and/or the configuration 
+of the Ray `Tuner` for automatic hyperparameter tuning.
 
-The only **mandatory section** is `stopping_criteria`, which is a dictionary 
+The only **mandatory parameters** are `algorithm`, which corresponds to the 
+name of the RL Algorithm to use, and `stopping_criteria`, which is a dictionary 
 used to list the (possibly, multiple) stopping criteria to be considered 
 during the training. The available termination conditions are:
 - `max_iterations`: the maximum number of training iterations.
@@ -112,7 +127,13 @@ is the name of the Ray `Algorithm`, `environment` is the name of the chosen
 `datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')`. The default base result 
 directory if no value is provided here is `~/ray_results`.
 - `from_checkpoint`: path to the directory where the checkpoint to be 
-restored is saved.
+restored is saved. If this is provided, further information related to the 
+Environment or the Ray Algorithm configuration files are neglected.
+- `env_config_file`: path to the `env_config.json` file described 
+[above](#environment-configuration-file). This parameter is **mandatory** if 
+no previous checkpoint is provided.
+- `ray_config_file`: path to the `ray_config.json` file described 
+[above](#ray-algorithm-configuration-file).
 - `evaluation_interval`: after how many iterations the evaluation should be 
 performed. **Important note:** one evaluation step is always performed at the 
 end of the training loop, even if no parameter is provided here.
@@ -125,8 +146,12 @@ Example:
 
 ```
 {
+  "algorithm": "PPO",
+  "env_config_file": "config_files/env_config.json",
+  "ray_config_file": "config_files/ray_config.json",
   "logdir": "OUTPUT",
   "evaluation_interval": 5,
+  "checkpoint_interval": 5,
   "stopping_criteria": {
     "max_iterations": 10
   }
@@ -167,6 +192,7 @@ Example of `tuner` sub-dictionary:
 
 ```
 {
+  "algorithm": "...",
   "stopping_criteria": {...},
   ...,
   "tuner": {
