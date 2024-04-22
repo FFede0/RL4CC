@@ -18,8 +18,8 @@ The `env_config.json` file includes **four** mandatory parameters, which
 are related to Environment name and the simulation time management within it. 
 
 These are:
-- `env_name`: the name of the Environment, as it appears in the corresponding 
-[factory](../environment/environments_factory.py);
+- `env_name`: the name of the Environment, as it is registered in the 
+[`ray.tune.registry`](../environment/__init__.py);
 - `min_time`: the start time of the simulation (in seconds);
 - `max_time`: the end time of the simulation (in seconds);
 - `time_step`: the time elapsed between two subsequent calls to 
@@ -81,9 +81,6 @@ using directly the ones defined in Ray. These are:
   - `num_cpus_master`: number of CPUs assigned to the master node.
 - in the `evaluation` section:
   - `evaluation_duration_per_worker`: how many episodes/steps should be collected by each evaluation worker.
-- In the `callbacks` section:
-  - `callbacks_class_name`: the name of the Callbacks class to use (as it 
-  appears in the corresponding [factory](../callbacks/callbacks_factory.py)).
 
 These keywords mask a lower-level management performed by Ray, where different 
 algorithms use different parameters to control the same elements. An 
@@ -102,6 +99,11 @@ In particular, `env` and `env_config` are indirectly controlled through the
 [`env_config.json`](#environment-configuration-file) file and the `Environment` 
 passed to the algorithm (or the algorithm configuration) initializer, while `evaluation_interval` and `logdir` are set from the 
 [experiment configuration file](#experiment-configuration-file).
+
+**Additional note:** in the `callbacks` section, the `callbacks_class` 
+parameter should correspond to the path to the callbacks class as it would 
+be reported while importing the module (e.g., 
+`"callbacks/base_callbacks/BaseCallbacks"`).
 
 Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and 
 [DQN](ray_config_dqn.json.template) are provided.

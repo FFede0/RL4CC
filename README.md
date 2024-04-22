@@ -52,43 +52,43 @@ exp = TrainingExperiment("config_files/exp_config.json")
 exp.run()
 ```
 
-### Training experiments with custom Environment/Callbacks implementations
+### Training experiments with a custom Environment
 
-To use custom implementations of the Environment/Callbacks classes, these 
-need to be added to the corresponding factories. Moreover, **the updated** 
-**factories must be provided as parameters** when initializing a 
-training experiment object. 
-
-As an example, suppose that your code directory follows the structure:
+To use a custom Environment implementation, this needs to be registered in the 
+`ray.tune.registry`. As an example, suppose that your code directory follows 
+the structure:
 
 ```
 .
 ├── RL4CC
 ├── src
-│   ├── my_custom_environment.py
-│   └── my_custom_callbacks.py
+│   ├── __init__.py
+│   └── my_custom_environment.py
 └── main.py
 ```
 
-and that the `MyCustomEnvironment` and `MyCustomCallbacks` are correctly 
-decorated to register them in the corresponding factories. 
-To guarantee that these classes are properly loaded when starting the 
-experiment, your main.py file should include something as:
+and that the `src/__init__.py` file includes, similarly to the one reported 
+here for the base Environment,
 
 ```
-from src.my_custom_environment import MyCustomEnvironment
-from src.my_custom_callbacks import MyCustomCallbacks
+from .my_custom_environment import MyCustomEnvironment
+from ray.tune.registry import register_env
 
-from RL4CC.environments.environments_factory import EnvironmentsFactory
-from RL4CC.callbacks.callbacks_factory import CallbacksFactory
+register_env("MyCustomEnvironment", lambda config: MyCustomEnvironment(config))
+```
 
-exp = TrainingExperiment(
-  "config_files/exp_config.json",
-  EnvironmentsFactory,
-  CallbacksFactory
-)
+To guarantee that the environment is properly loaded when starting the 
+experiment, your `main.py` file should include:
+
+```
+import src
+from RL4CC.experiments.train import TrainingExperiment
+
+exp = TrainingExperiment("config_files/exp_config.json")
 exp.run()
 ```
+
+i.e., you must ensure that `src/__init__.py` is actually executed. 
 
 ### Expected outputs
 
