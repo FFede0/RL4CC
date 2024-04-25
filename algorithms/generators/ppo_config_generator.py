@@ -17,6 +17,7 @@ from algorithms.generators.algo_config_generator import AlgoConfigGenerator
 from utilities.logger import Logger
 
 from ray.rllib.algorithms import AlgorithmConfig
+from ray.rllib.algorithms.ppo.ppo import PPOConfig
 
 
 class PPOConfigGenerator(AlgoConfigGenerator):
