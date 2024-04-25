@@ -33,8 +33,7 @@ class SACConfigGenerator(AlgoConfigGenerator):
         # algorithm-specific protected/suggested keys
         # To-do for Mohanad: update protected keys here based on the SAC implementation
         self._protected_keys += [
-            ("sgd_minibatch_size", "training"),
-            ("num_sgd_iter", "training")
+            ("training_intensity", "training")
         ]
 
     # To-do for Mohanad:update method to coincide with the SAC implemetation (these are from PPO implementation)
