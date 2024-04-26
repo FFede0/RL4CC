@@ -31,7 +31,7 @@
     "sampler_perf_stats_ema_coef": null,
     "num_rollout_workers": 2,
     "duration_per_worker": 200,
-    "duration_unit": "step"
+    "duration_unit": "timesteps"
   },
   "training": {
     "gamma": 0.99,
@@ -59,10 +59,7 @@
     "num_trained_batches": 30
   },
   "exploration": {
-    "explore": true,
-    "exploration_config": {
-      "type": "StochasticSampling"
-    }
+    "explore": true
   },
   "rl_module": {
     "_enable_rl_module_api": true
