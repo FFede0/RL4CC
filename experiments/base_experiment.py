@@ -75,9 +75,8 @@ class BaseExperiment(ABC):
         )
       self.checkpoint_path = None
       self.env_config = load_config_file(self.exp_config["env_config_file"])
-      self.ray_config = load_config_file(
-        self.exp_config.get("ray_config_file", "")
-      )
+      self.ray_config = load_config_file(self.exp_config.get("ray_config_file", ""))
+      self.tune_config = load_config_file(self.exp_config.get("tune_config_file", None))
   
   def write_config_files(self):
     """
@@ -100,6 +99,7 @@ class BaseExperiment(ABC):
   
   def plot_results(self, result: dict) -> str:
     pass
+
   
   @abstractmethod
   def define_stopping_criteria(self, exp_config: dict):

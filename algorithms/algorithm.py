@@ -19,6 +19,9 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
+from ray import tune, air
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune.search.hyperopt import HyperOptSearch
 import os
 
 
@@ -29,6 +32,7 @@ class Algorithm:
       checkpoint_path: str = None,
       env_config: dict = None,
       ray_config: dict = None,
+      tune_config: dict = None,
       base_logdir: str = None,
       eval_interval: int = None, 
       logger: Logger = Logger(name="RL4CC-Algorithm")
@@ -47,11 +51,20 @@ class Algorithm:
           "ERROR: no environment configuration provided"
         )
       # ...generate `AlgorithmConfig`
-      algo_config = self.algo_config_generator.generate_algo_config(
-        env_config, ray_config, base_logdir, eval_interval
+      self.algo_config = self.algo_config_generator.generate_algo_config(
+        ray_config=ray_config,
+        env_config=env_config,
+        tune_config=tune_config,
+        eval_interval=eval_interval,
+        base_logdir=base_logdir,
       )
       # ...build and save the Ray `Algorithm`
-      self.build(algo_config)
+      # TODO (Mohanad): Uncomment the build method once the error is solved
+      #self.build(self.algo_config)
+
+    if tune_config is not None:
+      self.tune_config = self.get_tune_parameters(tune_config=tune_config)
+      self.run_config = self.get_run_parameters(tune_config=tune_config)
 
   def build(self, algo_config: AlgorithmConfig):
     """
@@ -130,3 +143,44 @@ class Algorithm:
       )
     else:
       print(jj)
+
+  #TODO (mohanad): move to base experiemnt
+  def get_tune_parameters(self, tune_config):
+    # Get a copy of the tune_config
+    tune_config_dict = tune_config
+
+    # Handle keys to pass as a parse the tuning dictionary as Key word arguments
+    tune_config_dict["num_samples"] = tune_config_dict["num_tune_trials"]
+    tune_config_dict.pop("use_tune")
+    tune_config_dict.pop("num_tune_trials")
+
+    # Handle search algorithm and scheduler to covert them to their respective tune objects
+    if "search_algorithm" in tune_config_dict:
+      search_algorithm = list(tune_config_dict.get("search_algorithm").keys())[0]
+      search_algorithm_config = tune_config_dict.get("search_algorithm")
+      if search_algorithm == "hyperopt_search":
+        try:
+          tune_config_dict["search_algorithm"] = HyperOptSearch(**search_algorithm_config)
+        except Exception as e:
+          raise KeyError("Parameters passed to the hyperopt search algorithm are invalid!")
+      else:
+        raise KeyError("You are trying to pass a search algorithm that is not supported")
+
+    if "scheduler" in tune_config_dict:
+      scheduler= list(tune_config_dict.get("scheduler").keys())[0]
+      scheduler_config = tune_config_dict.get("scheduler")
+      if scheduler == "asha_scheduler":
+        try:
+          tune_config_dict["scheduler"] = ASHAScheduler(**scheduler_config)
+        except:
+          raise KeyError("Parameters passed to the ASHAScheduler scheduler are invalid!")
+      else:
+        raise KeyError("You are trying to pass a scheduler that is not supported")
+
+    tune_params = tune.TuneConfig(**tune_config_dict)
+    return tune_params
+
+
+
+
+

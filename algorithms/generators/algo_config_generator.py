@@ -18,6 +18,7 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
+from ray import tune
 from abc import ABC, abstractmethod
 from datetime import datetime
 import inspect
@@ -33,6 +34,7 @@ class AlgoConfigGenerator(ABC):
     self.algo = None
     self.base_algo_config = None
     self.algo_methods = None
+    self.use_tune = False
     self._protected_keys = [
       # (key, key group)
       ("rollout_fragment_length", "rollouts"),
@@ -105,6 +107,7 @@ class AlgoConfigGenerator(ABC):
       self, 
       env_config: dict,
       ray_config: dict = None,
+      tune_config: dict = None,
       base_logdir: str = None,
       eval_interval: int = None
     ) -> AlgorithmConfig:
@@ -114,6 +117,13 @@ class AlgoConfigGenerator(ABC):
     """
     if "env_name" not in env_config:
       raise KeyError("ERROR: cannot create an environment without a name")
+
+    if tune_config is not None:
+      if "use_tune" not in tune_config:
+        raise KeyError('ERROR: if you are providing a tune config file path, '
+                       'you need to set a "use_tune" flag to either true or false in the tune config file')
+      else:
+        self.use_tune = tune_config.get("use_tune")
     # start config generation
     algo_config = (
       self.base_algo_config
@@ -149,6 +159,8 @@ class AlgoConfigGenerator(ABC):
     # merge sub-dictionaries of ray_config
     if ray_config is not None:
       for key, value in ray_config.items():
+        # Check the existence of Tuning Strings, convert them to tune objects wherever they exist
+        value = self.interpret_tune_config(key, value)
         if isinstance(value, dict):
           all_params.update(value)
         else:
@@ -318,7 +330,7 @@ class AlgoConfigGenerator(ABC):
 
   def convert_resources_parameters(self, all_params):
     """
-    Defines the appropriate parameters related to the resources requirement, 
+    Defines the appropriate parameters related to the resources requirement,
     according to the provided keys
     """
     # master CPUs
@@ -444,3 +456,36 @@ class AlgoConfigGenerator(ABC):
     """
     algo_dict = self.to_dict(algo_config)
     return json.dumps(algo_dict, indent = 2)
+
+  def interpret_tune_config(self,config_key, config_value):
+    """
+    Interprets a configuration value, converting it to a format usable by ray.tune.
+    Handles dictionaries, lists within dictionaries, nested lists, and strings representing Ray Tune objects.
+
+    :param config_key: The configuration key.
+    :param config_value: The configuration value to interpret.
+    :return: The interpreted value.
+    """
+    try:
+      if isinstance(config_value, dict):
+        return {key: self.interpret_tune_config(key, value) for key, value in config_value.items()}
+
+      if isinstance(config_value, list):
+        return [self.interpret_tune_config(config_value, item) for item in config_value]
+
+      if isinstance(config_value, str):
+        if config_value.strip().startswith("tune.") and "(" in config_value and ")" in config_value:
+
+          if self.use_tune:
+            self.logger.log(f'Tuning detected for the value of "{config_key}"')
+            return eval(config_value.strip())
+          else:
+            self.logger.warn("Tuning attempted but is disabled. Enable tuning by setting `use_tune=True`.")
+            raise ValueError("Tuning functionality is disabled.")
+        else:
+          return config_value
+      else:
+        return config_value
+    except Exception as e:
+      print(f"Error interpreting tune configuration: {e}")
+      raise

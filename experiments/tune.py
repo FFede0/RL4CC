@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from experiments.base_experiment import BaseExperiment
-from algorithms.algorithm import Algorithm
+from RL4CC.experiments.base_experiment import BaseExperiment
+from RL4CC.algorithms.algorithm import Algorithm
 from utilities.common import not_defined
 from ray import tune, air
+from RL4CC.algorithms.generators.dqn_config_generator import calculate_rr_weights
 
 from datetime import datetime
 import numpy as np
@@ -26,7 +27,6 @@ import os
 class TuningExperiment(BaseExperiment):
   def __init__(self, exp_config_file: str):
     super().__init__(exp_config_file)
-    raise NotImplementedError
 
   def run(self):
     # define algorithm
@@ -38,39 +38,49 @@ class TuningExperiment(BaseExperiment):
       base_logdir=self.logdir,
       eval_interval=self.evaluation_interval
     )
-
-    self.logdir = algo.logdir
+    # TODO (Mohanad): Uncomment the following calls once the error is solved
+    #self.logdir = algo.logdir
     # save experiment configuration files
-    self.write_config_files()
-    algo.print_algo_config()
+    #self.write_config_files()
+    #algo.print_algo_config()
 
-    self.tuning(algo)
+    tune_results = self.tuning(algo)
+
 
   def tuning(self, algo:Algorithm):
     # runs tuning
+    # TODO (Mohanad): The following params need to be fetched from the tune config generator
+    algo_name = self.exp_config.get("algorithm")
+    training_iterations = self.exp_config.get("stopping_criteria", {}).get("max_iterations")
+    num_samples = self.ray_config.get("tune_config", {}).get("num_tune_trials")
+    param_space = algo.algo_config
+
 
     start = datetime.now()
     self.logger.log(f"Tuning --> START")
     self.update_progress_file("Tuning_start_timestamp", start.timestamp())
 
-    tune_config = tune.TuneConfig(num_samples=self.experiment_configs["n_tune_trials"],
+    tune_config = tune.TuneConfig(num_samples=num_samples,
                                       metric="episode_reward_mean",
                                       mode="max",
+                                      # TODO (Mohanad): implement the logic for the definition for the search algo
                                       search_alg=self.search_algorithm,
                                       scheduler=self.scheduler,
                                       )
 
-    run_config = air.RunConfig(name=self.name,
+    run_config = air.RunConfig(name=algo_name,
                                verbose=1,
                                stop={"training_iteration": training_iterations},
                                log_to_file=True
                                )
 
-    results = tune.Tuner(self.algo,
+    results = tune.Tuner(algo_name,
                          run_config=run_config,
-                         param_space=param_config,
+                         param_space=param_space,
                          tune_config=tune_config,
                          ).fit()
+
+    return results
 
 
 
