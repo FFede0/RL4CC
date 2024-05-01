@@ -39,6 +39,7 @@ class Algorithm:
     self.algo_config_generator = ACGfactory.create(
       algo_name, logger = self.logger
     )
+    self.use_tune = use_tune
     # load the Ray `Algorithm` from a checkpoint (if provided)
     if checkpoint_path is not None:
       self.load_checkpoint(checkpoint_path)
@@ -57,7 +58,13 @@ class Algorithm:
         use_tune=use_tune
       )
       # ...build and save the Ray `Algorithm`
-      self.build(self.algo_config)
+      if not use_tune:
+       self.build(self.algo_config)
+      else:
+        self.logdir = self.algo_config["logger_config"]["logdir"]
+        self.logger.warn(
+          f"Algorithm created; output directory: {self.logdir}"
+        )
 
   def build(self, algo_config: AlgorithmConfig):
     """
@@ -127,15 +134,17 @@ class Algorithm:
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
     """
-    jj = self.algo_config_generator.to_json(self.algo.config)
-    if to_file:
-      write_config_file(
-        jj, 
-        os.path.join(self.algo.logdir, "complete_config"), 
-        "ray_config.json"
-      )
-    else:
-      print(jj)
+    #TODO(MOHANAD): handle this case, problem is that the config is not built (nor should it be when tuning)
+    if not self.use_tune:
+      jj = self.algo_config_generator.to_json(self.algo.config)
+      if to_file:
+        write_config_file(
+          jj,
+          os.path.join(self.algo.logdir, "complete_config"),
+          "ray_config.json"
+        )
+      else:
+        print(jj)
 
 
 

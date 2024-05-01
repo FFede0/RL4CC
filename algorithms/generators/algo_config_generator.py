@@ -470,14 +470,13 @@ class AlgoConfigGenerator(ABC):
         return [self.interpret_tune_config(config_value, item) for item in config_value]
 
       if isinstance(config_value, str):
-        if config_value.strip().startswith("tune.") and "(" in config_value and ")" in config_value:
+        if config_value.strip().startswith("tune."):
 
           if self.use_tune:
             self.logger.log(f'Tuning detected for the value of "{config_key}"')
             return eval(config_value.strip())
           else:
-            self.logger.warn("Tuning attempted but is disabled. Enable tuning by setting `use_tune=True`.")
-            raise ValueError("Tuning functionality is disabled.")
+            raise ValueError("Tuning attempted but is disabled. Enable tuning by setting `use_tune=True`.")
         else:
           return config_value
       else:
