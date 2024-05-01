@@ -41,7 +41,6 @@ class TrainingExperiment(BaseExperiment):
       checkpoint_path = self.checkpoint_path,
       env_config = self.env_config,
       ray_config = self.ray_config,
-      tune_config=self.tune_config,
       base_logdir = self.logdir,
       eval_interval = self.evaluation_interval
     )

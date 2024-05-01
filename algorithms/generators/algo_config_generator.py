@@ -107,10 +107,10 @@ class AlgoConfigGenerator(ABC):
       self, 
       env_config: dict,
       ray_config: dict = None,
-      tune_config: dict = None,
       base_logdir: str = None,
-      eval_interval: int = None
-    ) -> AlgorithmConfig:
+      eval_interval: int = None,
+      use_tune: bool = False,
+  ) -> AlgorithmConfig:
     """
     Defines the `AlgorithmConfig` considering the provided environment and 
     configuration dictionaries
@@ -118,12 +118,8 @@ class AlgoConfigGenerator(ABC):
     if "env_name" not in env_config:
       raise KeyError("ERROR: cannot create an environment without a name")
 
-    if tune_config is not None:
-      if "use_tune" not in tune_config:
-        raise KeyError('ERROR: if you are providing a tune config file path, '
-                       'you need to set a "use_tune" flag to either true or false in the tune config file')
-      else:
-        self.use_tune = tune_config.get("use_tune")
+    if use_tune:
+      self.use_tune = True
     # start config generation
     algo_config = (
       self.base_algo_config

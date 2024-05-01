@@ -13,8 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from RL4CC.experiments.base_experiment import BaseExperiment
-from RL4CC.algorithms.algorithm import Algorithm
+from experiments.base_experiment import BaseExperiment
+from algorithms.algorithm import Algorithm
+from algorithms.generators.tune_config_generator import TuneConfigGenerator
 from utilities.common import not_defined
 from ray import tune, air
 from RL4CC.algorithms.generators.dqn_config_generator import calculate_rr_weights
@@ -29,6 +30,14 @@ class TuningExperiment(BaseExperiment):
     super().__init__(exp_config_file)
 
   def run(self):
+    # Get tune params
+    tune_config_generator = TuneConfigGenerator()
+    try:
+      tune_config = tune_config_generator.get_tune_config(tune_config=self.tune_config)
+    except Exception as e:
+      raise KeyError("Error: The program could not parse the tune config file, make sure it is present and is indicated in the exp config file")
+
+    use_tune = tune_config_generator.use_tune
     # define algorithm
     algo = Algorithm(
       algo_name=self.exp_config["algorithm"],
@@ -36,53 +45,62 @@ class TuningExperiment(BaseExperiment):
       env_config=self.env_config,
       ray_config=self.ray_config,
       base_logdir=self.logdir,
-      eval_interval=self.evaluation_interval
+      eval_interval=self.evaluation_interval,
+      use_tune=use_tune
     )
-    # TODO (Mohanad): Uncomment the following calls once the error is solved
-    #self.logdir = algo.logdir
-    # save experiment configuration files
-    #self.write_config_files()
-    #algo.print_algo_config()
 
-    tune_results = self.tuning(algo)
-
-
-  def tuning(self, algo:Algorithm):
-    # runs tuning
-    # TODO (Mohanad): The following params need to be fetched from the tune config generator
     algo_name = self.exp_config.get("algorithm")
     training_iterations = self.exp_config.get("stopping_criteria", {}).get("max_iterations")
-    num_samples = self.ray_config.get("tune_config", {}).get("num_tune_trials")
     param_space = algo.algo_config
 
+    try:
+      run_config = tune_config_generator.get_run_config(algo_name=algo_name,
+                                                        training_iterations=training_iterations
+                                                        )
+    except Exception as e:
+      raise KeyError("Error: The program could not parse the run config, make sure you have a stopping criteria defined in the exp config file")
 
+    self.logdir = algo.logdir
+    #save experiment configuration files
+    self.write_config_files()
+    algo.print_algo_config()
+
+    tune_results = self.tuning(algo_name=algo_name,
+                               param_space=param_space,
+                               tune_config=tune_config,
+                               run_config=run_config
+                               )
+
+    results_df = tune_results.get_dataframe()
+    experiment_directory = tune_results.experiment_path
+    self.logger.log(f"Tuning experiment finished successfully, tuning output directory: {experiment_directory}")
+
+
+  def tuning(self,
+             algo_name: str = None,
+             param_space:dict = None,
+             tune_config: tune.TuneConfig = None,
+             run_config: air.RunConfig = None
+             ):
+    # runs tuning
     start = datetime.now()
     self.logger.log(f"Tuning --> START")
     self.update_progress_file("Tuning_start_timestamp", start.timestamp())
 
-    tune_config = tune.TuneConfig(num_samples=num_samples,
-                                      metric="episode_reward_mean",
-                                      mode="max",
-                                      # TODO (Mohanad): implement the logic for the definition for the search algo
-                                      search_alg=self.search_algorithm,
-                                      scheduler=self.scheduler,
-                                      )
-
-    run_config = air.RunConfig(name=algo_name,
-                               verbose=1,
-                               stop={"training_iteration": training_iterations},
-                               log_to_file=True
-                               )
-
-    results = tune.Tuner(algo_name,
+    tuner = tune.Tuner(algo_name,
                          run_config=run_config,
                          param_space=param_space,
                          tune_config=tune_config,
-                         ).fit()
+                         )
+
+    results = tuner.fit()
 
     return results
 
 
+  def get_best_trial_config(self, results, results_dir):
+    #TODO (mohanad): implement the method to save the best trial's config to a json file
+    pass
 
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
@@ -91,6 +109,7 @@ class TuningExperiment(BaseExperiment):
       raise KeyError(
         "ERROR: `algorithm` is required"
       )
+
 
   def define_stopping_criteria(self):
     """
