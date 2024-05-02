@@ -476,7 +476,7 @@ class AlgoConfigGenerator(ABC):
             self.logger.log(f'Tuning detected for the value of "{config_key}"')
             return eval(config_value.strip())
           else:
-            raise ValueError("Tuning attempted but is disabled. Enable tuning by setting `use_tune=True`.")
+            raise ValueError("Tuning attempted but is disabled. Enable tuning by setting `use_tune=True` in the tune config file.")
         else:
           return config_value
       else:

@@ -20,6 +20,8 @@ from ray import tune, air
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 
+import os
+
 class TuneConfigGenerator:
     def __init__(
             self,
@@ -51,7 +53,7 @@ class TuneConfigGenerator:
                 except Exception as e:
                     raise KeyError("Parameters passed to the hyperopt search algorithm are invalid!")
             else:
-                raise KeyError("You are trying to pass a search algorithm that is not supported")
+                raise NotImplementedError("You are trying to pass a search algorithm that is not supported")
 
         if "scheduler" in tune_config_dict:
             scheduler = list(tune_config_dict.get("scheduler").keys())[0]
@@ -62,19 +64,33 @@ class TuneConfigGenerator:
                 except:
                     raise KeyError("Parameters passed to the ASHAScheduler scheduler are invalid!")
             else:
-                raise KeyError("You are trying to pass a scheduler that is not supported")
+                raise NotImplementedError("You are trying to pass a scheduler that is not supported")
 
-        tune_params = tune.TuneConfig(**tune_config_dict)
+        tune_params = tune.TuneConfig(**tune_config_dict,
+                                      trial_name_creator=self.trial_name_string,
+                                      trial_dirname_creator=self.trial_name_string
+                                      )
         return tune_params
 
     def get_run_config(self,
-                       algo_name: str = None,
+                       tune_file_name: str = None,
                        training_iterations: int = None,
+                       storage_path: str = None,
+                       callbacks=None
                        ) -> air.RunConfig:
 
-        run_config = air.RunConfig(name=algo_name,
+
+        run_config = air.RunConfig(name=tune_file_name,
                                    verbose=1,
                                    stop={"training_iteration": training_iterations},
+                                   storage_path=storage_path,
+                                   callbacks=callbacks
                                    )
+        return run_config
+
+    @staticmethod
+    def trial_name_string(trial):
+        """Create a custom name for the trial."""
+        return f"{trial.trainable_name}_{trial.trial_id}"
 
 

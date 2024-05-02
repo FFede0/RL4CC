@@ -16,9 +16,10 @@ limitations under the License.
 from experiments.base_experiment import BaseExperiment
 from algorithms.algorithm import Algorithm
 from algorithms.generators.tune_config_generator import TuneConfigGenerator
-from utilities.common import not_defined
+from ray.rllib.algorithms.callbacks import DefaultCallbacks
+from utilities.common import not_defined, write_config_file
 from ray import tune, air
-from RL4CC.algorithms.generators.dqn_config_generator import calculate_rr_weights
+
 
 from datetime import datetime
 import numpy as np
@@ -29,7 +30,9 @@ class TuningExperiment(BaseExperiment):
   def __init__(self, exp_config_file: str):
     super().__init__(exp_config_file)
 
-  def run(self):
+  def run(self,
+          callbacks: DefaultCallbacks = None
+          ):
     # Get tune params
     tune_config_generator = TuneConfigGenerator()
     try:
@@ -46,30 +49,35 @@ class TuningExperiment(BaseExperiment):
       ray_config=self.ray_config,
       base_logdir=self.logdir,
       eval_interval=self.evaluation_interval,
-      use_tune=use_tune
+      use_tune=use_tune,
     )
 
+    # Write algorithm config file to output dir
+    self.logdir =  algo.logdir
+    # save experiment configuration files
+    self.write_config_files()
+    algo.print_algo_config()
+
+    # Prepare Run & Search Space config params
     algo_name = self.exp_config.get("algorithm")
-    training_iterations = self.exp_config.get("stopping_criteria", {}).get("max_iterations")
+    training_iterations = self.exp_config.get("stopping_criteria", {}).get("max_iterations", 10)
     param_space = algo.algo_config
 
+
     try:
-      run_config = tune_config_generator.get_run_config(algo_name=algo_name,
-                                                        training_iterations=training_iterations
+      run_config = tune_config_generator.get_run_config(training_iterations=training_iterations,
+                                                        storage_path=self.logdir
                                                         )
     except Exception as e:
       raise KeyError("Error: The program could not parse the run config, make sure you have a stopping criteria defined in the exp config file")
-
-    self.logdir = algo.logdir
-    #save experiment configuration files
-    self.write_config_files()
-    algo.print_algo_config()
 
     tune_results = self.tuning(algo_name=algo_name,
                                param_space=param_space,
                                tune_config=tune_config,
                                run_config=run_config
                                )
+
+    self.write_best_trial_config(results=tune_results)
 
     results_df = tune_results.get_dataframe()
     experiment_directory = tune_results.experiment_path
@@ -82,25 +90,44 @@ class TuningExperiment(BaseExperiment):
              tune_config: tune.TuneConfig = None,
              run_config: air.RunConfig = None
              ):
-    # runs tuning
+
+    # Logging & updating progress
     start = datetime.now()
     self.logger.log(f"Tuning --> START")
     self.update_progress_file("Tuning_start_timestamp", start.timestamp())
 
+    # runs tuning
     tuner = tune.Tuner(algo_name,
-                         run_config=run_config,
-                         param_space=param_space,
-                         tune_config=tune_config,
-                         )
+                       run_config=run_config,
+                       param_space=param_space,
+                       tune_config=tune_config,
+                       )
 
     results = tuner.fit()
+
+    # Logging & updating progress
+    end = datetime.now()
+    self.update_progress_file("experiment_end_timestamp", end.timestamp())
+    experiment_duration = end - start
+    self.update_progress_file(
+      "Tuning_duration_s", experiment_duration.total_seconds()
+    )
+    self.logger.log(f"Tuning took: {experiment_duration}")
 
     return results
 
 
-  def get_best_trial_config(self, results, results_dir):
-    #TODO (mohanad): implement the method to save the best trial's config to a json file
-    pass
+  def write_best_trial_config(self,
+                              results: tune.ResultGrid = None):
+    # Get best hyperparameters
+    best_results = results.get_best_result()
+    best_hyperparameters = best_results.config
+
+    # Save as Json
+    best_trial_dir = os.path.join(self.logdir, "complete_config/best_tune_trial_config.json")
+
+    with open(best_trial_dir, 'w') as f:
+      json.dump(best_hyperparameters, f, indent=4)
 
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
