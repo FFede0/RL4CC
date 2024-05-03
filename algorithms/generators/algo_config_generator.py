@@ -199,6 +199,8 @@ class AlgoConfigGenerator(ABC):
       exp_logdir = self.generate_logdir(base_logdir, env_config["env_name"])
       if not_defined("logger_config", all_params):
         all_params["logger_config"] = {}
+      if not_defined("type", all_params["logger_config"]):
+        all_params["logger_config"]["type"] = "ray.tune.logger.UnifiedLogger"
       all_params["logger_config"]["logdir"] = exp_logdir
   
   def validate_key_usage(self, all_params: dict):
