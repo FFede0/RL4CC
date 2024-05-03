@@ -120,7 +120,8 @@ class AlgoConfigGenerator(ABC):
       # environment
       .environment(
         env_config["env_name"], 
-        env_config=env_config
+        # pass-along config dictionary avoiding env_name
+        env_config={k:v for k,v in env_config.items() if k != "env_name"}
       )
     )
     # process the parameters
