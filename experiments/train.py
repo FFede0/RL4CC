@@ -78,7 +78,7 @@ class TrainingExperiment(BaseExperiment):
       if it % self.evaluation_interval == 0:
         self.update_evaluation_metrics_file(
           result["training_iteration"], 
-          result.evaluation_metrics
+          result["evaluation"]
         )
       # move to the next iteration
       it += 1

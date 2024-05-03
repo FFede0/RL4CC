@@ -114,13 +114,15 @@ class BaseExperiment(ABC):
     """
     Serialize the dictionary of evaluation metrics
     """
+    if "evaluation" in evaluation_metrics:
+      evaluation_metrics = evaluation_metrics["evaluation"]
     em = {**evaluation_metrics}
-    for key, val in evaluation_metrics["evaluation"]["hist_stats"].items():
+    for key, val in evaluation_metrics["hist_stats"].items():
       newval = []
       for x in val:
         if isinstance(x, np.ndarray):
           newval.append(x.tolist())
         else:
           newval.append(x)
-      em["evaluation"]["hist_stats"][key] = newval
+      em["hist_stats"][key] = newval
     return em
