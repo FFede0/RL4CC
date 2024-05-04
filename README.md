@@ -143,7 +143,31 @@ training iteration. By default, this will store:
 
 ## How to start hyperparameter tuning
 
-TBA
+Hyperparameter Tuning is an integration of the Ray Tune, Air, Rllib libraries.
+
+To define and start a tuning experiment exploiting one of the available 
+algorithms:
+1. define the `tune_config.json` file in the `exp_config.json` file as indicated
+[in the README](config_files/README.md);
+2. initialize a `TuningExperiment` object by providing the path to the 
+`exp_config.json` file;
+3. call the `TrainingExperiment.run()` method.
+4. Alternatively, Since Air's RunConfig is used on top of the algorithm object, the user can provide the callbacks (class) directly in the run method in a list (which will overwrite any previous callbacks indicated).
+
+Example (when using the pre-defined `BaseEnvironment` and `BaseCallbacks` 
+classes):
+
+```
+# Basic usage:
+exp = TuningExperiment("config_files/exp_config.json")
+exp.run()
+
+# Optional callbacks:
+from Mycallbacks import Mycallbacks1, Mycallbacks2 #(It is recommended to extend the BaseCallbacks class of RL4CC)
+exp = TuningExperiment("config_files/exp_config.json")
+callbacks = [Mycallbacks, Mycallbacks2]
+exp.run(callbacks=callbacks)
+```
 
 ## The RL4CC Logger
 

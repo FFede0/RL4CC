@@ -1,6 +1,5 @@
 {
   "tune_config" :{
-    "use_tune": true,
     "num_tune_trials": 10,
     "metric": "episode_reward_mean",
     "search_algorithm": {

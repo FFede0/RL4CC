@@ -17,7 +17,7 @@ from experiments.base_experiment import BaseExperiment
 from algorithms.algorithm import Algorithm
 from algorithms.generators.tune_config_generator import TuneConfigGenerator
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from utilities.common import not_defined, write_config_file
+from utilities.common import not_defined, write_config_file, load_config_file
 from ray import tune, air
 
 
@@ -33,14 +33,24 @@ class TuningExperiment(BaseExperiment):
   def run(self,
           callbacks: DefaultCallbacks = None
           ):
+
+    if self.tune_config is None:
+      raise FileNotFoundError(
+          "In order to run a tune experiment, a tune_config.json file must be provided and indicated in the exp_config.json file"
+      )
+    else:
+      self.tune_config = load_config_file(self.tune_config)
+      if self.tune_config is None:
+        raise FileNotFoundError(
+          "A tune_config.json file is indicated in the exp_config.json file but it could not be found, make sure it exists"
+        )
+      use_tune = True
+
+
     # Get tune params
     tune_config_generator = TuneConfigGenerator()
-    try:
-      tune_config = tune_config_generator.get_tune_config(tune_config=self.tune_config)
-    except Exception as e:
-      raise KeyError("Error: The program could not parse the tune config file, make sure it is present and is indicated in the exp config file")
+    tune_config = tune_config_generator.get_tune_config(tune_config=self.tune_config)
 
-    use_tune = tune_config_generator.use_tune
     # define algorithm
     algo = Algorithm(
       algo_name=self.exp_config["algorithm"],

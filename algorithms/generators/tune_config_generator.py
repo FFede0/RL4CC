@@ -35,11 +35,8 @@ class TuneConfigGenerator:
         # Get a copy of the tune_config
         tune_config_dict = tune_config
 
-        # Define "use_tune" variable
-        self.use_tune = tune_config_dict.get("use_tune", False)
         # Handle keys to pass as a parse the tuning dictionary as Key word arguments
         tune_config_dict["num_samples"] = tune_config_dict["num_tune_trials"]
-        tune_config_dict.pop("use_tune")
         tune_config_dict.pop("num_tune_trials")
 
         # Handle search algorithm and scheduler to covert them to their respective tune objects
