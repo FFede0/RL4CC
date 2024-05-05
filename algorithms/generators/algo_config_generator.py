@@ -21,6 +21,7 @@ from ray.tune.registry import get_trainable_cls
 from ray import tune
 from abc import ABC, abstractmethod
 from datetime import datetime
+from ray.tune.search.sample import Domain
 import inspect
 import json
 import os
@@ -421,6 +422,11 @@ class AlgoConfigGenerator(ABC):
     Converts the given `AlgorithmConfig` into a dictionary
     """
     all_params = algo_config.serialize()
+
+    # Intermediate step in case of tune.search.Domain (when tuning) exist
+    # The method will replace the tune objetcs with a string to make it json serializable
+    all_params = self.replace_tune_objects(all_params)
+
     # split according to the dictionary of class method parameters
     ray_config = {}
     for method, method_params in self.algo_methods.items():
@@ -456,6 +462,20 @@ class AlgoConfigGenerator(ABC):
     algo_dict = self.to_dict(algo_config)
     return json.dumps(algo_dict, indent = 2)
 
+  def replace_tune_objects(self, config):
+    """
+    Replaces Ray Tune objects in a dictionary with the string "to be tuned..."
+    """
+    if isinstance(config, dict):
+      return {k: self.replace_tune_objects(v) for k, v in config.items()}
+    elif isinstance(config, list):
+      return [self.replace_tune_objects(v) for v in config]
+    elif isinstance(config, Domain):
+      return "to be tuned..."
+    else:
+      return config
+
+
   def interpret_tune_config(self,config_key, config_value):
     """
     Interprets a configuration value, converting it to a format usable by ray.tune.
@@ -479,11 +499,13 @@ class AlgoConfigGenerator(ABC):
             self.logger.log(f'Tuning detected for the value of "{config_key}"')
             return eval(config_value.strip())
           else:
-            raise ValueError("Tuning attempted but is disabled. Enable tuning by setting `use_tune=True` in the tune config file.")
+            raise ValueError("Hyperparameter tuning is not supported in single experiments remove tune.search_space objects in the algorithm config files.")
         else:
           return config_value
       else:
         return config_value
     except Exception as e:
-      print(f"Error interpreting tune configuration: {e}")
+      print(f"Error interpreting algorithm configuration: {e}")
       raise
+
+

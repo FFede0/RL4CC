@@ -134,7 +134,6 @@ class Algorithm:
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
     """
-    #TODO(MOHANAD): handle this case, problem is that the config is not built (nor should it be when tuning)
     if not self.use_tune:
       jj = self.algo_config_generator.to_json(self.algo.config)
       if to_file:
@@ -145,6 +144,19 @@ class Algorithm:
         )
       else:
         print(jj)
+
+    else:
+      jj = self.algo_config_generator.to_json(self.algo_config)
+      if to_file:
+        write_config_file(
+          jj,
+          os.path.join(self.logdir, "complete_config"),
+          "ray_config.json"
+        )
+
+      else:
+        print(jj)
+        
 
 
 

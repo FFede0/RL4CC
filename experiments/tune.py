@@ -20,11 +20,13 @@ from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from utilities.common import not_defined, write_config_file, load_config_file
 from ray import tune, air
 
-
 from datetime import datetime
 import numpy as np
 import json
 import os
+import shutil
+
+
 
 class TuningExperiment(BaseExperiment):
   def __init__(self, exp_config_file: str):
@@ -127,17 +129,31 @@ class TuningExperiment(BaseExperiment):
     return results
 
 
-  def write_best_trial_config(self,
-                              results: tune.ResultGrid = None):
+  def write_best_trial_config(self, results: tune.ResultGrid = None):
     # Get best hyperparameters
     best_results = results.get_best_result()
-    best_hyperparameters = best_results.config
+    best_results_config_path = os.path.join(best_results.path, "params.json")
 
     # Save as Json
     best_trial_dir = os.path.join(self.logdir, "complete_config/best_tune_trial_config.json")
 
-    with open(best_trial_dir, 'w') as f:
-      json.dump(best_hyperparameters, f, indent=4)
+    # Copy the file and rename it
+    shutil.copyfile(best_results_config_path, best_trial_dir)
+
+  def move_and_rename_json(source_path, destination_directory, new_name):
+    """
+    Move and rename a JSON file.
+
+    Parameters:
+    - source_path (str): The path to the existing JSON file.
+    - destination_directory (str): The path to the directory where the file should be moved.
+    - new_name (str): The new name for the JSON file.
+    """
+    # Create the full path for the new file
+    new_file_path = f"{destination_directory}/{new_name}"
+
+    # Copy the file and rename it
+    shutil.copyfile(source_path, new_file_path)
 
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()

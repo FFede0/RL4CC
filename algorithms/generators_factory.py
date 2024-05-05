@@ -17,6 +17,7 @@ from algorithms.generators.algo_config_generator import AlgoConfigGenerator
 from algorithms.generators.ppo_config_generator import PPOConfigGenerator
 from algorithms.generators.dqn_config_generator import DQNConfigGenerator
 from algorithms.generators.sac_config_generator import SACConfigGenerator
+from algorithms.generators.a2c_config_generator import A2CConfigGenerator
 
 
 class AlgoConfigGeneratorsFactory:
@@ -47,3 +48,5 @@ ACGfactory = AlgoConfigGeneratorsFactory()
 ACGfactory.register("PPO", PPOConfigGenerator)
 ACGfactory.register("DQN", DQNConfigGenerator)
 ACGfactory.register("SAC", SACConfigGenerator)
+ACGfactory.register("A2C", A2CConfigGenerator)
+
