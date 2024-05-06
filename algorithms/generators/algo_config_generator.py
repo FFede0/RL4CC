@@ -421,7 +421,12 @@ class AlgoConfigGenerator(ABC):
     """
     Converts the given `AlgorithmConfig` into a dictionary
     """
-    all_params = algo_config.serialize()
+
+    try:
+      all_params = algo_config.serialize()
+    except:
+      all_params = algo_config
+      pass
 
     # Intermediate step in case of tune.search.Domain (when tuning) exist
     # The method will replace the tune objetcs with a string to make it json serializable
@@ -471,9 +476,15 @@ class AlgoConfigGenerator(ABC):
     elif isinstance(config, list):
       return [self.replace_tune_objects(v) for v in config]
     elif isinstance(config, Domain):
-      return "to be tuned..."
+      # Return the string representation of the tune object
+      domain = config.domain_str
+      sampler = config.sampler.__str__().lower()
+      tune_string = f"tune.{sampler}{domain}"
+      return tune_string
     else:
       return config
+
+      import ray.tune.search.sample
 
 
   def interpret_tune_config(self,config_key, config_value):

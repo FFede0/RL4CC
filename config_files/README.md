@@ -237,19 +237,20 @@ message level.
 In order to perform a hyperparameter tuning experiment, a `tune_config_path` must
 be indicated in the exp_config.json file.
 
-The `tune_config.json` file includes **one** mandatory parameter, which 
-is related to the number of tune trials in the tuning experiment execution. 
+The `tune_config.json` file includes **three** mandatory parameter, which 
+are related to the number of tune trials and their evaluation in the tuning experiment execution. 
 
 These are:
 - `num_tune_trials`: The number of tuning trials to be run in parallel. These trials will sample from the Tune search 
 spaces indicated in the ray_config_*algorithm.json file, the examples given at the next section [below](#configuring-the-search-space-for-parameters) should help
 explain this better.
-
-**Optional parameters**:
 - `metric`: The metric used to evaluate the performance of a given set of parameters in a trial.
 - `mode`: The mode on which the values returned by the metric are evaluated, for instance; setting
 this parameter to **"max"** when considering an **"epsiode_reward_mean"** metric, will place the trial 
 that returns the highest numerical value of the mean reward as the best trials.
+
+
+**Optional parameters**:
 - `search_algorithm`: A search algorithm as specified in tune.search page [here](https://docs.ray.io/en/latest/tune/api/suggestion.html#hyperopt-tune-search-hyperopt-hyperoptsearch)
 - `scheduler`: A scheduler as specified in tune.schedulers page [here](https://docs.ray.io/en/latest/tune/api/schedulers.html#tune-scheduler-hyperband)
 

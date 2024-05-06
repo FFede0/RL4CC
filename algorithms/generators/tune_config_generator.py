@@ -35,9 +35,12 @@ class TuneConfigGenerator:
         # Get a copy of the tune_config
         tune_config_dict = tune_config
 
+        self.validate_tune_config(tune_config_dict)
+
         # Handle keys to pass as a parse the tuning dictionary as Key word arguments
         tune_config_dict["num_samples"] = tune_config_dict["num_tune_trials"]
         tune_config_dict.pop("num_tune_trials")
+
 
         # Handle search algorithm and scheduler to covert them to their respective tune objects
         if "search_algorithm" in tune_config_dict:
@@ -89,5 +92,15 @@ class TuneConfigGenerator:
     def trial_name_string(trial):
         """Create a custom name for the trial."""
         return f"{trial.trainable_name}_{trial.trial_id}"
+
+
+    @staticmethod
+    def validate_tune_config(tune_config):
+        # Check for the existence of the mandatory keys
+        required_keys = ["num_tune_trials", "metric", "mode"]
+        if not all(key in tune_config for key in required_keys):
+            raise KeyError("One or more of the mandatory keys (num_tune_trials, metric, mode) "
+                           "are missing from the tune_config file")
+
 
 

@@ -57,14 +57,11 @@ class Algorithm:
         base_logdir=base_logdir,
         use_tune=use_tune
       )
-      # ...build and save the Ray `Algorithm`
-      if not use_tune:
-       self.build(self.algo_config)
-      else:
-        self.logdir = self.algo_config["logger_config"]["logdir"]
-        self.logger.warn(
-          f"Algorithm created; output directory: {self.logdir}"
-        )
+
+      self.logdir = self.algo_config["logger_config"]["logdir"]
+      self.logger.warn(
+        f"Algorithm created; output directory: {self.logdir}"
+      )
 
   def build(self, algo_config: AlgorithmConfig):
     """
@@ -72,10 +69,6 @@ class Algorithm:
     configuration dictionaries
     """
     self.algo = algo_config.build()
-    self.logdir = self.algo.logdir
-    self.logger.warn(
-      f"Algorithm created; output directory: {self.logdir}"
-    )
   
   def load_checkpoint(self, path: str):
     """
@@ -134,28 +127,16 @@ class Algorithm:
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
     """
-    if not self.use_tune:
-      jj = self.algo_config_generator.to_json(self.algo.config)
-      if to_file:
-        write_config_file(
-          jj,
-          os.path.join(self.algo.logdir, "complete_config"),
-          "ray_config.json"
-        )
-      else:
-        print(jj)
+    jj = self.algo_config_generator.to_json(self.algo_config)
+    if to_file:
+      write_config_file(
+        jj,
+        os.path.join(self.logdir, "complete_config"),
+        "ray_config.json"
+      )
 
     else:
-      jj = self.algo_config_generator.to_json(self.algo_config)
-      if to_file:
-        write_config_file(
-          jj,
-          os.path.join(self.logdir, "complete_config"),
-          "ray_config.json"
-        )
-
-      else:
-        print(jj)
+      print(jj)
         
 
 

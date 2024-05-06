@@ -79,7 +79,7 @@ class BaseExperiment(ABC):
       self.tune_config = self.exp_config.get("tune_config_file", None)
 
   
-  def write_config_files(self):
+  def write_config_files(self, tune_config = None):
     """
     Write the environment and experiment configuration files into the 
     experiment logdir
@@ -91,12 +91,25 @@ class BaseExperiment(ABC):
         os.path.join(self.logdir, "complete_config"), 
         "env_config.json"
       )
+
+    # write tune configuration file
+    if tune_config is not None:
+      write_config_file(
+        json.dumps(tune_config,
+                   indent=2),
+        os.path.join(self.logdir, "complete_config"),
+        "tune_config.json"
+      )
+
     # write experiment configuration file
     write_config_file(
       json.dumps(self.exp_config, indent = 2), 
       os.path.join(self.logdir, "complete_config"), 
       "exp_config.json"
     )
+
+
+
   
   def plot_results(self, result: dict) -> str:
     pass

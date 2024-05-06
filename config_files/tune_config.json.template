@@ -1,5 +1,4 @@
 {
-  "tune_config" :{
     "num_tune_trials": 10,
     "metric": "episode_reward_mean",
     "search_algorithm": {
@@ -15,5 +14,4 @@
         "brackets": 1
       }
     }
-  }
 }

@@ -17,11 +17,10 @@ from experiments.base_experiment import BaseExperiment
 from algorithms.algorithm import Algorithm
 from algorithms.generators.tune_config_generator import TuneConfigGenerator
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from utilities.common import not_defined, write_config_file, load_config_file
+from utilities.common import not_defined, load_config_file, write_config_file
 from ray import tune, air
 
 from datetime import datetime
-import numpy as np
 import json
 import os
 import shutil
@@ -64,10 +63,11 @@ class TuningExperiment(BaseExperiment):
       use_tune=use_tune,
     )
 
+    algo.algo_config_generator
     # Write algorithm config file to output dir
     self.logdir =  algo.logdir
     # save experiment configuration files
-    self.write_config_files()
+    self.write_config_files(tune_config=self.tune_config)
     algo.print_algo_config()
 
     # Prepare Run & Search Space config params
@@ -78,7 +78,8 @@ class TuningExperiment(BaseExperiment):
 
     try:
       run_config = tune_config_generator.get_run_config(training_iterations=training_iterations,
-                                                        storage_path=self.logdir
+                                                        storage_path=self.logdir,
+                                                        callbacks=callbacks
                                                         )
     except Exception as e:
       raise KeyError("Error: The program could not parse the run config, make sure you have a stopping criteria defined in the exp config file")
@@ -89,9 +90,10 @@ class TuningExperiment(BaseExperiment):
                                run_config=run_config
                                )
 
-    self.write_best_trial_config(results=tune_results)
+    self.write_best_trial_config(results=tune_results,
+                                 algo=algo
+                                 )
 
-    results_df = tune_results.get_dataframe()
     experiment_directory = tune_results.experiment_path
     self.logger.log(f"Tuning experiment finished successfully, tuning output directory: {experiment_directory}")
 
@@ -106,7 +108,7 @@ class TuningExperiment(BaseExperiment):
     # Logging & updating progress
     start = datetime.now()
     self.logger.log(f"Tuning --> START")
-    self.update_progress_file("Tuning_start_timestamp", start.timestamp())
+    self.update_progress_file("experiment_start_timestamp", start.timestamp())
 
     # runs tuning
     tuner = tune.Tuner(algo_name,
@@ -122,23 +124,33 @@ class TuningExperiment(BaseExperiment):
     self.update_progress_file("experiment_end_timestamp", end.timestamp())
     experiment_duration = end - start
     self.update_progress_file(
-      "Tuning_duration_s", experiment_duration.total_seconds()
+      "experiment_duration_s", experiment_duration.total_seconds()
     )
-    self.logger.log(f"Tuning took: {experiment_duration}")
+    self.logger.log(f"experiment took: {experiment_duration}")
 
     return results
 
 
-  def write_best_trial_config(self, results: tune.ResultGrid = None):
+  def write_best_trial_config(self,
+                              results: tune.ResultGrid = None,
+                              algo = None
+                              ):
     # Get best hyperparameters
     best_results = results.get_best_result()
     best_results_config_path = os.path.join(best_results.path, "params.json")
+    best_results_config = load_config_file(best_results_config_path)
 
-    # Save as Json
-    best_trial_dir = os.path.join(self.logdir, "complete_config/best_tune_trial_config.json")
+    # Convert the config to the desired format
+    best_results_config = algo.algo_config_generator.to_json(best_results_config)
 
-    # Copy the file and rename it
-    shutil.copyfile(best_results_config_path, best_trial_dir)
+    # Directory
+    best_trial_dir = os.path.join(self.logdir, "complete_config")
+
+    # Save the best tune trial config into a json config file
+    write_config_file(jconfig=best_results_config,
+                      dirname=best_trial_dir,
+                      filename="best_tune_trial_config.json"
+                      )
 
   def move_and_rename_json(source_path, destination_directory, new_name):
     """
