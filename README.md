@@ -169,6 +169,7 @@ callbacks = [Mycallbacks, Mycallbacks2]
 exp.run(callbacks=callbacks)
 ```
 
+
 ## The RL4CC Logger
 
 The RL4CC `Logger` can be configured to print messages with different 

@@ -108,6 +108,62 @@ be reported while importing the module (e.g.,
 Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and 
 [DQN](ray_config_dqn.json.template) are provided.
 
+### How to use custom Policy models
+
+Ray supports the use of Torch and TF models using the ModelV2 implementation.
+
+One can easily implement their own custom network by extending either the [Torch](../models/base_torch_model.py) or the
+[Tensorflow](../models/base_tf_model.py) Base models, and then registering in Ray's Models catalog as can be seen in the
+[models initialization file](../models/__init__.py), where 2 custom models we built are registered and can be used off the shelf.
+
+To actually indicate the use of a custom model after building one's own model by extending the base models
+or using the custom models provided, one must specify the **name** of the model as was registered in Ray's models
+catalog, and providing the accompanying custom model config dictionary in the Ray config dictionary. 
+
+For example, using the provided [CustomTorchModel](../models/custom_torch_model.py):
+
+  - 1- Make sure the model is registered (in this case it is already registered [here](../models/__init__.py) under
+  the name **"custom_torch_model"**)
+
+  - 2- In the ray_config json file, under **"training"** dictionary there is a **"model"**
+dictionary, inside this dictionary the custom  model will be defined which will overwrite the
+generic RLModule model.
+
+ - 3- The custom model's name as registered in the Ray's model catalog must be passed using the
+**"custom_model"** key, while its respective config must be passed under the **"custom_model_config"
+key.
+
+This would look like this inside the ray config file:
+
+```
+.
+.
+"framework": "torch",
+.
+.
+"training": {
+  .
+  .
+  "model": {
+        "custom_model": "custom_torch_model",
+        "custom_model_config": {
+          "seed": 123,
+          "fun_layers": ["ReLU", "ReLU", "ReLU"],
+          "dropout": true,
+          "dropout_list": [0.02, 0, 0],
+          "n_features": [128, 128, 64]
+        },
+      },
+    .
+    .
+  }
+ .
+ .
+```
+
+:warning::warning::warning: The framework of the model **must** match the framework passed in the ray config
+file, otherwise this will result in runtime errors.
+
 ### Experiment configuration file
 
 The `exp_config.json` includes parameters related to the training experiment 
