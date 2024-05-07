@@ -62,15 +62,15 @@ class AlgoConfigGenerator(ABC):
       ("num_cpus_master",  "resources"),
       ("evaluation_duration_per_worker", "evaluation")
     ]
-  
+
   def save_algo_methods_dict(self):
     """
-    Saves a dictionary of algo methods and corresponding parameters (useful 
+    Saves a dictionary of algo methods and corresponding parameters (useful
     to print the `AlgorithmConfig`)
     """
     self.algo_methods = {}
-    # to get the complete list of methods and corresponding parameters, we 
-    # have to inspect all parents of the `{self.algo}Config` class up to 
+    # to get the complete list of methods and corresponding parameters, we
+    # have to inspect all parents of the `{self.algo}Config` class up to
     # `AlgorithmConfig`
     all_parents = inspect.getmro(self.base_algo_config.__class__)
     found_AlgorithmConfig = False
@@ -97,15 +97,15 @@ class AlgoConfigGenerator(ABC):
       # check if we have reached the last parent to inspect
       found_AlgorithmConfig = (class_to_inspect.__name__ == "AlgorithmConfig")
       idx += 1
-  
+
   def generate_default_config(self) -> AlgorithmConfig:
     """
     Generates the default `AlgorithmConfig` according to the class algorithm
     """
     self.base_algo_config = get_trainable_cls(self.algo).get_default_config()
-  
+
   def generate_algo_config(
-      self, 
+      self,
       env_config: dict,
       ray_config: dict = None,
       base_logdir: str = None,
@@ -113,7 +113,7 @@ class AlgoConfigGenerator(ABC):
       use_tune: bool = False,
   ) -> AlgorithmConfig:
     """
-    Defines the `AlgorithmConfig` considering the provided environment and 
+    Defines the `AlgorithmConfig` considering the provided environment and
     configuration dictionaries
     """
     if "env_name" not in env_config:
@@ -126,7 +126,7 @@ class AlgoConfigGenerator(ABC):
       self.base_algo_config
       # environment
       .environment(
-        env_config["env_name"], 
+        env_config["env_name"],
         # pass-along config dictionary avoiding env_name
         env_config={k:v for k,v in env_config.items() if k != "env_name"}
       )
@@ -141,16 +141,16 @@ class AlgoConfigGenerator(ABC):
     # validate the number of collected and trained steps
     self.validate_collection_and_training_size(algo_config)
     return algo_config
-  
+
   def process_config_parameters(
-      self, 
-      ray_config: dict, 
-      env_config: dict, 
-      base_logdir: str = None, 
+      self,
+      ray_config: dict,
+      env_config: dict,
+      base_logdir: str = None,
       eval_interval: int = None
     ) -> dict:
     """
-    Processes the configuration parameters, extracting the relevant 
+    Processes the configuration parameters, extracting the relevant
     information to define an `AlgorithmConfig`
     """
     all_params = {}
@@ -168,23 +168,23 @@ class AlgoConfigGenerator(ABC):
       all_params, env_config, base_logdir, eval_interval
     )
     return all_params
-  
+
   def update_special_keys(
-      self, 
-      all_params: dict, 
-      env_config: dict, 
-      base_logdir: str = None, 
+      self,
+      all_params: dict,
+      env_config: dict,
+      base_logdir: str = None,
       eval_interval: int = None
     ):
     """
-    Updates the work-in-progress dictionary of parameters by converting the 
+    Updates the work-in-progress dictionary of parameters by converting the
     provided keys if necessary
     """
     # check the presence of protected/suggested keys
     using_suggested_keys, using_protected_keys = self.validate_key_usage(
       all_params
     )
-    # fix the value of keys that should not be overridden (unless they may 
+    # fix the value of keys that should not be overridden (unless they may
     # have been manually specified)
     if not using_protected_keys:
       all_params["min_time_s_per_iteration"] = 0
@@ -196,14 +196,14 @@ class AlgoConfigGenerator(ABC):
       self.logger.warn(
         msg + "Set them manually or check the default"
       )
-    # if suggested keys are provided, these should be converted into the 
+    # if suggested keys are provided, these should be converted into the
     # appropriate standard keys
     if using_suggested_keys:
       self.convert_rollout_parameters(all_params, env_config)
       self.convert_evaluation_parameters(all_params, env_config, eval_interval)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
-    # manage the debugging configuration, creating the experiment logdir 
+    # manage the debugging configuration, creating the experiment logdir
     # if required
     if base_logdir is not None:
       exp_logdir = self.generate_logdir(base_logdir, env_config["env_name"])
@@ -212,10 +212,10 @@ class AlgoConfigGenerator(ABC):
       if not_defined("type", all_params["logger_config"]):
         all_params["logger_config"]["type"] = "ray.tune.logger.UnifiedLogger"
       all_params["logger_config"]["logdir"] = exp_logdir
-  
+
   def validate_key_usage(self, all_params: dict):
     """
-    Checks if the user is setting any protected/suggested key and throws 
+    Checks if the user is setting any protected/suggested key and throws
     appropriate errors/warnings
     """
     # check if the user is setting any suggested key
@@ -242,7 +242,7 @@ class AlgoConfigGenerator(ABC):
             )
         else:
           using_protected_keys = True
-          # prevent the user from simultaneously setting protected and 
+          # prevent the user from simultaneously setting protected and
           # suggested keys
           if using_suggested_keys:
             msg = "ERROR: mixing protected and suggested keys is forbidden"
@@ -259,7 +259,7 @@ class AlgoConfigGenerator(ABC):
 
   def convert_rollout_parameters(self, all_params: dict, env_config: dict):
     """
-    Defines the appropriate parameters related to the definition and 
+    Defines the appropriate parameters related to the definition and
     behavior of rollout workers, according to the provided keys
     """
     # duration unit
@@ -284,13 +284,13 @@ class AlgoConfigGenerator(ABC):
         max_time = env_config["max_time"]
         time_step = env_config["time_step"]
         n_steps = (max_time - min_time) // time_step
-        all_params["rollout_fragment_length"] = duration * n_steps
-  
+        all_params["rollout_fragment_length"] = self.scale_parameter(duration, n_steps)
+
   def convert_evaluation_parameters(
       self, all_params: dict, env_config: dict, eval_interval: int = None
     ):
     """
-    Defines the appropriate parameters related to the evaluation length, 
+    Defines the appropriate parameters related to the evaluation length,
     according to the provided keys
     """
     # evaluation interval
@@ -318,7 +318,7 @@ class AlgoConfigGenerator(ABC):
         n_steps = (max_time - min_time) // time_step
         duration *= n_steps
       all_params["evaluation_duration"] = duration
-    # guarantee that at least the final evaluation can be surely performed 
+    # guarantee that at least the final evaluation can be surely performed
     # (force the local (non-eval) worker to have an environment to evaluate on)
     if not_defined("evaluation_interval", all_params):
       all_params["create_env_on_driver"] = True
@@ -352,10 +352,10 @@ class AlgoConfigGenerator(ABC):
     )
     os.makedirs(exp_logdir, exist_ok=True)
     return exp_logdir
-  
+
   def check_num_training_step_calls(self, algo_config: AlgorithmConfig):
     """
-    Checks if the `training_step` function will be called more than once 
+    Checks if the `training_step` function will be called more than once
     according to the given `AlgorithmConfig`
     """
     mins = algo_config["min_sample_timesteps_per_iteration"]
@@ -367,12 +367,12 @@ class AlgoConfigGenerator(ABC):
       self.logger.warn(
         msg + "more than once"
       )
-  
+
   def validate_collection_and_training_size(
       self, algo_config: AlgorithmConfig
     ):
     """
-    Computes the number of sampled and trained steps according to the 
+    Computes the number of sampled and trained steps according to the
     given `AlgorithmConfig` and checks whether the values are coherent
     """
     self.logger.breakline()
@@ -382,7 +382,7 @@ class AlgoConfigGenerator(ABC):
     tot_sampled = self.count_sampled_steps(algo_config)
     tot_trained = self.count_trained_steps(algo_config)
     self.logger.breakline()
-    # raise a WARNING if the number of collected and trained steps are too 
+    # raise a WARNING if the number of collected and trained steps are too
     # unbalanced
     if tot_trained < tot_sampled * 0.9:
       self.logger.warn(
@@ -394,11 +394,11 @@ class AlgoConfigGenerator(ABC):
       )
     # check if the `training_step` function will be called more than once
     self.check_num_training_step_calls(algo_config)
-  
+
   @abstractmethod
   def convert_training_parameters(self, all_params: dict):
     """
-    Defines the appropriate parameters related to the definition and 
+    Defines the appropriate parameters related to the definition and
     behavior of the policy training algorithm, according to the provided keys
     """
     pass
@@ -416,7 +416,7 @@ class AlgoConfigGenerator(ABC):
     Counts the number of trained steps according to the given `AlgorithmConfig`
     """
     pass
-  
+
   def to_dict(self, algo_config: AlgorithmConfig) -> dict:
     """
     Converts the given `AlgorithmConfig` into a dictionary
@@ -459,17 +459,17 @@ class AlgoConfigGenerator(ABC):
       if not added:
         ray_config["not_classified"][param] = value
     return ray_config
-  
+
   def to_json(self, algo_config: AlgorithmConfig) -> str:
     """
-    Converts the given `AlgorithmConfig` into a string with json format
+    Converts the given `AlgorithmConfig object` or `AlgorithmConfig dictionaries` into a string with json format
     """
     algo_dict = self.to_dict(algo_config)
     return json.dumps(algo_dict, indent = 2)
 
   def replace_tune_objects(self, config):
     """
-    Replaces Ray Tune objects in a dictionary with the string "to be tuned..."
+    Replaces Ray Tune objects in a dictionary with their string repr
     """
     if isinstance(config, dict):
       return {k: self.replace_tune_objects(v) for k, v in config.items()}
@@ -483,8 +483,6 @@ class AlgoConfigGenerator(ABC):
       return tune_string
     else:
       return config
-
-      import ray.tune.search.sample
 
 
   def interpret_tune_config(self,config_key, config_value):
@@ -507,6 +505,7 @@ class AlgoConfigGenerator(ABC):
         if config_value.strip().startswith("tune."):
 
           if self.use_tune:
+            self.validate_special_key_tuning(config_key=config_key)
             self.logger.log(f'Tuning detected for the value of "{config_key}"')
             return eval(config_value.strip())
           else:
@@ -518,5 +517,106 @@ class AlgoConfigGenerator(ABC):
     except Exception as e:
       print(f"Error interpreting algorithm configuration: {e}")
       raise
+
+  def validate_special_key_tuning(self, config_key):
+    # Define the special keys that can be tuned
+    tunable_special_keys = ["duration_per_worker", "batch_size", "num_train_batches"]
+    special_keys = [key for key, _ in self._suggested_keys]
+    # Check if the special key is tunable
+    if config_key in special_keys:
+      if config_key not in tunable_special_keys:
+        # Interrupts execution if the value is not tunable
+        raise NotImplementedError(f"The parameter {config_key} is a non-tunable parameter")
+
+  def scale_parameter(self, config_value, scale_factor):
+    """
+    This method is to be mainly used when scaling config parameters.
+
+    It will return the multiplication of the config_value and the scale_factor when
+    they are of a generic data type.
+
+    It will return the scaling of the config value when provided tune.search objects
+
+    Args:
+        config_value: parameter to scale.
+        scale_factor: The scaling factor.
+
+    Returns:
+        The scaled config_value
+    """
+    # Check if the value is a tune object
+    if isinstance(config_value, Domain):
+      # scale the bounds of the tune objects with the scale factor
+      return self.scale_tune_object(config_value, scale_factor)
+    else:
+      # Normally scale the parameter
+      return config_value * scale_factor
+
+
+  def scale_tune_object(self, obj, factor):
+    """
+    Scale the bounds or values of a Ray Tune object by a factor.
+
+    Args:
+        obj: A Ray Tune object (such as tune.uniform, tune.loguniform, etc.).
+        factor: The scaling factor.
+
+    Returns:
+        A new Ray Tune object with scaled bounds or values.
+    """
+    obj_type = self.identify_sampler_type(obj)
+
+    if obj_type in {"uniform", "loguniform", "quniform", "qloguniform"}:
+      lower = obj.lower * factor
+      upper = obj.upper * factor
+      if obj_type == "uniform":
+        return tune.uniform(lower, upper)
+      elif obj_type == "loguniform":
+        return tune.loguniform(lower, upper)
+      elif obj_type == "quniform":
+        return tune.quniform(lower, upper, obj.q)
+      elif obj_type == "qloguniform":
+        return tune.qloguniform(lower, upper, obj.q)
+      else:
+        raise ValueError(f"Unsupported Ray Tune Float object: {obj}")
+
+    elif obj_type in {"randint", "qrandint"}:
+      lower = obj.lower * factor
+      upper = obj.upper * factor
+      if obj_type == "randint":
+        return tune.randint(lower, upper)
+      elif obj_type == "qrandint":
+        return tune.qrandint(lower, upper, obj.q)
+      else:
+        raise ValueError(f"Unsupported Ray Tune Integer object: {obj}")
+
+    elif obj_type == "choice":
+      return tune.grid_search([value * factor for value in obj.categories])
+
+    else:
+      raise ValueError(f"Unsupported Ray Tune object: {obj}")
+
+
+  @staticmethod
+  def identify_sampler_type(sampler):
+    """Identify the type of Ray Tune search sampler."""
+    if isinstance(sampler, tune.search.sample.Quantized):
+      base_type = AlgoConfigGenerator.identify_sampler_type(sampler.base_sampler)
+      return f"q{base_type}"
+    elif isinstance(sampler, tune.search.sample.Uniform):
+      return "uniform"
+    elif isinstance(sampler, tune.search.sample.LogUniform):
+      return "loguniform"
+    elif isinstance(sampler, tune.search.sample.Integer):
+      if isinstance(sampler.sampler, tune.search.sample.Uniform):
+        return "randint"
+      elif isinstance(sampler.sampler, tune.search.sample.LogUniform):
+        return "qrandint"
+    elif isinstance(sampler, tune.search.sample.Categorical):
+      return "choice"
+    else:
+      return "unknown"
+
+
 
 

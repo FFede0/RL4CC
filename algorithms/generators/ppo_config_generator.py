@@ -47,7 +47,7 @@ class PPOConfigGenerator(AlgoConfigGenerator):
         "num_rollout_workers",
         max(self.base_algo_config["num_rollout_workers"], 1)
       )
-      n_steps = nw * all_params["rollout_fragment_length"]
+      n_steps = self.scale_parameter(all_params["rollout_fragment_length"], nw)
       all_params["train_batch_size"] = n_steps
     # sgd batch size
     if "batch_size" in all_params:

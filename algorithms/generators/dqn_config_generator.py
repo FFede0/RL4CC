@@ -57,9 +57,12 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         "rollout_fragment_length",
         self.base_algo_config.get_rollout_fragment_length()
       )
-      n_sampled_steps = nw * rfl
+
+      # TODO (Mohanad): Discuss with Federica the scenario when both nw and rfl are tuned
+      n_sampled_steps = self.scale_parameter(rfl, nw)
       # number of trained steps & intensity
       if num_batches > 1:
+        # TODO (Mohanad): Same note about 2 values being tuned at once (faced an error during testing)
         n_trained_steps = batch_size * num_batches
         all_params["training_intensity"] = n_trained_steps // n_sampled_steps
       else:
