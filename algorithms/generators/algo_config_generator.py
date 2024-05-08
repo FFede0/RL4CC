@@ -366,13 +366,13 @@ class AlgoConfigGenerator(ABC):
     Computes the number of sampled and trained steps according to the 
     given `AlgorithmConfig` and checks whether the values are coherent
     """
-    self.logger.breakline()
+    self.logger.breakline(1)
     self.logger.log(
-      f"*** sampled/trained steps in each `{self.algo}.training_step()` ***"
+      f"*** sampled/trained steps in each `{self.algo}.training_step()` ***", 1
     )
     tot_sampled = self.count_sampled_steps(algo_config)
     tot_trained = self.count_trained_steps(algo_config)
-    self.logger.breakline()
+    self.logger.breakline(1)
     # raise a WARNING if the number of collected and trained steps are too 
     # unbalanced
     if tot_trained < tot_sampled * 0.9:

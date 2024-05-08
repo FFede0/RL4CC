@@ -81,16 +81,17 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     for wid in range(max(nw, 1)):
       # number of collected steps (per worker)
       rfl = algo_config.get_rollout_fragment_length()
-      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)")
+      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)", 1)
       ncs += rfl
     self.logger.log(
-      f"{ncs} step(s) collected in each of the {citer} collection iteration(s)"
+      f"{ncs} step(s) collected in each of the {citer} collection iteration(s)",
+      1
     )
     # wait before start training?
     wait_n_steps = algo_config["num_steps_sampled_before_learning_starts"]
     if wait_n_steps > 0:
       self.logger.log(
-        f"{wait_n_steps} steps have to be sampled before learning starts"
+        f"{wait_n_steps} steps have to be sampled before learning starts", 1
       )
     return ncs * citer
   
@@ -104,6 +105,6 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     tbs = algo_config["train_batch_size"]
     C = algo_config["replay_buffer_config"]["capacity"]
     self.logger.log(
-      f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})"
+      f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})", 1
     )
     return tbs * titer
