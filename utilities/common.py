@@ -42,3 +42,22 @@ def write_config_file(jconfig: str, dirname: str, filename: str):
   os.makedirs(dirname, exist_ok = True)
   with open(os.path.join(dirname, filename), "w") as ostream:
     ostream.write(jconfig)
+
+def compare_dictionaries(d1: dict, d2: dict) -> bool:
+  equal = True
+  for key, val in d1.items():
+    if key in d2:
+      if isinstance(val, dict):
+        equal = equal and compare_dictionaries(d1[key], d2[key])
+      elif isinstance(val, list) or isinstance(val, tuple):
+        equal = equal and all([v1 == v2 for v1, v2 in zip(val, d2[key])])
+      else:
+        if key == "logdir":
+          v1 = "/".join(val.split("/")[:-1])
+          v2 = "/".join(d2[key].split("/")[:-1])
+          equal = equal and (v1 == v2)
+        else:
+          equal = equal and (val == d2[key])
+    else:
+      return False
+  return equal
