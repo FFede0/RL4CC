@@ -33,7 +33,7 @@ class TuneConfigGenerator:
                         tune_config: dict
                         ) -> tune.TuneConfig:
         # Get a copy of the tune_config
-        tune_config_dict = tune_config
+        tune_config_dict = tune_config.copy()
 
         self.validate_tune_config(tune_config_dict)
 

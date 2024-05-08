@@ -58,12 +58,10 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         self.base_algo_config.get_rollout_fragment_length()
       )
 
-      # TODO (Mohanad): Discuss with Federica the scenario when both nw and rfl are tuned
       n_sampled_steps = self.scale_parameter(rfl, nw)
       # number of trained steps & intensity
       if num_batches > 1:
-        # TODO (Mohanad): Same note about 2 values being tuned at once (faced an error during testing)
-        n_trained_steps = batch_size * num_batches
+        n_trained_steps = self.scale_parameter(batch_size, num_batches)
         all_params["training_intensity"] = n_trained_steps // n_sampled_steps
       else:
         all_params["training_intensity"] = None
@@ -82,7 +80,7 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       # number of collected steps (per worker)
       rfl = algo_config.get_rollout_fragment_length()
       self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)")
-      ncs += rfl
+      ncs = self.scale_parameter(ncs, addend = rfl)
     self.logger.log(
       f"{ncs} step(s) collected in each of the {citer} collection iteration(s)"
     )
@@ -92,7 +90,7 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       self.logger.log(
         f"{wait_n_steps} steps have to be sampled before learning starts"
       )
-    return ncs * citer
+    return self.scale_parameter(ncs, citer)
   
   def count_trained_steps(self, algo_config: AlgorithmConfig) -> int:
     """
@@ -106,4 +104,4 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     self.logger.log(
       f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})"
     )
-    return tbs * titer
+    return self.scale_parameter(tbs, titer)

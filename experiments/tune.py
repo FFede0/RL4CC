@@ -19,7 +19,7 @@ from algorithms.generators.tune_config_generator import TuneConfigGenerator
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from utilities.common import not_defined, load_config_file, write_config_file
 from ray import tune, air
-
+from ray.tune.tune_config import TuneConfig
 from datetime import datetime
 import json
 import os
@@ -67,6 +67,7 @@ class TuningExperiment(BaseExperiment):
     # Write algorithm config file to output dir
     self.logdir =  algo.logdir
     # save experiment configuration files
+
     self.write_config_files(tune_config=self.tune_config)
     algo.print_algo_config()
 
@@ -152,29 +153,6 @@ class TuningExperiment(BaseExperiment):
                       filename="best_tune_trial_config.json"
                       )
 
-  def move_and_rename_json(source_path, destination_directory, new_name):
-    """
-    Move and rename a JSON file.
-
-    Parameters:
-    - source_path (str): The path to the existing JSON file.
-    - destination_directory (str): The path to the directory where the file should be moved.
-    - new_name (str): The new name for the JSON file.
-    """
-    # Create the full path for the new file
-    new_file_path = f"{destination_directory}/{new_name}"
-
-    # Copy the file and rename it
-    shutil.copyfile(source_path, new_file_path)
-
-  def validate_experiment_configuration(self):
-    super().validate_experiment_configuration()
-    # the algorithm name must be provided
-    if not_defined("algorithm", self.exp_config):
-      raise KeyError(
-        "ERROR: `algorithm` is required"
-      )
-
 
   def define_stopping_criteria(self):
     """
@@ -229,4 +207,34 @@ class TuningExperiment(BaseExperiment):
     evaluation_file = os.path.join(self.logdir, "evaluation.txt")
     with open(evaluation_file, "a") as ostream:
       ostream.write(f"{evaluation}\n")
+
+
+  def write_config_files(self, tune_config = None):
+    """
+    Write the environment and experiment configuration files into the
+    experiment logdir
+    """
+    # write environment configuration file
+    if self.env_config is not None:
+      write_config_file(
+        json.dumps(self.env_config, indent = 2),
+        os.path.join(self.logdir, "complete_config"),
+        "env_config.json"
+      )
+
+    # write tune configuration file
+    if tune_config is not None:
+      write_config_file(
+        json.dumps(tune_config,
+                   indent=2),
+        os.path.join(self.logdir, "complete_config"),
+        "tune_config.json"
+      )
+
+    # write experiment configuration file
+    write_config_file(
+      json.dumps(self.exp_config, indent = 2),
+      os.path.join(self.logdir, "complete_config"),
+      "exp_config.json"
+    )
 

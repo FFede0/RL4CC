@@ -53,14 +53,14 @@ class AlgoConfigGenerator(ABC):
       ("env_config", "environment")
     ]
     self._suggested_keys = [
-      # (key, key group)
-      ("duration_per_worker",  "rollouts"),
-      ("duration_unit",  "rollouts"),
-      ("batch_size",  "training"),
-      ("num_train_batches",  "training"),
-      ("num_gpus_master",  "resources"),
-      ("num_cpus_master",  "resources"),
-      ("evaluation_duration_per_worker", "evaluation")
+      # (key, key group, tunable)
+      ("duration_per_worker",  "rollouts", "tunable"),
+      ("duration_unit",  "rollouts", "not_tunable"),
+      ("batch_size",  "training", "tunable"),
+      ("num_train_batches",  "training", "tunable"),
+      ("num_gpus_master",  "resources", "not_tunable"),
+      ("num_cpus_master",  "resources", "not_tunable"),
+      ("evaluation_duration_per_worker", "evaluation", "not_tunable")
     ]
 
   def save_algo_methods_dict(self):
@@ -219,7 +219,7 @@ class AlgoConfigGenerator(ABC):
     appropriate errors/warnings
     """
     # check if the user is setting any suggested key
-    using_suggested_keys = any(k in all_params for k,_ in self._suggested_keys)
+    using_suggested_keys = any(k in all_params for k,_ , _ in self._suggested_keys)
     # check if the user is setting any protected key
     using_protected_keys = False
     for pk,_ in self._protected_keys:
@@ -379,21 +379,23 @@ class AlgoConfigGenerator(ABC):
     self.logger.log(
       f"*** sampled/trained steps in each `{self.algo}.training_step()` ***"
     )
-    tot_sampled = self.count_sampled_steps(algo_config)
-    tot_trained = self.count_trained_steps(algo_config)
-    self.logger.breakline()
-    # raise a WARNING if the number of collected and trained steps are too
-    # unbalanced
-    if tot_trained < tot_sampled * 0.9:
-      self.logger.warn(
-        f"only {tot_trained} steps are trained over the {tot_sampled} sampled"
-      )
-    elif tot_trained > tot_sampled * 1.1:
-      self.logger.warn(
-        f"{tot_trained} steps trained over only {tot_sampled} new samples"
-      )
-    # check if the `training_step` function will be called more than once
-    self.check_num_training_step_calls(algo_config)
+    if not self.use_tune:
+      tot_sampled = self.count_sampled_steps(algo_config)
+      tot_trained = self.count_trained_steps(algo_config)
+      self.logger.breakline()
+      # raise a WARNING if the number of collected and trained steps are too
+      # unbalanced
+
+      if tot_trained < tot_sampled * 0.9:
+        self.logger.warn(
+          f"only {tot_trained} steps are trained over the {tot_sampled} sampled"
+        )
+      elif tot_trained > tot_sampled * 1.1:
+        self.logger.warn(
+          f"{tot_trained} steps trained over only {tot_sampled} new samples"
+        )
+      # check if the `training_step` function will be called more than once
+      self.check_num_training_step_calls(algo_config)
 
   @abstractmethod
   def convert_training_parameters(self, all_params: dict):
@@ -519,16 +521,20 @@ class AlgoConfigGenerator(ABC):
       raise
 
   def validate_special_key_tuning(self, config_key):
+    # Define the special keys
+    special_keys = [key for key, _, _ in self._suggested_keys]
+
     # Define the special keys that can be tuned
-    tunable_special_keys = ["duration_per_worker", "batch_size", "num_train_batches"]
-    special_keys = [key for key, _ in self._suggested_keys]
+    tunable_special_keys = [key for key, _, tunable in self._suggested_keys if tunable == "tunable"]
+
     # Check if the special key is tunable
     if config_key in special_keys:
       if config_key not in tunable_special_keys:
         # Interrupts execution if the value is not tunable
         raise NotImplementedError(f"The parameter {config_key} is a non-tunable parameter")
 
-  def scale_parameter(self, config_value, scale_factor):
+
+  def scale_parameter(self, config_value, scale_factor=0, addend=0):
     """
     This method is to be mainly used when scaling config parameters.
 
@@ -538,8 +544,9 @@ class AlgoConfigGenerator(ABC):
     It will return the scaling of the config value when provided tune.search objects
 
     Args:
-        config_value: parameter to scale.
-        scale_factor: The scaling factor.
+        config_value: The term to be scaled. This can be a Ray Tune object (such as tune.uniform, tune.loguniform, etc.).
+        scale_factor: The scaling object. This can be a Ray Tune object.
+        addend: The object to add. This can be a Ray Tune objec
 
     Returns:
         The scaled config_value
@@ -547,28 +554,48 @@ class AlgoConfigGenerator(ABC):
     # Check if the value is a tune object
     if isinstance(config_value, Domain):
       # scale the bounds of the tune objects with the scale factor
-      return self.scale_tune_object(config_value, scale_factor)
+      return self.scale_tune_object(config_value, scale_factor, addend)
+    elif isinstance(scale_factor, Domain):
+      return self.scale_tune_object(scale_factor, config_value, addend)
     else:
       # Normally scale the parameter
       return config_value * scale_factor
 
 
-  def scale_tune_object(self, obj, factor):
+  def scale_tune_object(self, obj,
+                        factor=0,
+                        addend=0,):
     """
     Scale the bounds or values of a Ray Tune object by a factor.
 
     Args:
-        obj: A Ray Tune object (such as tune.uniform, tune.loguniform, etc.).
-        factor: The scaling factor.
+        obj: The term to be scaled. This can be a Ray Tune object (such as tune.uniform, tune.loguniform, etc.).
+        factor: The scaling object. This can be a Ray Tune object.
+        addend: The object to add. This can be a Ray Tune object.
 
     Returns:
         A new Ray Tune object with scaled bounds or values.
     """
+    # First, identify the sampler type of the object
     obj_type = self.identify_sampler_type(obj)
 
-    if obj_type in {"uniform", "loguniform", "quniform", "qloguniform"}:
-      lower = obj.lower * factor
-      upper = obj.upper * factor
+    # Check if the factor or the addend are ray objects
+    # Interrupt execution when samplers are mismatched
+    # When Ray tune objects, the upper and lower bounds are fetched, else, assigns the same factor for both.
+    if isinstance(factor, Domain):
+      upper_factor, lower_factor = self.check_sampler_compatibility(obj=obj, factor= factor)
+    else:
+      upper_factor = lower_factor = factor
+
+    if isinstance(addend, Domain):
+      upper_addend, lower_addend = self.check_sampler_compatibility(obj=obj, factor= addend)
+    else:
+      upper_addend = lower_addend = addend
+
+
+    if obj_type in {"uniform", "loguniform", "quniform", "qloguniform", "randint", "qrandint"}:
+      lower = obj.lower * lower_factor + upper_addend
+      upper = obj.upper * upper_factor + lower_addend
       if obj_type == "uniform":
         return tune.uniform(lower, upper)
       elif obj_type == "loguniform":
@@ -577,21 +604,15 @@ class AlgoConfigGenerator(ABC):
         return tune.quniform(lower, upper, obj.q)
       elif obj_type == "qloguniform":
         return tune.qloguniform(lower, upper, obj.q)
-      else:
-        raise ValueError(f"Unsupported Ray Tune Float object: {obj}")
-
-    elif obj_type in {"randint", "qrandint"}:
-      lower = obj.lower * factor
-      upper = obj.upper * factor
       if obj_type == "randint":
         return tune.randint(lower, upper)
       elif obj_type == "qrandint":
         return tune.qrandint(lower, upper, obj.q)
       else:
-        raise ValueError(f"Unsupported Ray Tune Integer object: {obj}")
+        raise ValueError(f"Unsupported Ray Tune object: {obj}")
 
     elif obj_type == "choice":
-      return tune.grid_search([value * factor for value in obj.categories])
+      return tune.grid_search([value * factor + addend for value in obj.categories])
 
     else:
       raise ValueError(f"Unsupported Ray Tune object: {obj}")
@@ -616,6 +637,25 @@ class AlgoConfigGenerator(ABC):
       return "choice"
     else:
       return "unknown"
+
+
+  def check_sampler_compatibility(self, obj, operand):
+    obj_sampler_type = self.identify_sampler_type(obj)
+    operand_sampler_type = self.identify_sampler_type(operand)
+
+    if obj_sampler_type != operand_sampler_type:
+      raise NotImplementedError(f"The samplers of type {obj_sampler_type} and {operand_sampler_type} are mismatched.")
+
+    else:
+      if operand_sampler_type in {"uniform", "loguniform", "quniform", "qloguniform", "randint", "qrandint"}:
+        upper_bound = obj.lower
+        lower_bound = obj.upper
+        return upper_bound, lower_bound
+
+      elif operand_sampler_type == "choice":
+        raise NotImplementedError(f"The samplers of type {obj_sampler_type} and {operand_sampler_type} are mismatched.")
+
+
 
 
 

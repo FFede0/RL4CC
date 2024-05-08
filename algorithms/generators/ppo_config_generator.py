@@ -70,7 +70,7 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       # number of collected steps (per worker)
       rfl = algo_config.get_rollout_fragment_length()
       self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)")
-      ncs += rfl
+      ncs = self.scale_parameter(ncs, addend = rfl)
     tbs = algo_config["train_batch_size"]
     self.logger.log(
       f"{ncs} step(s) collected to reach the required number {tbs}"
@@ -94,4 +94,4 @@ class PPOConfigGenerator(AlgoConfigGenerator):
       raise ValueError(
         msg + f"collected steps ({tbs})"
       )
-    return sgdbs * sgdit
+    return self.scale_parameter(sgdbs, sgdit)
