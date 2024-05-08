@@ -49,9 +49,12 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     if "num_train_batches" in all_params:
       num_batches = all_params.pop("num_train_batches")
       # number of sampled steps
-      nw = all_params.get(
-        "num_rollout_workers",
-        max(1, self.base_algo_config["num_rollout_workers"])
+      nw = max(
+        1, 
+        all_params.get(
+          "num_rollout_workers",
+          self.base_algo_config["num_rollout_workers"]
+        ) + 1
       )
       rfl = all_params.get(
         "rollout_fragment_length",
@@ -61,7 +64,7 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       # number of trained steps & intensity
       if num_batches > 1:
         n_trained_steps = batch_size * num_batches
-        all_params["training_intensity"] = n_trained_steps // n_sampled_steps
+        all_params["training_intensity"] = n_trained_steps / n_sampled_steps
       else:
         all_params["training_intensity"] = None
   
