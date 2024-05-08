@@ -1,0 +1,10 @@
+{
+  "algorithm": "DQN",
+  "env_config_file": "config_files/regression_tests/train_DQN/env_config.json",
+  "ray_config_file": "config_files/regression_tests/train_DQN/ray_config.json",
+  "logdir": "utilities/regression_tests/LOGDIR/train_DQN",
+  "evaluation_interval": 5,
+  "stopping_criteria": {
+    "max_iterations": 10
+  }
+}

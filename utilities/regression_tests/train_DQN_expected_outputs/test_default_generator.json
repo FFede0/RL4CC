@@ -1,0 +1,285 @@
+{
+  "build": {
+    "env": null,
+    "logger_creator": null
+  },
+  "checkpointing": {
+    "checkpoint_trainable_policies_only": false,
+    "export_native_model_files": false
+  },
+  "debugging": {
+    "log_level": "WARN",
+    "logger_config": null,
+    "worker_cls": -1,
+    "fake_sampler": false,
+    "seed": null,
+    "log_sys_usage": true
+  },
+  "environment": {
+    "auto_wrap_old_gym_envs": true,
+    "env_task_fn": null,
+    "render_env": false,
+    "action_space": null,
+    "clip_actions": false,
+    "env_config": {},
+    "disable_env_checking": false,
+    "action_mask_key": "action_mask",
+    "clip_rewards": null,
+    "observation_space": null,
+    "normalize_actions": true
+  },
+  "evaluation": {
+    "always_attach_evaluation_results": false,
+    "evaluation_sample_timeout_s": 180.0,
+    "evaluation_duration": 10,
+    "off_policy_estimation_methods": {},
+    "evaluation_interval": null,
+    "evaluation_duration_unit": "episodes",
+    "evaluation_num_workers": 0,
+    "evaluation_parallel_to_training": false,
+    "evaluation_config": {
+      "explore": false
+    },
+    "enable_async_evaluation": false,
+    "ope_split_batch_by_episode": true,
+    "custom_evaluation_function": null
+  },
+  "experimental": {
+    "_disable_execution_plan_api": true,
+    "_tf_policy_handles_more_than_one_loss": false,
+    "_disable_initialize_loss_from_dummy_batch": false,
+    "_disable_preprocessor_api": false,
+    "_disable_action_flattening": false
+  },
+  "exploration": {
+    "explore": true,
+    "exploration_config": {
+      "type": "EpsilonGreedy",
+      "initial_epsilon": 1.0,
+      "final_epsilon": 0.02,
+      "epsilon_timesteps": 10000
+    }
+  },
+  "fault_tolerance": {
+    "delay_between_worker_restarts_s": 60.0,
+    "max_num_worker_restarts": 1000,
+    "restart_failed_sub_environments": false,
+    "recreate_failed_workers": false,
+    "worker_health_probe_timeout_s": 60,
+    "num_consecutive_worker_failures_tolerance": 100,
+    "worker_restore_timeout_s": 1800
+  },
+  "framework": {
+    "tf_session_args": {
+      "intra_op_parallelism_threads": 2,
+      "inter_op_parallelism_threads": 2,
+      "gpu_options": {
+        "allow_growth": true
+      },
+      "log_device_placement": false,
+      "device_count": {
+        "CPU": 1
+      },
+      "allow_soft_placement": true
+    },
+    "torch_compile_learner_dynamo_mode": null,
+    "torch_compile_worker_dynamo_mode": null,
+    "framework": "torch",
+    "torch_compile_learner": false,
+    "torch_compile_learner_dynamo_backend": "aot_eager",
+    "eager_tracing": true,
+    "torch_compile_worker_dynamo_backend": "aot_eager",
+    "local_tf_session_args": {
+      "intra_op_parallelism_threads": 8,
+      "inter_op_parallelism_threads": 8
+    },
+    "eager_max_retraces": 20,
+    "torch_compile_learner_what_to_compile": "forward_train",
+    "torch_compile_worker": false
+  },
+  "get_multi_agent_setup": {
+    "policies": {
+      "default_policy": [
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  },
+  "multi_agent": {
+    "algorithm_config_overrides_per_module": {},
+    "policies_to_train": null,
+    "policy_map_capacity": 100,
+    "count_steps_by": "env_steps",
+    "policy_mapping_fn": "__not_serializable__",
+    "policy_map_cache": -1,
+    "observation_fn": null,
+    "policy_states_are_swappable": false
+  },
+  "offline_data": {
+    "input_config": {},
+    "shuffle_buffer_size": 0,
+    "output": null,
+    "postprocess_inputs": false,
+    "output_max_file_size": 67108864,
+    "offline_sampling": false,
+    "actions_in_input_normalized": false,
+    "output_compress_columns": [
+      "obs",
+      "new_obs"
+    ],
+    "output_config": {},
+    "input_": "sampler"
+  },
+  "python_environment": {
+    "extra_python_environs_for_driver": {},
+    "extra_python_environs_for_worker": {}
+  },
+  "reporting": {
+    "metrics_episode_collection_timeout_s": 60.0,
+    "min_time_s_per_iteration": null,
+    "keep_per_episode_custom_metrics": false,
+    "metrics_num_episodes_for_smoothing": 100,
+    "min_train_timesteps_per_iteration": 0,
+    "min_sample_timesteps_per_iteration": 1000
+  },
+  "resources": {
+    "_fake_gpus": false,
+    "placement_strategy": "PACK",
+    "num_cpus_per_worker": 1,
+    "custom_resources_per_worker": {},
+    "num_gpus": 0,
+    "local_gpu_idx": 0,
+    "num_learner_workers": 0,
+    "num_gpus_per_learner_worker": 0,
+    "num_gpus_per_worker": 0,
+    "num_cpus_per_learner_worker": 1,
+    "num_cpus_for_local_worker": 1
+  },
+  "rl_module": {
+    "_enable_rl_module_api": false,
+    "rl_module_spec": "<class 'NoneType'>"
+  },
+  "rollouts": {
+    "remote_env_batch_wait_ms": 0,
+    "enable_tf1_exec_eagerly": false,
+    "sample_collector": "ray.rllib.evaluation.collectors.simple_list_collector.SimpleListCollector",
+    "enable_connectors": true,
+    "remote_worker_envs": false,
+    "batch_mode": "truncate_episodes",
+    "rollout_fragment_length": "auto",
+    "compress_observations": false,
+    "ignore_worker_failures": false,
+    "env_runner_cls": null,
+    "preprocessor_pref": "deepmind",
+    "use_worker_filter_stats": true,
+    "update_worker_filter_stats": true,
+    "sample_async": false,
+    "validate_workers_after_construction": true,
+    "num_envs_per_worker": 1,
+    "sampler_perf_stats_ema_coef": null,
+    "observation_filter": "NoFilter",
+    "create_env_on_local_worker": false,
+    "num_rollout_workers": 0
+  },
+  "training": {
+    "lr": 0.0005,
+    "lr_schedule": null,
+    "_enable_learner_api": false,
+    "adam_epsilon": 1e-08,
+    "replay_buffer_config": {
+      "type": "MultiAgentPrioritizedReplayBuffer",
+      "prioritized_replay": -1,
+      "capacity": 50000,
+      "prioritized_replay_alpha": 0.6,
+      "prioritized_replay_beta": 0.4,
+      "prioritized_replay_eps": 1e-06,
+      "replay_sequence_length": 1,
+      "worker_side_prioritization": false
+    },
+    "num_steps_sampled_before_learning_starts": 1000,
+    "v_max": 10.0,
+    "grad_clip": 40.0,
+    "before_learn_on_batch": null,
+    "training_intensity": null,
+    "gamma": 0.99,
+    "optimizer": {},
+    "hiddens": [
+      256
+    ],
+    "train_batch_size": 32,
+    "store_buffer_in_checkpoints": false,
+    "td_error_loss_fn": "huber",
+    "v_min": -10.0,
+    "target_network_update_freq": 500,
+    "model": {
+      "_disable_preprocessor_api": false,
+      "_disable_action_flattening": false,
+      "fcnet_hiddens": [
+        256,
+        256
+      ],
+      "fcnet_activation": "tanh",
+      "conv_filters": null,
+      "conv_activation": "relu",
+      "post_fcnet_hiddens": [],
+      "post_fcnet_activation": "relu",
+      "free_log_std": false,
+      "no_final_linear": false,
+      "vf_share_layers": true,
+      "use_lstm": false,
+      "max_seq_len": 20,
+      "lstm_cell_size": 256,
+      "lstm_use_prev_action": false,
+      "lstm_use_prev_reward": false,
+      "_time_major": false,
+      "use_attention": false,
+      "attention_num_transformer_units": 1,
+      "attention_dim": 64,
+      "attention_num_heads": 1,
+      "attention_head_dim": 32,
+      "attention_memory_inference": 50,
+      "attention_memory_training": 50,
+      "attention_position_wise_mlp_dim": 32,
+      "attention_init_gru_gate_bias": 2.0,
+      "attention_use_n_prev_actions": 0,
+      "attention_use_n_prev_rewards": 0,
+      "framestack": true,
+      "dim": 84,
+      "grayscale": false,
+      "zero_mean": true,
+      "custom_model": null,
+      "custom_model_config": {},
+      "custom_action_dist": null,
+      "custom_preprocessor": null,
+      "encoder_latent_dim": null,
+      "always_check_shapes": false,
+      "lstm_use_prev_action_reward": -1,
+      "_use_default_native_models": -1
+    },
+    "grad_clip_by": "global_norm",
+    "num_atoms": 1,
+    "noisy": false,
+    "dueling": true,
+    "n_step": 1,
+    "categorical_distribution_temperature": 1.0,
+    "sigma0": 0.5,
+    "tau": 1.0,
+    "max_requests_in_flight_per_sampler_worker": 2,
+    "double_q": true
+  },
+  "not_classified": {
+    "_is_atari": null,
+    "_learner_class": null,
+    "in_evaluation": false,
+    "sync_filters_on_rollout_workers_timeout_s": 60.0,
+    "_AlgorithmConfig__prior_exploration_config": null,
+    "simple_optimizer": -1,
+    "synchronize_filters": -1,
+    "replay_sequence_length": null
+  },
+  "callbacks": {
+    "callbacks_class": "ray.rllib.algorithms.callbacks.DefaultCallbacks"
+  }
+}
