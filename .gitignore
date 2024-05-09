@@ -1,3 +1,6 @@
+# Output of regression tests
+utilities/regression_tests/LOGDIR/*
+
 # Configuration files (except the README and some templates)
 config_files/*
 !config_files/README.md
