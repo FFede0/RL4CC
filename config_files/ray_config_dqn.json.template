@@ -48,6 +48,14 @@
       "replay_sequence_length": 1,
       "worker_side_prioritization": false
     },
+    "model": {
+        "fcnet_hiddens": [256, 256, 128],
+        "fcnet_activation": "ReLU",
+        "post_fcnet_hiddens": [],
+        "post_fcnet_activation": "linear"
+        "vf_share_layers": false,
+        "_disable_preprocessor_api": false
+    },
     "target_network_update_freq": 500,
     "num_steps_sampled_before_learning_starts": 1000,
     "store_buffer_in_checkpoints": false,

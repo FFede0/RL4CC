@@ -260,22 +260,20 @@ Sample configuration:
 
 ```
 {
-  "tune_config" :{
-    "num_tune_trials": 10,
-    "metric": "episode_reward_mean",
-    "mode": "max"
-    "search_algorithm": {
-      "hyperopt_search": {
-        "metric": "episode_reward_mean",
-        "mode": "max"
-      }
-    },
-    "scheduler": {
-      "asha_scheduler": {
-        "grace_period": 10,
-        "reduction_factor": 3,
-        "brackets": 1
-      }
+  "num_tune_trials": 10,
+  "metric": "episode_reward_mean",
+  "mode": "max"
+  "search_algorithm": {
+    "hyperopt_search": {
+      "metric": "episode_reward_mean",
+      "mode": "max"
+    }
+  },
+  "scheduler": {
+    "asha_scheduler": {
+      "grace_period": 10,
+      "reduction_factor": 3,
+      "brackets": 1
     }
   }
 }
