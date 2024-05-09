@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from typing import Tuple
+import pandas as pd
 import json
 import os
 
@@ -65,3 +67,16 @@ def compare_dictionaries(d1: dict, d2: dict) -> bool:
     else:
       return False
   return equal
+
+def compute_deviation(
+    baseline: pd.Series, target: pd.Series
+  ) -> Tuple[pd.Series, float, float, float]:
+  """
+  Compute the deviation (and its minimum, maximum and average value) between 
+  a baseline and a target (increases as target becomes lower than baseline)
+  """
+  deviation = (baseline - target) / baseline
+  m = float(deviation.min())
+  M = float(deviation.max())
+  avg = float(deviation.mean())
+  return deviation, m, M, avg
