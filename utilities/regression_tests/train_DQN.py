@@ -1,7 +1,9 @@
 from algorithms.generators.dqn_config_generator import DQNConfigGenerator
 from experiments.train import TrainingExperiment
 from utilities.common import load_config_file, compare_dictionaries, write_config_file
+from utilities.common import compute_deviation
 from utilities.logger import Logger
+import pandas as pd
 import os
 
 def test_default_generator(
@@ -43,12 +45,31 @@ def test_generator(
     raise RuntimeError("train_DQN.test_generator() test failed")
 
 def test_training_loop(
-    logger: Logger, exp_config_file: str, expected_out_dir: str
+    logger: Logger, exp_config_file: str, expected_out_dir: str, tol: float
   ):
   # run
   exp = TrainingExperiment(logger=logger, exp_config_file=exp_config_file)
   exp.run()
   # compare with expected output
+  progress = pd.read_csv(os.path.join(exp.logdir, "progress.csv"))
+  expected_progress = pd.read_csv(
+    os.path.join(expected_out_dir, "test_training_loop.csv")
+  )
+  columns = [
+    "episode_reward_max",
+    "episode_reward_min",
+    "episode_reward_mean",
+    "episode_len_mean",
+    "episodes_this_iter",
+    "num_agent_steps_sampled",
+    "num_agent_steps_trained",
+    "num_env_steps_sampled_this_iter",
+    "num_env_steps_trained_this_iter"
+  ]
+  for col in columns:
+    _, _, _, avg = compute_deviation(expected_progress[col], progress[col])
+    if avg > tol:
+      raise RuntimeError("train_PPO.test_training_loop() test failed")
 
 def main():
   logger = Logger(name="RL4CC-RegressionTests-trainDQN")
@@ -68,4 +89,4 @@ def main():
   logger.breakline()
   logger.log("TrainingExperiment.run()")
   logger.breakline()
-  test_training_loop(logger, exp_config_file, expected_out_dir)
+  test_training_loop(logger, exp_config_file, expected_out_dir, 1e-5)
