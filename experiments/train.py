@@ -44,6 +44,8 @@ class TrainingExperiment(BaseExperiment):
       base_logdir = self.logdir,
       eval_interval = self.evaluation_interval
     )
+
+    algo.build()
     self.logdir = algo.logdir
     # save experiment configuration files
     self.write_config_files()
@@ -78,7 +80,7 @@ class TrainingExperiment(BaseExperiment):
       if it % self.evaluation_interval == 0:
         self.update_evaluation_metrics_file(
           result["training_iteration"], 
-          result.evaluation_metrics
+          result["evaluation"]
         )
       # move to the next iteration
       it += 1

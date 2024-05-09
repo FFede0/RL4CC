@@ -108,6 +108,62 @@ be reported while importing the module (e.g.,
 Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and 
 [DQN](ray_config_dqn.json.template) are provided.
 
+### How to use custom Policy models
+
+Ray supports the use of Torch and TF models using the ModelV2 implementation.
+
+One can easily implement their own custom network by extending either the [Torch](../models/base_torch_model.py) or the
+[Tensorflow](../models/base_tf_model.py) Base models, and then registering in Ray's Models catalog as can be seen in the
+[models initialization file](../models/__init__.py), where 2 custom models we built are registered and can be used off the shelf.
+
+To actually indicate the use of a custom model after building one's own model by extending the base models
+or using the custom models provided, one must specify the **name** of the model as was registered in Ray's models
+catalog, and providing the accompanying custom model config dictionary in the Ray config dictionary. 
+
+For example, using the provided [CustomTorchModel](../models/custom_torch_model.py):
+
+  - 1- Make sure the model is registered (in this case it is already registered [here](../models/__init__.py) under
+  the name **"custom_torch_model"**)
+
+  - 2- In the ray_config json file, under **"training"** dictionary there is a **"model"**
+dictionary, inside this dictionary the custom  model will be defined which will overwrite the
+generic RLModule model.
+
+ - 3- The custom model's name as registered in the Ray's model catalog must be passed using the
+**"custom_model"** key, while its respective config must be passed under the **"custom_model_config"
+key.
+
+This would look like this inside the ray config file:
+
+```
+.
+.
+"framework": "torch",
+.
+.
+"training": {
+  .
+  .
+  "model": {
+        "custom_model": "custom_torch_model",
+        "custom_model_config": {
+          "seed": 123,
+          "fun_layers": ["ReLU", "ReLU", "ReLU"],
+          "dropout": true,
+          "dropout_list": [0.02, 0, 0],
+          "n_features": [128, 128, 64]
+        },
+      },
+    .
+    .
+  }
+ .
+ .
+```
+
+:warning::warning::warning: The framework of the model **must** match the framework passed in the ray config
+file, otherwise this will result in runtime errors.
+
 ### Experiment configuration file
 
 The `exp_config.json` includes parameters related to the training experiment 
@@ -136,6 +192,7 @@ Environment or the Ray Algorithm configuration files are neglected.
 no previous checkpoint is provided.
 - `ray_config_file`: path to the `ray_config.json` file described 
 [above](#ray-algorithm-configuration-file).
+- `tune_config_file`: path to the `tune_config.json` file described [below](#tuner-configuration-file)
 - `evaluation_interval`: after how many iterations the evaluation should be 
 performed. **Important note:** one evaluation step is always performed at the 
 end of the training loop, even if no parameter is provided here.
@@ -173,35 +230,83 @@ message level.
 - `file_streams`: `True` to log on files instead of using `sys.stdout` and 
 `sys.stderr`.
 
-#### Configure hyperparameter tuning
+## Configure hyperparameter tuning
 
-To configure a Ray `Tuner`, a `tuner` sub-dictionary should be added 
-in `exp_config.json`. It is used to specify, e.g., the number of times to 
-sample from the hyperparameter space and the policy for fault tolerance when 
-resuming a stopped experiment from the existing state. In particular, the 
-`resume_errored` and `restart_errored` fields are related to the possibility 
-of resuming or restarting an experiment left in the `ERRORED` state, 
-respectively. The `resume_unfinished` field is related to the possibilty of 
-resuming an experiment left in the `RUNNING` state. 
+### `Tuner` configuration file
 
-**Note:** experiments left in the `TERMINATED` state cannot be resumed: you 
-have to start a new experiment from scratch if you want to test new parameters.
+In order to perform a hyperparameter tuning experiment, a `tune_config_path` must
+be indicated in the exp_config.json file.
 
-Concerning the `num_tune_samples` parameter, if this is -1, (virtually) 
-infinite samples are generated until a stopping condition is met.
+The `tune_config.json` file includes **three** mandatory parameter, which 
+are related to the number of tune trials and their evaluation in the tuning experiment execution. 
 
-Example of `tuner` sub-dictionary:
+These are:
+- `num_tune_trials`: The number of tuning trials to be run in parallel. These trials will sample from the Tune search 
+spaces indicated in the ray_config_*algorithm.json file, the examples given at the next section [below](#configuring-the-search-space-for-parameters) should help
+explain this better.
+- `metric`: The metric used to evaluate the performance of a given set of parameters in a trial.
+- `mode`: The mode on which the values returned by the metric are evaluated, for instance; setting
+this parameter to **"max"** when considering an **"epsiode_reward_mean"** metric, will place the trial 
+that returns the highest numerical value of the mean reward as the best trials.
+
+
+**Optional parameters**:
+- `search_algorithm`: A search algorithm as specified in tune.search page [here](https://docs.ray.io/en/latest/tune/api/suggestion.html#hyperopt-tune-search-hyperopt-hyperoptsearch)
+- `scheduler`: A scheduler as specified in tune.schedulers page [here](https://docs.ray.io/en/latest/tune/api/schedulers.html#tune-scheduler-hyperband)
+
+**Note**: currently, only the **HyperOpt** search algorithm and the **ASHAScheduler** are implemented.
+
+Sample configuration:
 
 ```
 {
-  "algorithm": "...",
-  "stopping_criteria": {...},
-  ...,
-  "tuner": {
-    "num_tune_samples": 2,
-    "resume_errored": true,
-    "restart_errored": false,
-    "resume_unfinished": true
+  "num_tune_trials": 10,
+  "metric": "episode_reward_mean",
+  "mode": "max"
+  "search_algorithm": {
+    "hyperopt_search": {
+      "metric": "episode_reward_mean",
+      "mode": "max"
+    }
+  },
+  "scheduler": {
+    "asha_scheduler": {
+      "grace_period": 10,
+      "reduction_factor": 3,
+      "brackets": 1
+    }
   }
 }
 ```
+### Configuring the `search space` for parameters
+
+The Tuner configurations file `tune_config.json` prescribed in the section [above](#tuner-configuration-file)
+is responsible for the behaviour of the **Tuner** and how it handles the **Trials**  running in parallel. However,
+to actually fine-tune algorithm parameters, the user should indicate this in the algorithm's respecive
+`ray_config.json` file.
+
+This can be simply done by providing the **search_space** requirements for each parameter as a tune.**search_space string. 
+For example, if the learning rate for the PPO algorithm is to be tuned, locate the required 
+parameter in the ray_config_ppo.json file and set it as:
+```
+"training": {
+    "gamma": 0.99,
+    "grad_clip": null,
+    "grad_clip_by": "global_norm",
+    "lr": "tune.loguniform(1e-4, 1e-1)",
+    .
+    .
+    .
+ }
+```
+
+In the above example, the **Tuner** will sample **num_tune_trials** (present in the `tune_config.json` file) trials, each trial will run for the specified
+number of **max_iterations** (present in the `exp_config.json` file), where each trial will have a different `lr` sampled from the `loguniform` distribution 
+over the range of `(1e-4, 1e-1)`.
+
+For more about tune's search spaces go [here](https://docs.ray.io/en/latest/tune/api/search_space.html).
+
+**Note**: When the user tries to run a tuning experiment without specifying a `tune_config.json` or its
+respective path in the `exp_config.json` file, the execution will be interrupted prompting the user to 
+provide them.
+

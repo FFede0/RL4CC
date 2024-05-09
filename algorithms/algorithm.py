@@ -19,6 +19,7 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
+from ray import tune
 import os
 
 
@@ -30,13 +31,15 @@ class Algorithm:
       env_config: dict = None,
       ray_config: dict = None,
       base_logdir: str = None,
-      eval_interval: int = None, 
+      eval_interval: int = None,
+      use_tune: bool = False,
       logger: Logger = Logger(name="RL4CC-Algorithm")
     ):
     self.logger = logger
     self.algo_config_generator = ACGfactory.create(
       algo_name, logger = self.logger
     )
+    self.use_tune = use_tune
     # load the Ray `Algorithm` from a checkpoint (if provided)
     if checkpoint_path is not None:
       self.load_checkpoint(checkpoint_path)
@@ -47,11 +50,18 @@ class Algorithm:
           "ERROR: no environment configuration provided"
         )
       # ...generate `AlgorithmConfig`
-      algo_config = self.algo_config_generator.generate_algo_config(
-        env_config, ray_config, base_logdir, eval_interval
+      self.algo_config = self.algo_config_generator.generate_algo_config(
+        ray_config=ray_config,
+        env_config=env_config,
+        eval_interval=eval_interval,
+        base_logdir=base_logdir,
+        use_tune=use_tune
       )
-      # ...build and save the Ray `Algorithm`
-      self.build(algo_config)
+
+      self.logdir = self.algo_config["logger_config"]["logdir"]
+      self.logger.warn(
+        f"Algorithm created; output directory: {self.logdir}"
+      )
 
   def build(self, algo_config: AlgorithmConfig):
     """
@@ -59,10 +69,6 @@ class Algorithm:
     configuration dictionaries
     """
     self.algo = algo_config.build()
-    self.logdir = self.algo.logdir
-    self.logger.warn(
-      f"Algorithm created; output directory: {self.logdir}"
-    )
   
   def load_checkpoint(self, path: str):
     """
@@ -121,12 +127,21 @@ class Algorithm:
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
     """
-    jj = self.algo_config_generator.to_json(self.algo.config)
+    jj = self.algo_config_generator.to_json(self.algo_config)
     if to_file:
       write_config_file(
-        jj, 
-        os.path.join(self.algo.logdir, "complete_config"), 
+        jj,
+        os.path.join(self.logdir, "complete_config"),
         "ray_config.json"
       )
+
     else:
       print(jj)
+        
+
+
+
+
+
+
+

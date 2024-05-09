@@ -18,6 +18,7 @@ from algorithms.generators.ppo_config_generator import PPOConfigGenerator
 from algorithms.generators.dqn_config_generator import DQNConfigGenerator
 
 
+
 class AlgoConfigGeneratorsFactory:
   """
   Factory of `AlgoConfigGenerator`s
@@ -45,3 +46,4 @@ class AlgoConfigGeneratorsFactory:
 ACGfactory = AlgoConfigGeneratorsFactory()
 ACGfactory.register("PPO", PPOConfigGenerator)
 ACGfactory.register("DQN", DQNConfigGenerator)
+

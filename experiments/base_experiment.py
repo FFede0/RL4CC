@@ -75,9 +75,9 @@ class BaseExperiment(ABC):
         )
       self.checkpoint_path = None
       self.env_config = load_config_file(self.exp_config["env_config_file"])
-      self.ray_config = load_config_file(
-        self.exp_config.get("ray_config_file", "")
-      )
+      self.ray_config = load_config_file(self.exp_config.get("ray_config_file", ""))
+      self.tune_config = self.exp_config.get("tune_config_file", None)
+
   
   def write_config_files(self):
     """
@@ -91,15 +91,18 @@ class BaseExperiment(ABC):
         os.path.join(self.logdir, "complete_config"), 
         "env_config.json"
       )
+
     # write experiment configuration file
     write_config_file(
       json.dumps(self.exp_config, indent = 2), 
       os.path.join(self.logdir, "complete_config"), 
       "exp_config.json"
     )
+
   
   def plot_results(self, result: dict) -> str:
     pass
+
   
   @abstractmethod
   def define_stopping_criteria(self, exp_config: dict):
@@ -114,13 +117,15 @@ class BaseExperiment(ABC):
     """
     Serialize the dictionary of evaluation metrics
     """
+    if "evaluation" in evaluation_metrics:
+      evaluation_metrics = evaluation_metrics["evaluation"]
     em = {**evaluation_metrics}
-    for key, val in evaluation_metrics["evaluation"]["hist_stats"].items():
+    for key, val in evaluation_metrics["hist_stats"].items():
       newval = []
       for x in val:
         if isinstance(x, np.ndarray):
           newval.append(x.tolist())
         else:
           newval.append(x)
-      em["evaluation"]["hist_stats"][key] = newval
+      em["hist_stats"][key] = newval
     return em

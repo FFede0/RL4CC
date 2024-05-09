@@ -31,7 +31,7 @@
     "sampler_perf_stats_ema_coef": null,
     "num_rollout_workers": 0,
     "duration_per_worker": 1,
-    "duration_unit": "step"
+    "duration_unit": "timesteps"
   },
   "training": {
     "gamma": 0.99,
@@ -47,6 +47,14 @@
       "prioritized_replay_eps": 1e-6,
       "replay_sequence_length": 1,
       "worker_side_prioritization": false
+    },
+    "model": {
+        "fcnet_hiddens": [256, 256, 128],
+        "fcnet_activation": "ReLU",
+        "post_fcnet_hiddens": [],
+        "post_fcnet_activation": "linear"
+        "vf_share_layers": false,
+        "_disable_preprocessor_api": false
     },
     "target_network_update_freq": 500,
     "num_steps_sampled_before_learning_starts": 1000,
