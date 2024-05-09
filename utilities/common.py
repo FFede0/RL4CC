@@ -44,6 +44,10 @@ def write_config_file(jconfig: str, dirname: str, filename: str):
     ostream.write(jconfig)
 
 def compare_dictionaries(d1: dict, d2: dict) -> bool:
+  """
+  Return True if the content of two dictionaries (possibly with nested keys) 
+  is equal
+  """
   equal = True
   for key, val in d1.items():
     if key in d2:
