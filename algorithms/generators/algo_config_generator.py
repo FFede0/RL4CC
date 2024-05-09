@@ -339,7 +339,8 @@ class AlgoConfigGenerator(ABC):
     """
     now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
     exp_logdir = os.path.join(
-      os.path.abspath(base_logdir), f"{self.algo}_{env_name}_{now}"
+      os.path.abspath(os.path.expanduser(base_logdir)), 
+      f"{self.algo}_{env_name}_{now}"
     )
     os.makedirs(exp_logdir, exist_ok=True)
     return exp_logdir
