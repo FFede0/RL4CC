@@ -36,14 +36,16 @@ def load_config_file(filename: str) -> dict:
       config = json.load(istream)
   return config
 
-def write_config_file(jconfig: str, dirname: str, filename: str):
+def write_config_file(jconfig: str, dirname: str, filename: str) -> str:
   """
   Write the given configuration dictionary (in json format) into the 
   provided directory with the given file name
   """
   os.makedirs(dirname, exist_ok = True)
-  with open(os.path.join(dirname, filename), "w") as ostream:
+  filename = os.path.join(dirname, filename)
+  with open(filename, "w") as ostream:
     ostream.write(jconfig)
+  return filename
 
 def compare_dictionaries(d1: dict, d2: dict) -> bool:
   """
