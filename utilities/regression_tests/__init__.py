@@ -1,3 +1,3 @@
 import environment
-from . import train_PPO
-from . import train_DQN
+from . import test_generators
+from . import test_training_experiment
