@@ -48,7 +48,7 @@ class TrainingExperiment(BaseExperiment):
       eval_interval = self.evaluation_interval,
       logger = self.logger
     )
-
+    # build
     algo.build()
     self.logdir = algo.logdir
     # save experiment configuration files

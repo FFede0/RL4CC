@@ -60,7 +60,6 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         "rollout_fragment_length",
         self.base_algo_config.get_rollout_fragment_length()
       )
-
       n_sampled_steps = self.scale_parameter(rfl, nw)
       # number of trained steps & intensity
       if num_batches > 1:

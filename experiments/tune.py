@@ -19,39 +19,36 @@ from algorithms.generators.tune_config_generator import TuneConfigGenerator
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from utilities.common import not_defined, load_config_file, write_config_file
 from ray import tune, air
-from ray.tune.tune_config import TuneConfig
 from datetime import datetime
 import json
 import os
-import shutil
-
 
 
 class TuningExperiment(BaseExperiment):
   def __init__(self, exp_config_file: str):
     super().__init__(exp_config_file)
 
-  def run(self,
-          callbacks: DefaultCallbacks = None
-          ):
-
+  def run(
+      self,
+      callbacks: DefaultCallbacks = None
+    ):
+    # the tune configuration must be provided
     if self.tune_config is None:
       raise FileNotFoundError(
-          "In order to run a tune experiment, a tune_config.json file must be provided and indicated in the exp_config.json file"
+        "A tune_config_file must be provided in the experiment configuration"
       )
     else:
       self.tune_config = load_config_file(self.tune_config)
       if self.tune_config is None:
         raise FileNotFoundError(
-          "A tune_config.json file is indicated in the exp_config.json file but it could not be found, make sure it exists"
+          "The tune_config_file cannot be accessed"
         )
       use_tune = True
-
-
-    # Get tune params
+    # get tune params
     tune_config_generator = TuneConfigGenerator()
-    tune_config = tune_config_generator.get_tune_config(tune_config=self.tune_config)
-
+    tune_config = tune_config_generator.get_tune_config(
+      tune_config = self.tune_config
+    )
     # define algorithm
     algo = Algorithm(
       algo_name=self.exp_config["algorithm"],
@@ -62,65 +59,65 @@ class TuningExperiment(BaseExperiment):
       eval_interval=self.evaluation_interval,
       use_tune=use_tune,
     )
-
-    algo.algo_config_generator
-    # Write algorithm config file to output dir
     self.logdir =  algo.logdir
+    algo.algo_config_generator
     # save experiment configuration files
-
     self.write_config_files(tune_config=self.tune_config)
     algo.print_algo_config()
-
-    # Prepare Run & Search Space config params
+    # prepare Run & Search Space config params
     algo_name = self.exp_config.get("algorithm")
-    training_iterations = self.exp_config.get("stopping_criteria", {}).get("max_iterations", 10)
+    training_iterations = self.exp_config.get(
+      "stopping_criteria", {}
+    ).get("max_iterations", 10)
     param_space = algo.algo_config
-
-
     try:
-      run_config = tune_config_generator.get_run_config(training_iterations=training_iterations,
-                                                        storage_path=self.logdir,
-                                                        callbacks=callbacks
-                                                        )
-    except Exception as e:
-      raise KeyError("Error: The program could not parse the run config, make sure you have a stopping criteria defined in the exp config file")
-
-    tune_results = self.tuning(algo_name=algo_name,
-                               param_space=param_space,
-                               tune_config=tune_config,
-                               run_config=run_config
-                               )
-
-    self.write_best_trial_config(results=tune_results,
-                                 algo=algo
-                                 )
-
+      run_config = tune_config_generator.get_run_config(
+        training_iterations = training_iterations,
+        storage_path = self.logdir,
+        callbacks = callbacks
+      )
+    except Exception as _:
+      raise KeyError(
+        "Error: The program could not parse the run config, make sure you "
+        "have a stopping criteria defined in the exp config file"
+      )
+    # tune
+    tune_results = self.tuning(
+      algo_name = algo_name,
+      param_space = param_space,
+      tune_config = tune_config,
+      run_config = run_config
+    )
+    # write the configuration of the best trial
+    self.write_best_trial_config(
+      results = tune_results,
+      algo = algo
+    )
     experiment_directory = tune_results.experiment_path
-    self.logger.log(f"Tuning experiment finished successfully, tuning output directory: {experiment_directory}")
+    self.logger.log(
+      f"Tuning experiment finished successfully, tuning output directory: {experiment_directory}"
+    )
 
-
-  def tuning(self,
-             algo_name: str = None,
-             param_space:dict = None,
-             tune_config: tune.TuneConfig = None,
-             run_config: air.RunConfig = None
-             ):
-
-    # Logging & updating progress
+  def tuning(
+      self,
+      algo_name: str = None,
+      param_space:dict = None,
+      tune_config: tune.TuneConfig = None,
+      run_config: air.RunConfig = None
+    ):
+    # logging & updating progress
     start = datetime.now()
     self.logger.log(f"Tuning --> START")
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
-
     # runs tuning
-    tuner = tune.Tuner(algo_name,
-                       run_config=run_config,
-                       param_space=param_space,
-                       tune_config=tune_config,
-                       )
-
+    tuner = tune.Tuner(
+      algo_name,
+      run_config = run_config,
+      param_space = param_space,
+      tune_config = tune_config,
+    )
     results = tuner.fit()
-
-    # Logging & updating progress
+    # logging & updating progress
     end = datetime.now()
     self.update_progress_file("experiment_end_timestamp", end.timestamp())
     experiment_duration = end - start
@@ -128,31 +125,29 @@ class TuningExperiment(BaseExperiment):
       "experiment_duration_s", experiment_duration.total_seconds()
     )
     self.logger.log(f"experiment took: {experiment_duration}")
-
     return results
 
-
-  def write_best_trial_config(self,
-                              results: tune.ResultGrid = None,
-                              algo = None
-                              ):
-    # Get best hyperparameters
+  def write_best_trial_config(
+      self,
+      results: tune.ResultGrid = None,
+      algo = None
+    ):
+    # get best hyperparameters
     best_results = results.get_best_result()
     best_results_config_path = os.path.join(best_results.path, "params.json")
     best_results_config = load_config_file(best_results_config_path)
-
-    # Convert the config to the desired format
-    best_results_config = algo.algo_config_generator.to_json(best_results_config)
-
-    # Directory
+    # convert the config to the desired format
+    best_results_config = algo.algo_config_generator.to_json(
+      best_results_config
+    )
+    # directory
     best_trial_dir = os.path.join(self.logdir, "complete_config")
-
-    # Save the best tune trial config into a json config file
-    write_config_file(jconfig=best_results_config,
-                      dirname=best_trial_dir,
-                      filename="best_tune_trial_config.json"
-                      )
-
+    # save the best tune trial config into a json config file
+    write_config_file(
+      jconfig = best_results_config,
+      dirname = best_trial_dir,
+      filename = "best_tune_trial_config.json"
+    )
 
   def define_stopping_criteria(self):
     """
@@ -208,7 +203,6 @@ class TuningExperiment(BaseExperiment):
     with open(evaluation_file, "a") as ostream:
       ostream.write(f"{evaluation}\n")
 
-
   def write_config_files(self, tune_config = None):
     """
     Write the environment and experiment configuration files into the
@@ -221,7 +215,6 @@ class TuningExperiment(BaseExperiment):
         os.path.join(self.logdir, "complete_config"),
         "env_config.json"
       )
-
     # write tune configuration file
     if tune_config is not None:
       write_config_file(
@@ -230,11 +223,9 @@ class TuningExperiment(BaseExperiment):
         os.path.join(self.logdir, "complete_config"),
         "tune_config.json"
       )
-
     # write experiment configuration file
     write_config_file(
       json.dumps(self.exp_config, indent = 2),
       os.path.join(self.logdir, "complete_config"),
       "exp_config.json"
     )
-

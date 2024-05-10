@@ -19,7 +19,6 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
-from ray import tune
 import os
 
 
@@ -57,10 +56,9 @@ class Algorithm:
         base_logdir=base_logdir,
         use_tune=use_tune
       )
-
       self.logdir = self.algo_config["logger_config"]["logdir"]
       self.logger.warn(
-        f"Algorithm created; output directory: {self.logdir}"
+        f"`AlgorithmConfig` created; output directory: {self.logdir}"
       )
 
   def build(self, algo_config: AlgorithmConfig):
@@ -134,7 +132,6 @@ class Algorithm:
         os.path.join(self.logdir, "complete_config"),
         "ray_config.json"
       )
-
     else:
       print(jj)
         

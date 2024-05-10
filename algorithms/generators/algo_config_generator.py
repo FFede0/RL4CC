@@ -111,14 +111,13 @@ class AlgoConfigGenerator(ABC):
       base_logdir: str = None,
       eval_interval: int = None,
       use_tune: bool = False,
-  ) -> AlgorithmConfig:
+    ) -> AlgorithmConfig:
     """
     Defines the `AlgorithmConfig` considering the provided environment and
     configuration dictionaries
     """
     if "env_name" not in env_config:
       raise KeyError("ERROR: cannot create an environment without a name")
-
     if use_tune:
       self.use_tune = True
     # start config generation
@@ -157,7 +156,8 @@ class AlgoConfigGenerator(ABC):
     # merge sub-dictionaries of ray_config
     if ray_config is not None:
       for key, value in ray_config.items():
-        # Check the existence of Tuning Strings, convert them to tune objects wherever they exist
+        # check the existence of Tuning Strings, convert them to tune objects 
+        # wherever they exist
         value = self.interpret_tune_config(key, value)
         if isinstance(value, dict):
           all_params.update(value)
@@ -219,7 +219,9 @@ class AlgoConfigGenerator(ABC):
     appropriate errors/warnings
     """
     # check if the user is setting any suggested key
-    using_suggested_keys = any(k in all_params for k,_ , _ in self._suggested_keys)
+    using_suggested_keys = any(
+      k in all_params for k,_ , _ in self._suggested_keys
+    )
     # check if the user is setting any protected key
     using_protected_keys = False
     for pk,_ in self._protected_keys:
@@ -284,7 +286,9 @@ class AlgoConfigGenerator(ABC):
         max_time = env_config["max_time"]
         time_step = env_config["time_step"]
         n_steps = (max_time - min_time) // time_step
-        all_params["rollout_fragment_length"] = self.scale_parameter(duration, n_steps)
+        all_params["rollout_fragment_length"] = self.scale_parameter(
+          duration, n_steps
+        )
 
   def convert_evaluation_parameters(
       self, all_params: dict, env_config: dict, eval_interval: int = None
@@ -424,17 +428,15 @@ class AlgoConfigGenerator(ABC):
     """
     Converts the given `AlgorithmConfig` into a dictionary
     """
-
     try:
       all_params = algo_config.serialize()
     except:
       all_params = algo_config
       pass
-
-    # Intermediate step in case of tune.search.Domain (when tuning) exist
-    # The method will replace the tune objetcs with a string to make it json serializable
+    # intermediate step in case of tune.search.Domain (when tuning) exist
+    # the method will replace the tune objetcs with a string to make it json 
+    # serializable
     all_params = self.replace_tune_objects(all_params)
-
     # split according to the dictionary of class method parameters
     ray_config = {}
     for method, method_params in self.algo_methods.items():
@@ -465,7 +467,8 @@ class AlgoConfigGenerator(ABC):
 
   def to_json(self, algo_config: AlgorithmConfig) -> str:
     """
-    Converts the given `AlgorithmConfig object` or `AlgorithmConfig dictionaries` into a string with json format
+    Converts the given `AlgorithmConfig` or config dictionary into a string 
+    with json format
     """
     algo_dict = self.to_dict(algo_config)
     return json.dumps(algo_dict, indent = 2)
@@ -488,66 +491,82 @@ class AlgoConfigGenerator(ABC):
       return config
 
 
-  def interpret_tune_config(self,config_key, config_value):
+  def interpret_tune_config(self, config_key, config_value):
     """
-    Interprets a configuration value, converting it to a format usable by ray.tune.
-    Handles dictionaries, lists within dictionaries, nested lists, and strings representing Ray Tune objects.
+    Interprets a configuration value, converting it to a format usable by 
+    ray.tune.
+    Handles dictionaries, lists within dictionaries, nested lists, and 
+    strings representing Ray Tune objects.
 
     :param config_key: The configuration key.
     :param config_value: The configuration value to interpret.
     :return: The interpreted value.
     """
     try:
+      # dictionaries
       if isinstance(config_value, dict):
-        return {key: self.interpret_tune_config(key, value) for key, value in config_value.items()}
-
+        return {
+          key: self.interpret_tune_config(
+            key, value
+          ) for key, value in config_value.items()
+        }
+      # lists
       if isinstance(config_value, list):
-        return [self.interpret_tune_config(config_value, item) for item in config_value]
-
+        return [
+          self.interpret_tune_config(
+            config_value, item
+          ) for item in config_value
+        ]
+      # strings
       if isinstance(config_value, str):
         if config_value.strip().startswith("tune."):
-
+          # check whether tune is enabled
           if self.use_tune:
             self.validate_special_key_tuning(config_key=config_key)
             self.logger.log(f'Tuning detected for the value of "{config_key}"')
             return eval(config_value.strip())
           else:
-            raise ValueError("Hyperparameter tuning is not supported in single experiments remove tune.search_space objects in the algorithm config files.")
+            raise ValueError(
+              "Hyperparameter tuning is not supported in single experiments "
+              "remove tune.search_space objects in the algorithm config files."
+            )
         else:
           return config_value
       else:
         return config_value
     except Exception as e:
-      print(f"Error interpreting algorithm configuration: {e}")
-      raise
+      raise ValueError(f"Error interpreting algorithm configuration: {e}")
 
   def validate_special_key_tuning(self, config_key):
-    # Define the special keys
+    # define the special keys
     special_keys = [key for key, _, _ in self._suggested_keys]
-
-    # Define the special keys that can be tuned
-    tunable_special_keys = [key for key, _, tunable in self._suggested_keys if tunable == "tunable"]
-
-    # Check if the special key is tunable
+    # define the special keys that can be tuned
+    tunable_special_keys = [
+      key for key, _, tunable in self._suggested_keys if tunable == "tunable"
+    ]
+    # check if the special key is tunable
     if config_key in special_keys:
       if config_key not in tunable_special_keys:
-        # Interrupts execution if the value is not tunable
-        raise NotImplementedError(f"The parameter {config_key} is a non-tunable parameter")
-
+        # interrupts execution if the value is not tunable
+        raise ValueError(
+          f"The parameter {config_key} is a non-tunable parameter"
+        )
 
   def scale_parameter(self, config_value, scale_factor=0, addend=0):
     """
     This method is to be mainly used when scaling config parameters.
 
-    It will return the multiplication of the config_value and the scale_factor when
-    they are of a generic data type.
+    It will return the multiplication of the config_value and the scale_factor 
+    when they are of a generic data type.
 
-    It will return the scaling of the config value when provided tune.search objects
+    It will return the scaling of the config value when provided tune.search 
+    objects
 
     Args:
-        config_value: The term to be scaled. This can be a Ray Tune object (such as tune.uniform, tune.loguniform, etc.).
-        scale_factor: The scaling object. This can be a Ray Tune object.
-        addend: The object to add. This can be a Ray Tune objec
+      config_value: The term to be scaled. This can be a Ray Tune object 
+        (such as tune.uniform, tune.loguniform, etc.).
+      scale_factor: The scaling object. This can be a Ray Tune object.
+      addend: The object to add. This can be a Ray Tune objec
 
     Returns:
         The scaled config_value
@@ -562,39 +581,49 @@ class AlgoConfigGenerator(ABC):
       # Normally scale the parameter
       return config_value * scale_factor
 
-
-  def scale_tune_object(self, obj,
-                        factor=0,
-                        addend=0,):
+  def scale_tune_object(self, obj, factor=0, addend=0,):
     """
     Scale the bounds or values of a Ray Tune object by a factor.
 
     Args:
-        obj: The term to be scaled. This can be a Ray Tune object (such as tune.uniform, tune.loguniform, etc.).
-        factor: The scaling object. This can be a Ray Tune object.
-        addend: The object to add. This can be a Ray Tune object.
+      obj: The term to be scaled. This can be a Ray Tune object 
+        (such as tune.uniform, tune.loguniform, etc.).
+      factor: The scaling object. This can be a Ray Tune object.
+      addend: The object to add. This can be a Ray Tune object.
 
     Returns:
         A new Ray Tune object with scaled bounds or values.
     """
     # First, identify the sampler type of the object
     obj_type = self.identify_sampler_type(obj)
-
-    # Check if the factor or the addend are ray objects
-    # Interrupt execution when samplers are mismatched
-    # When Ray tune objects, the upper and lower bounds are fetched, else, assigns the same factor for both.
+    # check if the factor or the addend are ray objects; interrupt execution 
+    # when samplers are mismatched. When they are Ray tune objects, the upper 
+    # and lower bounds are fetched; otherwise, the same factor is assigned to 
+    # both
     if isinstance(factor, Domain):
-      upper_factor, lower_factor = self.check_sampler_compatibility(obj=obj, factor= factor)
+      upper_factor, lower_factor = self.check_sampler_compatibility(
+        obj = obj, 
+        factor = factor
+      )
     else:
       upper_factor = lower_factor = factor
-
+    # addend
     if isinstance(addend, Domain):
-      upper_addend, lower_addend = self.check_sampler_compatibility(obj=obj, factor= addend)
+      upper_addend, lower_addend = self.check_sampler_compatibility(
+        obj = obj, 
+        factor = addend
+      )
     else:
       upper_addend = lower_addend = addend
-
-
-    if obj_type in {"uniform", "loguniform", "quniform", "qloguniform", "randint", "qrandint"}:
+    # distribution
+    if obj_type in {
+        "uniform", 
+        "loguniform", 
+        "quniform", 
+        "qloguniform", 
+        "randint", 
+        "qrandint"
+      }:
       lower = obj.lower * lower_factor + upper_addend
       upper = obj.upper * upper_factor + lower_addend
       if obj_type == "uniform":
@@ -611,19 +640,22 @@ class AlgoConfigGenerator(ABC):
         return tune.qrandint(lower, upper, obj.q)
       else:
         raise ValueError(f"Unsupported Ray Tune object: {obj}")
-
     elif obj_type == "choice":
-      return tune.grid_search([value * factor + addend for value in obj.categories])
-
+      return tune.grid_search(
+        [value * factor + addend for value in obj.categories]
+      )
     else:
       raise ValueError(f"Unsupported Ray Tune object: {obj}")
 
-
   @staticmethod
   def identify_sampler_type(sampler):
-    """Identify the type of Ray Tune search sampler."""
+    """
+    Identify the type of Ray Tune search sampler
+    """
     if isinstance(sampler, tune.search.sample.Quantized):
-      base_type = AlgoConfigGenerator.identify_sampler_type(sampler.base_sampler)
+      base_type = AlgoConfigGenerator.identify_sampler_type(
+        sampler.base_sampler
+      )
       return f"q{base_type}"
     elif isinstance(sampler, tune.search.sample.Uniform):
       return "uniform"
@@ -639,25 +671,28 @@ class AlgoConfigGenerator(ABC):
     else:
       return "unknown"
 
-
   def check_sampler_compatibility(self, obj, operand):
     obj_sampler_type = self.identify_sampler_type(obj)
     operand_sampler_type = self.identify_sampler_type(operand)
-
     if obj_sampler_type != operand_sampler_type:
-      raise NotImplementedError(f"The samplers of type {obj_sampler_type} and {operand_sampler_type} are mismatched.")
-
+      raise NotImplementedError(
+        f"The samplers of type {obj_sampler_type} and {operand_sampler_type} "
+        "are mismatched."
+      )
     else:
-      if operand_sampler_type in {"uniform", "loguniform", "quniform", "qloguniform", "randint", "qrandint"}:
+      if operand_sampler_type in {
+          "uniform", 
+          "loguniform", 
+          "quniform", 
+          "qloguniform", 
+          "randint", 
+          "qrandint"
+        }:
         upper_bound = obj.lower
         lower_bound = obj.upper
         return upper_bound, lower_bound
-
       elif operand_sampler_type == "choice":
-        raise NotImplementedError(f"The samplers of type {obj_sampler_type} and {operand_sampler_type} are mismatched.")
-
-
-
-
-
-
+        raise NotImplementedError(
+          f"The samplers of type {obj_sampler_type} and {operand_sampler_type} "
+          "are mismatched."
+        )

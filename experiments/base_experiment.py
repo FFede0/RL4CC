@@ -80,7 +80,6 @@ class BaseExperiment(ABC):
       self.ray_config = load_config_file(self.exp_config.get("ray_config_file", ""))
       self.tune_config = self.exp_config.get("tune_config_file", None)
 
-  
   def write_config_files(self):
     """
     Write the environment and experiment configuration files into the 
@@ -93,18 +92,15 @@ class BaseExperiment(ABC):
         os.path.join(self.logdir, "complete_config"), 
         "env_config.json"
       )
-
     # write experiment configuration file
     write_config_file(
       json.dumps(self.exp_config, indent = 2), 
       os.path.join(self.logdir, "complete_config"), 
       "exp_config.json"
     )
-
   
   def plot_results(self, result: dict) -> str:
     pass
-
   
   @abstractmethod
   def define_stopping_criteria(self, exp_config: dict):
