@@ -26,14 +26,18 @@ class TuneConfigGenerator:
       self, logger: Logger = Logger(name="RL4CC-TuneConfigGenerator")
     ):
     self.logger = logger
+    self._required_keys = ["num_tune_trials", "metric", "mode"]
 
   def get_tune_config(self, tune_config: dict) -> tune.TuneConfig:
+    """
+    Generates a `TuneConfig` object based on the provided configuration 
+    dictionary
+    """
     # get a copy of the tune_config
     tune_config_dict = tune_config.copy()
     self.validate_tune_config(tune_config_dict)
     # handle keys to pass as a parse the tuning dictionary as keyword arguments
-    tune_config_dict["num_samples"] = tune_config_dict["num_tune_trials"]
-    tune_config_dict.pop("num_tune_trials")
+    tune_config_dict["num_samples"] = tune_config_dict.pop("num_tune_trials")
     # convert the search algorithm to the respective tune objects
     if "search_algorithm" in tune_config_dict:
       search_algorithm = list(
@@ -54,7 +58,7 @@ class TuneConfigGenerator:
           )
       else:
         raise NotImplementedError(
-          "You are trying to pass a search algorithm that is not supported"
+          f"Search algorithm {search_algorithm} is not supported"
         )
     # convert the scheduler to the respective tune objects
     if "scheduler" in tune_config_dict:
@@ -68,9 +72,7 @@ class TuneConfigGenerator:
             "Parameters passed to the ASHAScheduler scheduler are invalid!"
           )
       else:
-        raise NotImplementedError(
-          "You are trying to pass a scheduler that is not supported"
-        )
+        raise NotImplementedError(f"Scheduler {scheduler} is not supported")
     # generate `TuneConfig`
     tune_params = tune.TuneConfig(
       **tune_config_dict,
@@ -86,6 +88,10 @@ class TuneConfigGenerator:
       storage_path: str = None,
       callbacks = None
     ) -> air.RunConfig:
+    """
+    Generates a `RunConfig` object based on the provided configuration 
+    parameters
+    """
     run_config = air.RunConfig(
       name = tune_file_name,
       verbose = 1,
@@ -95,19 +101,20 @@ class TuneConfigGenerator:
     )
     return run_config
 
+  def validate_tune_config(self, tune_config: dict):
+    """
+    Validate the configuration dictionary checking for the existence of the 
+    mandatory keys
+    """
+    if not all(key in tune_config for key in self._required_keys):
+      raise KeyError(
+        "One or more of the mandatory keys (num_tune_trials, metric, mode) "
+        "are missing from the tune_config file"
+      )
+  
   @staticmethod
   def trial_name_string(trial):
     """
     Create a custom name for the trial
     """
     return f"{trial.trainable_name}_{trial.trial_id}"
-
-  @staticmethod
-  def validate_tune_config(tune_config):
-    # Check for the existence of the mandatory keys
-    required_keys = ["num_tune_trials", "metric", "mode"]
-    if not all(key in tune_config for key in required_keys):
-      raise KeyError(
-        "One or more of the mandatory keys (num_tune_trials, metric, mode) "
-        "are missing from the tune_config file"
-      )
