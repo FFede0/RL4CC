@@ -1,7 +1,11 @@
+# Output of regression tests
+utilities/regression_tests/LOGDIR/*
+
 # Configuration files (except the README and some templates)
 config_files/*
 !config_files/README.md
 !config_files/*.template
+!config_files/regression_tests/
 
 # MacOS files
 .DS_Store

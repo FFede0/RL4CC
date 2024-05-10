@@ -49,9 +49,12 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     if "num_train_batches" in all_params:
       num_batches = all_params.pop("num_train_batches")
       # number of sampled steps
-      nw = all_params.get(
-        "num_rollout_workers",
-        max(1, self.base_algo_config["num_rollout_workers"])
+      nw = max(
+        1, 
+        all_params.get(
+          "num_rollout_workers",
+          self.base_algo_config["num_rollout_workers"]
+        ) + 1
       )
       rfl = all_params.get(
         "rollout_fragment_length",
@@ -61,8 +64,8 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       n_sampled_steps = self.scale_parameter(rfl, nw)
       # number of trained steps & intensity
       if num_batches > 1:
-        n_trained_steps = self.scale_parameter(batch_size, num_batches)
-        all_params["training_intensity"] = n_trained_steps // n_sampled_steps
+        n_trained_steps = batch_size * num_batches
+        all_params["training_intensity"] = n_trained_steps / n_sampled_steps
       else:
         all_params["training_intensity"] = None
   
@@ -79,16 +82,17 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     for wid in range(max(nw, 1)):
       # number of collected steps (per worker)
       rfl = algo_config.get_rollout_fragment_length()
-      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)")
+      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)", 1)
       ncs = self.scale_parameter(ncs, addend = rfl)
     self.logger.log(
-      f"{ncs} step(s) collected in each of the {citer} collection iteration(s)"
+      f"{ncs} step(s) collected in each of the {citer} collection iteration(s)",
+      1
     )
     # wait before start training?
     wait_n_steps = algo_config["num_steps_sampled_before_learning_starts"]
     if wait_n_steps > 0:
       self.logger.log(
-        f"{wait_n_steps} steps have to be sampled before learning starts"
+        f"{wait_n_steps} steps have to be sampled before learning starts", 1
       )
     return self.scale_parameter(ncs, citer)
   
@@ -102,6 +106,6 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     tbs = algo_config["train_batch_size"]
     C = algo_config["replay_buffer_config"]["capacity"]
     self.logger.log(
-      f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})"
+      f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})", 1
     )
     return self.scale_parameter(tbs, titer)

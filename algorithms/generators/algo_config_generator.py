@@ -126,7 +126,7 @@ class AlgoConfigGenerator(ABC):
       self.base_algo_config
       # environment
       .environment(
-        env_config["env_name"],
+        env_config["env_name"], 
         # pass-along config dictionary avoiding env_name
         env_config={k:v for k,v in env_config.items() if k != "env_name"}
       )
@@ -348,7 +348,8 @@ class AlgoConfigGenerator(ABC):
     """
     now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
     exp_logdir = os.path.join(
-      os.path.abspath(base_logdir), f"{self.algo}_{env_name}_{now}"
+      os.path.abspath(os.path.expanduser(base_logdir)), 
+      f"{self.algo}_{env_name}_{now}"
     )
     os.makedirs(exp_logdir, exist_ok=True)
     return exp_logdir
@@ -375,9 +376,9 @@ class AlgoConfigGenerator(ABC):
     Computes the number of sampled and trained steps according to the
     given `AlgorithmConfig` and checks whether the values are coherent
     """
-    self.logger.breakline()
+    self.logger.breakline(1)
     self.logger.log(
-      f"*** sampled/trained steps in each `{self.algo}.training_step()` ***"
+      f"*** sampled/trained steps in each `{self.algo}.training_step()` ***", 1
     )
     if not self.use_tune:
       tot_sampled = self.count_sampled_steps(algo_config)

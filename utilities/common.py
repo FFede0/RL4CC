@@ -13,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from typing import Tuple
+import pandas as pd
 import json
 import os
 
@@ -34,16 +36,49 @@ def load_config_file(filename: str) -> dict:
       config = json.load(istream)
   return config
 
-def write_config_file(jconfig: str, dirname: str, filename: str):
+def write_config_file(jconfig: str, dirname: str, filename: str) -> str:
   """
   Write the given configuration dictionary (in json format) into the 
   provided directory with the given file name
   """
   os.makedirs(dirname, exist_ok = True)
-  with open(os.path.join(dirname, filename), "w") as ostream:
+  filename = os.path.join(dirname, filename)
+  with open(filename, "w") as ostream:
     ostream.write(jconfig)
+  return filename
 
+def compare_dictionaries(d1: dict, d2: dict) -> bool:
+  """
+  Return True if the content of two dictionaries (possibly with nested keys) 
+  is equal
+  """
+  equal = True
+  for key, val in d1.items():
+    if key in d2:
+      if isinstance(val, dict):
+        equal = equal and compare_dictionaries(d1[key], d2[key])
+      elif isinstance(val, list) or isinstance(val, tuple):
+        equal = equal and all([v1 == v2 for v1, v2 in zip(val, d2[key])])
+      else:
+        if key == "logdir":
+          v1 = "/".join(val.split("/")[:-1])
+          v2 = "/".join(d2[key].split("/")[:-1])
+          equal = equal and (v1 == v2)
+        else:
+          equal = equal and (val == d2[key])
+    else:
+      return False
+  return equal
 
-
-
-
+def compute_deviation(
+    baseline: pd.Series, target: pd.Series
+  ) -> Tuple[pd.Series, float, float, float]:
+  """
+  Compute the deviation (and its minimum, maximum and average value) between 
+  a baseline and a target (increases as target becomes lower than baseline)
+  """
+  deviation = (baseline - target) / baseline
+  m = float(deviation.min())
+  M = float(deviation.max())
+  avg = float(deviation.mean())
+  return deviation, m, M, avg

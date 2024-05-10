@@ -66,14 +66,14 @@ class PPOConfigGenerator(AlgoConfigGenerator):
     nw = algo_config["num_rollout_workers"]
     # number of collected steps
     ncs = 0
-    for wid in range(max(nw, 1)):
+    for wid in range(1, max(nw, 1) + 1):
       # number of collected steps (per worker)
       rfl = algo_config.get_rollout_fragment_length()
-      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)")
+      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)", 1)
       ncs = self.scale_parameter(ncs, addend = rfl)
     tbs = algo_config["train_batch_size"]
     self.logger.log(
-      f"{ncs} step(s) collected to reach the required number {tbs}"
+      f"{ncs} step(s) collected to reach the required number {tbs}", 1
     )
     return tbs
   
@@ -85,7 +85,7 @@ class PPOConfigGenerator(AlgoConfigGenerator):
     sgdbs = algo_config["sgd_minibatch_size"]
     sgdit = algo_config["num_sgd_iter"]
     self.logger.log(
-      f"{sgdit} batch(es) of size {sgdbs} sampled from experience to train"
+      f"{sgdit} batch(es) of size {sgdbs} sampled from experience to train", 1
     )
     # check if parameters are coherent
     tbs = algo_config["train_batch_size"]

@@ -23,7 +23,9 @@ import os
 
 
 class BaseExperiment(ABC):
-  def __init__(self, exp_config_file: str):
+  def __init__(
+      self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
+    ):
     # load experiment configuration file
     self.exp_config = load_config_file(exp_config_file)
     if self.exp_config is None:
@@ -31,7 +33,7 @@ class BaseExperiment(ABC):
         f"ERROR: file `{exp_config_file}` not found or invalid"
       )
     # initialize logger
-    self.logger = Logger(name = "RL4CC")
+    self.logger = logger
     if "logger" in self.exp_config:
       verbosity = self.exp_config["logger"].get("verbosity", 0)
       self.logger.verbose = verbosity
