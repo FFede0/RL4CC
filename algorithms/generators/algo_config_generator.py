@@ -530,6 +530,10 @@ class AlgoConfigGenerator(ABC):
       raise ValueError(f"Error interpreting algorithm configuration: {e}")
 
   def validate_special_key_tuning(self, config_key):
+    """
+    Validate the given configuration key checking whether it is a tunable 
+    parameter
+    """
     # define the special keys
     special_keys = [key for key, _, _ in self._suggested_keys]
     # define the special keys that can be tuned
@@ -541,7 +545,7 @@ class AlgoConfigGenerator(ABC):
       if config_key not in tunable_special_keys:
         # interrupts execution if the value is not tunable
         raise ValueError(
-          f"The parameter {config_key} is a non-tunable parameter"
+          f"The parameter `{config_key}` is a non-tunable parameter"
         )
 
   def scale_parameter(self, config_value, scale_factor=0, addend=0):
