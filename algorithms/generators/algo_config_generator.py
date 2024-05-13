@@ -474,7 +474,7 @@ class AlgoConfigGenerator(ABC):
       return {k: self.replace_tune_objects(v) for k, v in config.items()}
     elif isinstance(config, list):
       return [self.replace_tune_objects(v) for v in config]
-    elif isinstance(config, Domain):
+    elif self.any_tuning_key([config]):
       # Return the string representation of the tune object
       domain = config.domain_str
       sampler = config.sampler.__str__().lower()
@@ -568,10 +568,10 @@ class AlgoConfigGenerator(ABC):
         The scaled config_value
     """
     # check if the value is a tune object
-    if isinstance(config_value, Domain):
+    if self.any_tuning_key([config_value]):
       # scale the bounds of the tune objects with the scale factor
       return self.scale_tune_object(config_value, scale_factor, addend)
-    elif isinstance(scale_factor, Domain):
+    elif self.any_tuning_key([scale_factor]):
       return self.scale_tune_object(scale_factor, config_value, addend)
     else:
       # Normally scale the parameter
@@ -596,7 +596,7 @@ class AlgoConfigGenerator(ABC):
     # when samplers are mismatched. When they are Ray tune objects, the upper 
     # and lower bounds are fetched; otherwise, the same factor is assigned to 
     # both
-    if isinstance(factor, Domain):
+    if self.any_tuning_key([factor]):
       upper_factor, lower_factor = self.check_sampler_compatibility(
         obj = obj, 
         factor = factor
@@ -604,7 +604,7 @@ class AlgoConfigGenerator(ABC):
     else:
       upper_factor = lower_factor = factor
     # addend
-    if isinstance(addend, Domain):
+    if self.any_tuning_key([addend]):
       upper_addend, lower_addend = self.check_sampler_compatibility(
         obj = obj, 
         factor = addend
@@ -662,6 +662,10 @@ class AlgoConfigGenerator(ABC):
         "`time_step`"
       )
     return n_steps
+  
+  @staticmethod
+  def any_tuning_key(keys: list) -> bool:
+    return any([isinstance(k, Domain) for k in keys])
   
   @staticmethod
   def identify_sampler_type(sampler):
