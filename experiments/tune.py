@@ -67,7 +67,7 @@ class TuningExperiment(BaseExperiment):
     self.logdir =  algo.logdir
     algo.algo_config_generator
     # save experiment configuration files
-    self.write_config_files(tune_config=self.tune_config)
+    self.write_config_files()
     algo.print_algo_config()
     # prepare Run & Search Space config params
     algo_name = self.exp_config.get("algorithm")
@@ -222,29 +222,16 @@ class TuningExperiment(BaseExperiment):
     with open(evaluation_file, "a") as ostream:
       ostream.write(f"{evaluation}\n")
 
-  def write_config_files(self, tune_config = None):
+  def write_config_files(self):
     """
     Write the environment and experiment configuration files into the
     experiment logdir
     """
-    # write environment configuration file
-    if self.env_config is not None:
-      write_config_file(
-        json.dumps(self.env_config, indent = 2),
-        os.path.join(self.logdir, "complete_config"),
-        "env_config.json"
-      )
+    # write environment and experiment configuration files
+    super().write_config_files()
     # write tune configuration file
-    if tune_config is not None:
-      write_config_file(
-        json.dumps(tune_config,
-                   indent=2),
-        os.path.join(self.logdir, "complete_config"),
-        "tune_config.json"
-      )
-    # write experiment configuration file
     write_config_file(
-      json.dumps(self.exp_config, indent = 2),
+      json.dumps(self.tune_config, indent=2),
       os.path.join(self.logdir, "complete_config"),
-      "exp_config.json"
+      "tune_config.json"
     )
