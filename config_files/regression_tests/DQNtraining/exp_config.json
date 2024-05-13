@@ -4,6 +4,9 @@
   "ray_config_file": "config_files/regression_tests/DQNtraining/ray_config.json",
   "logdir": "utilities/regression_tests/LOGDIR/DQNtraining",
   "evaluation_interval": 5,
+  "logger": {
+    "verbosity": 1
+  },
   "stopping_criteria": {
     "max_iterations": 10
   }
