@@ -281,7 +281,9 @@
     "_AlgorithmConfig__prior_exploration_config": null,
     "simple_optimizer": -1,
     "synchronize_filters": -1,
-    "replay_sequence_length": null
+    "replay_sequence_length": null,
+    "_RL4CC_INTERNALS_num_train_batches": 2,
+    "_RL4CC_INTERNALS_num_workers": 2
   },
   "callbacks": {
     "callbacks_class": "callbacks.base_callbacks.BaseCallbacks"
