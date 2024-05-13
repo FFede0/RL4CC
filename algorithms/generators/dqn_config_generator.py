@@ -18,6 +18,7 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms.dqn.dqn import calculate_rr_weights
 from ray.rllib.algorithms import AlgorithmConfig
+from ray import tune
 
 
 class DQNConfigGenerator(AlgoConfigGenerator):
@@ -45,10 +46,12 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     if "batch_size" in all_params:
       batch_size = all_params.pop("batch_size")
       all_params["train_batch_size"] = batch_size
-    # training intensity
+    # compute training intensity
     if "num_train_batches" in all_params:
+      # number of train batches
       num_batches = all_params.pop("num_train_batches")
-      # number of sampled steps
+      all_params["_RL4CC_INTERNALS_num_train_batches"] = num_batches
+      # number of rollout workers and collected steps per worker
       nw = max(
         1, 
         all_params.get(
@@ -60,12 +63,28 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         "rollout_fragment_length",
         self.base_algo_config.get_rollout_fragment_length()
       )
-      n_sampled_steps = self.scale_parameter(rfl, nw)
-      # number of trained steps & intensity
-      if num_batches > 1:
+      all_params["_RL4CC_INTERNALS_num_workers"] = nw
+      # check whether any parameter is being tuned
+      if self.any_tuning_key([rfl, num_batches, batch_size]):
+        # if so, the training intensity depends on the sampled values
+        all_params["training_intensity"] = tune.sample_from(
+          lambda spec: (
+            spec.config.train_batch_size * \
+              spec.config._RL4CC_INTERNALS_num_train_batches
+          ) / (
+            spec.config.rollout_fragment_length * \
+              spec.config._RL4CC_INTERNALS_num_workers
+          )
+        )
+      elif num_batches > 1:
+        # otherwise, if more batches should be collected, the training 
+        # intensity is the ratio between the number of trained and collected 
+        # steps
+        n_sampled_steps = rfl * nw
         n_trained_steps = batch_size * num_batches
         all_params["training_intensity"] = n_trained_steps / n_sampled_steps
       else:
+        # if only one batch is considered, let Ray figure it out
         all_params["training_intensity"] = None
   
   def count_sampled_steps(self, algo_config: AlgorithmConfig) -> int:
