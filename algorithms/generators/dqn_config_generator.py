@@ -97,7 +97,7 @@ class DQNConfigGenerator(AlgoConfigGenerator):
     citer, _ = calculate_rr_weights(algo_config)
     # number of collected steps
     ncs = 0
-    for wid in range(max(nw, 1)):
+    for wid in range(1, max(nw, 1) + 1):
       # number of collected steps (per worker)
       rfl = algo_config.get_rollout_fragment_length()
       self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)", 1)
