@@ -137,35 +137,3 @@ class TrainingExperiment(BaseExperiment):
           f"Stopping criterion `{key}` is not supported"
         )
     self.stop = stop_on_max_iter
-  
-  def update_progress_file(self, key: str, value):
-    """
-    Update the information written in the experiment progress file
-    """
-    exp_progress = {}
-    exp_progress_file = os.path.join(self.logdir, "exp_progress.json")
-    # load existing content (if any)
-    if os.path.exists(exp_progress_file):
-      with open(exp_progress_file, "r") as istream:
-        exp_progress = json.load(istream)
-    # update
-    exp_progress[key] = value
-    # write updated file
-    with open(exp_progress_file, "w") as ostream:
-      ostream.write(json.dumps(exp_progress, indent = 2))
-
-  def update_evaluation_metrics_file(
-      self, last_iter: int, evaluation_metrics: dict
-    ):
-    """
-    Save the result of the last evaluation
-    """
-    # create the serialized dictionary of the last evaluation results
-    evaluation = {
-      "after_training_iteration": last_iter,
-      **self.serialize_evaluation_metrics(evaluation_metrics)
-    }
-    # write
-    evaluation_file = os.path.join(self.logdir, "evaluation.txt")
-    with open(evaluation_file, "a") as ostream:
-      ostream.write(f"{evaluation}\n")
