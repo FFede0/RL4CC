@@ -48,8 +48,10 @@ class TrainingExperiment(BaseExperiment):
       eval_interval = self.evaluation_interval,
       logger = self.logger
     )
-    # build
-    algo.build()
+    # build (if the algorithm is not loaded from an existing checkpoint)
+    if self.checkpoint_path is None:
+      algo.build()
+    # save logdir
     self.logdir = algo.logdir
     # save experiment configuration files
     self.write_config_files()
