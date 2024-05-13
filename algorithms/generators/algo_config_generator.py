@@ -18,16 +18,18 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
-from ray import tune
-from abc import ABC, abstractmethod
-from datetime import datetime
 from ray.tune.search.sample import Domain
+from abc import ABC, abstractmethod
+from collections import namedtuple
+from datetime import datetime
+from ray import tune
 import inspect
 import json
 import os
 
 
 class AlgoConfigGenerator(ABC):
+  ParameterDomain = namedtuple("ParameterDomain", "value lower upper")
   def __init__(
       self, logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator")
     ):
@@ -283,8 +285,8 @@ class AlgoConfigGenerator(ABC):
         all_params["rollout_fragment_length"] = duration
       elif unit == "complete_episodes":
         n_steps = self.compute_num_steps_per_episode(env_config)
-        all_params["rollout_fragment_length"] = self.scale_parameter(
-          duration, n_steps
+        all_params["rollout_fragment_length"], _, _ = self.scale_parameter(
+          duration, scale_factor = n_steps
         )
 
   def convert_evaluation_parameters(
@@ -378,22 +380,23 @@ class AlgoConfigGenerator(ABC):
     self.logger.log(
       f"*** sampled/trained steps in each `{self.algo}.training_step()` ***", 1
     )
-    if not self.use_tune:
-      tot_sampled = self.count_sampled_steps(algo_config)
-      tot_trained = self.count_trained_steps(algo_config)
-      self.logger.breakline()
-      # raise a WARNING if the number of collected and trained steps are too
-      # unbalanced
-      if tot_trained < tot_sampled * 0.9:
-        self.logger.warn(
-          f"only {tot_trained} steps are trained over the {tot_sampled} sampled"
-        )
-      elif tot_trained > tot_sampled * 1.1:
-        self.logger.warn(
-          f"{tot_trained} steps trained over only {tot_sampled} new samples"
-        )
-      # check if the `training_step` function will be called more than once
-      self.check_num_training_step_calls(algo_config)
+    tot_sampled = self.count_sampled_steps(algo_config)
+    tot_trained = self.count_trained_steps(algo_config)
+    self.logger.breakline()
+    # raise a WARNING if the number of collected and trained steps are too
+    # unbalanced
+    if tot_trained.lower < tot_sampled.lower * 0.9:
+      self.logger.warn(
+        f"only {self.replace_tune_objects(tot_trained.value)} trained steps "
+        f"over the {self.replace_tune_objects(tot_sampled.value)} sampled"
+      )
+    elif tot_trained.upper > tot_sampled.upper * 1.1:
+      self.logger.warn(
+        f"{self.replace_tune_objects(tot_trained.value)} steps trained over "
+        f"only {self.replace_tune_objects(tot_sampled.value)} new samples"
+      )
+    # check if the `training_step` function will be called more than once
+    self.check_num_training_step_calls(algo_config)
 
   @abstractmethod
   def convert_training_parameters(self, all_params: dict):
@@ -404,14 +407,18 @@ class AlgoConfigGenerator(ABC):
     pass
 
   @abstractmethod
-  def count_sampled_steps(self, algo_config: AlgorithmConfig) -> int:
+  def count_sampled_steps(
+      self, algo_config: AlgorithmConfig
+    ) -> ParameterDomain:
     """
     Counts the number of sampled steps according to the given `AlgorithmConfig`
     """
     pass
 
   @abstractmethod
-  def count_trained_steps(self, algo_config: AlgorithmConfig) -> int:
+  def count_trained_steps(
+      self, algo_config: AlgorithmConfig
+    ) -> ParameterDomain:
     """
     Counts the number of trained steps according to the given `AlgorithmConfig`
     """
@@ -474,7 +481,7 @@ class AlgoConfigGenerator(ABC):
       return {k: self.replace_tune_objects(v) for k, v in config.items()}
     elif isinstance(config, list):
       return [self.replace_tune_objects(v) for v in config]
-    elif self.any_tuning_key([config]):
+    elif self.is_tuned(config):
       # Return the string representation of the tune object
       domain = config.domain_str
       sampler = config.sampler.__str__().lower()
@@ -514,7 +521,7 @@ class AlgoConfigGenerator(ABC):
         if config_value.strip().startswith("tune."):
           # check whether tune is enabled
           if self.use_tune:
-            self.validate_special_key_tuning(config_key=config_key)
+            self.validate_special_key_tuning(config_key = config_key)
             self.logger.log(f'Tuning detected for the value of "{config_key}"')
             return eval(config_value.strip())
           else:
@@ -548,7 +555,9 @@ class AlgoConfigGenerator(ABC):
           f"The parameter `{config_key}` is a non-tunable parameter"
         )
 
-  def scale_parameter(self, config_value, scale_factor = 1, addend = 0):
+  def scale_parameter(
+      self, config_value, scale_factor = 1, addend = 0
+    ) -> ParameterDomain:
     """
     This method is to be mainly used when scaling config parameters.
 
@@ -565,19 +574,29 @@ class AlgoConfigGenerator(ABC):
       addend: The object to add. This can be a Ray Tune objec
 
     Returns:
-        The scaled config_value
+        An `AlgoConfigGenerator.ParameterDomain` tuple reporting the value, 
+        lower and upper limits of scaled config_value
     """
+    scaled_domain = None
     # check if the value is a tune object
-    if self.any_tuning_key([config_value]):
+    if self.is_tuned(config_value):
       # scale the bounds of the tune objects with the scale factor
-      return self.scale_tune_object(config_value, scale_factor, addend)
-    elif self.any_tuning_key([scale_factor]):
-      return self.scale_tune_object(scale_factor, config_value, addend)
+      scaled_domain = self.scale_tune_object(
+        config_value, scale_factor, addend
+      )
+    elif self.is_tuned(scale_factor):
+      scaled_domain = self.scale_tune_object(
+        scale_factor, config_value, addend
+      )
     else:
       # Normally scale the parameter
-      return config_value * scale_factor + addend
+      val = config_value * scale_factor + addend
+      scaled_domain = self.ParameterDomain(val, val, val)
+    return scaled_domain
 
-  def scale_tune_object(self, obj, factor = 1, addend = 0):
+  def scale_tune_object(
+      self, obj, factor = 1, addend = 0
+    ) -> ParameterDomain:
     """
     Scale the bounds or values of a Ray Tune object by a factor.
 
@@ -596,18 +615,18 @@ class AlgoConfigGenerator(ABC):
     # when samplers are mismatched. When they are Ray tune objects, the upper 
     # and lower bounds are fetched; otherwise, the same factor is assigned to 
     # both
-    if self.any_tuning_key([factor]):
+    if self.is_tuned(factor):
       upper_factor, lower_factor = self.check_sampler_compatibility(
         obj = obj, 
-        factor = factor
+        operand = factor
       )
     else:
       upper_factor = lower_factor = factor
     # addend
-    if self.any_tuning_key([addend]):
+    if self.is_tuned(addend):
       upper_addend, lower_addend = self.check_sampler_compatibility(
         obj = obj, 
-        factor = addend
+        operand = addend
       )
     else:
       upper_addend = lower_addend = addend
@@ -623,22 +642,35 @@ class AlgoConfigGenerator(ABC):
       lower = obj.lower * lower_factor + upper_addend
       upper = obj.upper * upper_factor + lower_addend
       if obj_type == "uniform":
-        return tune.uniform(lower, upper)
+        return self.ParameterDomain(
+          tune.uniform(lower, upper), lower, upper
+        )
       elif obj_type == "loguniform":
-        return tune.loguniform(lower, upper)
+        return self.ParameterDomain(
+          tune.loguniform(lower, upper), lower, upper
+        )
       elif obj_type == "quniform":
-        return tune.quniform(lower, upper, obj.q)
+        return self.ParameterDomain(
+          tune.quniform(lower, upper, obj.q), lower, upper
+        )
       elif obj_type == "qloguniform":
-        return tune.qloguniform(lower, upper, obj.q)
+        return self.ParameterDomain(
+          tune.qloguniform(lower, upper, obj.q), lower, upper
+        )
       if obj_type == "randint":
-        return tune.randint(lower, upper)
+        return self.ParameterDomain(
+          tune.randint(lower, upper), lower, upper
+        )
       elif obj_type == "qrandint":
-        return tune.qrandint(lower, upper, obj.q)
+        return self.ParameterDomain(
+          tune.qrandint(lower, upper, obj.q), lower, upper
+        )
       else:
         raise ValueError(f"Unsupported Ray Tune object: {obj}")
     elif obj_type == "choice":
-      return tune.grid_search(
-        [value * factor + addend for value in obj.categories]
+      values_list = [value * factor + addend for value in obj.categories]
+      return self.ParameterDomain(
+        tune.grid_search(values_list), min(values_list), max(values_list)
       )
     else:
       raise ValueError(f"Unsupported Ray Tune object: {obj}")
@@ -664,8 +696,8 @@ class AlgoConfigGenerator(ABC):
     return n_steps
   
   @staticmethod
-  def any_tuning_key(keys: list) -> bool:
-    return any([isinstance(k, Domain) for k in keys])
+  def is_tuned(key) -> bool:
+    return isinstance(key, Domain)
   
   @staticmethod
   def identify_sampler_type(sampler):

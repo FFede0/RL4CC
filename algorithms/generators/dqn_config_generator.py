@@ -18,6 +18,7 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms.dqn.dqn import calculate_rr_weights
 from ray.rllib.algorithms import AlgorithmConfig
+from typing import Tuple
 from ray import tune
 
 
@@ -65,7 +66,7 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       )
       all_params["_RL4CC_INTERNALS_num_workers"] = nw
       # check whether any parameter is being tuned
-      if self.any_tuning_key([rfl, num_batches, batch_size]):
+      if any(self.is_tuned(k) for k in [rfl, num_batches, batch_size]):
         # if so, the training intensity depends on the sampled values
         all_params["training_intensity"] = tune.sample_from(
           lambda spec: (
@@ -87,43 +88,73 @@ class DQNConfigGenerator(AlgoConfigGenerator):
         # if only one batch is considered, let Ray figure it out
         all_params["training_intensity"] = None
   
-  def count_sampled_steps(self, algo_config: AlgorithmConfig) -> int:
+  def count_sampled_steps(
+      self, algo_config: AlgorithmConfig
+    ) -> AlgoConfigGenerator.ParameterDomain:
     """
     Counts the number of sampled steps according to the given `AlgorithmConfig`
     """
     # number of rollout workers
     nw = algo_config["num_rollout_workers"]
     # proportion between collection and training
-    citer, _ = calculate_rr_weights(algo_config)
+    citer, _ = self.calculate_rr_weights(algo_config)
     # number of collected steps
-    ncs = 0
     for wid in range(1, max(nw, 1) + 1):
       # number of collected steps (per worker)
       rfl = algo_config.get_rollout_fragment_length()
-      self.logger.log(f"worker {wid}/{max(nw, 1)} collects {rfl} step(s)", 1)
-      ncs = self.scale_parameter(ncs, addend = rfl)
+      self.logger.log(
+        f"worker {wid}/{max(nw, 1)} collects "
+        f"{self.replace_tune_objects(rfl)} step(s)", 
+        1
+      )
+    ncs, _, _ = self.scale_parameter(rfl, scale_factor = max(nw, 1))
     self.logger.log(
-      f"{ncs} step(s) collected in each of the {citer} collection iteration(s)",
+      f"{self.replace_tune_objects(ncs)} step(s) collected in each "
+      f"of the {citer} collection iteration(s)",
       1
     )
     # wait before start training?
     wait_n_steps = algo_config["num_steps_sampled_before_learning_starts"]
-    if wait_n_steps > 0:
+    if self.is_tuned(wait_n_steps) or wait_n_steps > 0:
+      wait_n_steps = self.replace_tune_objects(wait_n_steps)
       self.logger.log(
         f"{wait_n_steps} steps have to be sampled before learning starts", 1
       )
-    return self.scale_parameter(ncs, citer)
+    return self.scale_parameter(ncs, scale_factor = citer)
   
   def count_trained_steps(self, algo_config: AlgorithmConfig) -> int:
     """
     Counts the number of trained steps according to the given `AlgorithmConfig`
     """
     # proportion between collection and training
-    _, titer = calculate_rr_weights(algo_config)
+    _, titer = self.calculate_rr_weights(algo_config)
     # number of steps sampled from a replay buffer
     tbs = algo_config["train_batch_size"]
-    C = algo_config["replay_buffer_config"]["capacity"]
-    self.logger.log(
-      f"{titer} batch(es) of size {tbs} sampled from RB (capacity: {C})", 1
+    C = self.replace_tune_objects(
+      algo_config["replay_buffer_config"]["capacity"]
     )
-    return self.scale_parameter(tbs, titer)
+    self.logger.log(
+      f"{self.replace_tune_objects(titer)} batch(es) of size "
+      f"{self.replace_tune_objects(tbs)} sampled "
+      f"from RB (capacity: {C})", 
+      1
+    )
+    return self.scale_parameter(tbs, scale_factor = titer)
+  
+  def calculate_rr_weights(
+      self, 
+      algo_config: AlgorithmConfig
+    ) -> Tuple[int, int]:
+    citer = 1
+    titer = 1
+    # if Ray Tune is not used, the numbers can be computed directly
+    if not self.use_tune:
+      citer, titer = calculate_rr_weights(algo_config)
+    # otherwise, we may have to consider domain limits
+    else:
+      try:
+        citer, titer = calculate_rr_weights(algo_config)
+      except TypeError:
+        if "training_intensity" in algo_config:
+          titer = algo_config["_RL4CC_INTERNALS_num_train_batches"]
+    return citer, titer
