@@ -282,10 +282,18 @@ class AlgoConfigGenerator(ABC):
       if unit == "truncate_episodes":
         all_params["rollout_fragment_length"] = duration
       elif unit == "complete_episodes":
-        min_time = env_config["min_time"]
-        max_time = env_config["max_time"]
-        time_step = env_config["time_step"]
-        n_steps = (max_time - min_time) // time_step
+        n_steps = None
+        if all(k in env_config for k in ["min_time", "max_time", "time_step"]):
+          min_time = env_config["min_time"]
+          max_time = env_config["max_time"]
+          time_step = env_config["time_step"]
+          n_steps = (max_time - min_time) // time_step
+        else:
+          raise ValueError(
+            "ERROR: not enough parameters to support `episodes` duration. "
+            "Check if env_config.json includes `min_time`, `max_time`, "
+            "`time_step`"
+          )
         all_params["rollout_fragment_length"] = self.scale_parameter(
           duration, n_steps
         )
@@ -390,7 +398,6 @@ class AlgoConfigGenerator(ABC):
       self.logger.breakline()
       # raise a WARNING if the number of collected and trained steps are too
       # unbalanced
-
       if tot_trained < tot_sampled * 0.9:
         self.logger.warn(
           f"only {tot_trained} steps are trained over the {tot_sampled} sampled"
