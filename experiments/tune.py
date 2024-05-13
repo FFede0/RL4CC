@@ -16,8 +16,10 @@ limitations under the License.
 from experiments.base_experiment import BaseExperiment
 from algorithms.algorithm import Algorithm
 from algorithms.generators.tune_config_generator import TuneConfigGenerator
-from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from utilities.common import not_defined, load_config_file, write_config_file
+from utilities.logger import Logger
+
+from ray.rllib.algorithms.callbacks import DefaultCallbacks
 from ray import tune, air
 from datetime import datetime
 import json
@@ -25,8 +27,10 @@ import os
 
 
 class TuningExperiment(BaseExperiment):
-  def __init__(self, exp_config_file: str):
-    super().__init__(exp_config_file)
+  def __init__(
+      self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
+    ):
+    super().__init__(exp_config_file, logger)
 
   def run(
       self,
@@ -51,13 +55,14 @@ class TuningExperiment(BaseExperiment):
     )
     # define algorithm
     algo = Algorithm(
-      algo_name=self.exp_config["algorithm"],
-      checkpoint_path=self.checkpoint_path,
-      env_config=self.env_config,
-      ray_config=self.ray_config,
-      base_logdir=self.logdir,
-      eval_interval=self.evaluation_interval,
-      use_tune=use_tune,
+      algo_name = self.exp_config["algorithm"],
+      checkpoint_path = self.checkpoint_path,
+      env_config = self.env_config,
+      ray_config = self.ray_config,
+      base_logdir = self.logdir,
+      eval_interval = self.evaluation_interval,
+      logger = self.logger,
+      use_tune = use_tune
     )
     self.logdir =  algo.logdir
     algo.algo_config_generator
