@@ -282,18 +282,7 @@ class AlgoConfigGenerator(ABC):
       if unit == "truncate_episodes":
         all_params["rollout_fragment_length"] = duration
       elif unit == "complete_episodes":
-        n_steps = None
-        if all(k in env_config for k in ["min_time", "max_time", "time_step"]):
-          min_time = env_config["min_time"]
-          max_time = env_config["max_time"]
-          time_step = env_config["time_step"]
-          n_steps = (max_time - min_time) // time_step
-        else:
-          raise ValueError(
-            "ERROR: not enough parameters to support `episodes` duration. "
-            "Check if env_config.json includes `min_time`, `max_time`, "
-            "`time_step`"
-          )
+        n_steps = self.compute_num_steps_per_episode(env_config)
         all_params["rollout_fragment_length"] = self.scale_parameter(
           duration, n_steps
         )
@@ -324,10 +313,7 @@ class AlgoConfigGenerator(ABC):
     if "evaluation_duration_per_worker" in all_params:
       duration = all_params.pop("evaluation_duration_per_worker") * num_workers
       if unit == "episodes":
-        min_time = env_config["min_time"]
-        max_time = env_config["max_time"]
-        time_step = env_config["time_step"]
-        n_steps = (max_time - min_time) // time_step
+        n_steps = self.compute_num_steps_per_episode(env_config)
         duration *= n_steps
       all_params["evaluation_duration"] = duration
     # guarantee that at least the final evaluation can be surely performed
@@ -497,7 +483,6 @@ class AlgoConfigGenerator(ABC):
     else:
       return config
 
-
   def interpret_tune_config(self, config_key, config_value):
     """
     Interprets a configuration value, converting it to a format usable by 
@@ -654,6 +639,26 @@ class AlgoConfigGenerator(ABC):
     else:
       raise ValueError(f"Unsupported Ray Tune object: {obj}")
 
+  @staticmethod
+  def compute_num_steps_per_episode(env_config: dict) -> int:
+    """
+    Compute the number of steps per episode based on the environment 
+    configuration
+    """
+    n_steps = None
+    if all(k in env_config for k in ["min_time", "max_time", "time_step"]):
+      min_time = env_config["min_time"]
+      max_time = env_config["max_time"]
+      time_step = env_config["time_step"]
+      n_steps = (max_time - min_time) // time_step
+    else:
+      raise ValueError(
+        "ERROR: not enough parameters to support `episodes` duration. "
+        "Check if env_config.json includes `min_time`, `max_time`, "
+        "`time_step`"
+      )
+    return n_steps
+  
   @staticmethod
   def identify_sampler_type(sampler):
     """
