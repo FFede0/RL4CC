@@ -424,7 +424,7 @@ class AlgoConfigGenerator(ABC):
     try:
       all_params = algo_config.serialize()
     except:
-      all_params = algo_config
+      all_params = AlgorithmConfig._serialize_dict(algo_config)
       pass
     # intermediate step in case of tune.search.Domain (when tuning) exist
     # the method will replace the tune objetcs with a string to make it json 
