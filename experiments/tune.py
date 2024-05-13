@@ -88,8 +88,8 @@ class TuningExperiment(BaseExperiment):
       tune_config = tune_config,
       run_config = run_config
     )
-    # write the configuration of the best trial
-    self.write_best_trial_config(
+    # write the configuration and result(s) of the best trial
+    self.write_best_trial(
       results = tune_results,
       algo = algo
     )
@@ -127,7 +127,7 @@ class TuningExperiment(BaseExperiment):
     self.logger.log(f"experiment took: {experiment_duration}")
     return results
 
-  def write_best_trial_config(
+  def write_best_trial(
       self,
       results: tune.ResultGrid = None,
       algo = None
