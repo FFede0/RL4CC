@@ -134,11 +134,9 @@ class TuningExperiment(BaseExperiment):
     ):
     # get best hyperparameters
     best_results = results.get_best_result()
-    best_results_config_path = os.path.join(best_results.path, "params.json")
-    best_results_config = load_config_file(best_results_config_path)
     # convert the config to the desired format
     best_results_config = algo.algo_config_generator.to_json(
-      best_results_config
+      best_results.config
     )
     # directory
     best_trial_dir = os.path.join(self.logdir, "complete_config")
