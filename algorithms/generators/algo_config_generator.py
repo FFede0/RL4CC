@@ -548,7 +548,7 @@ class AlgoConfigGenerator(ABC):
           f"The parameter `{config_key}` is a non-tunable parameter"
         )
 
-  def scale_parameter(self, config_value, scale_factor=0, addend=0):
+  def scale_parameter(self, config_value, scale_factor = 1, addend = 0):
     """
     This method is to be mainly used when scaling config parameters.
 
@@ -567,7 +567,7 @@ class AlgoConfigGenerator(ABC):
     Returns:
         The scaled config_value
     """
-    # Check if the value is a tune object
+    # check if the value is a tune object
     if isinstance(config_value, Domain):
       # scale the bounds of the tune objects with the scale factor
       return self.scale_tune_object(config_value, scale_factor, addend)
@@ -575,9 +575,9 @@ class AlgoConfigGenerator(ABC):
       return self.scale_tune_object(scale_factor, config_value, addend)
     else:
       # Normally scale the parameter
-      return config_value * scale_factor
+      return config_value * scale_factor + addend
 
-  def scale_tune_object(self, obj, factor=0, addend=0,):
+  def scale_tune_object(self, obj, factor = 1, addend = 0):
     """
     Scale the bounds or values of a Ray Tune object by a factor.
 
@@ -590,7 +590,7 @@ class AlgoConfigGenerator(ABC):
     Returns:
         A new Ray Tune object with scaled bounds or values.
     """
-    # First, identify the sampler type of the object
+    # first, identify the sampler type of the object
     obj_type = self.identify_sampler_type(obj)
     # check if the factor or the addend are ray objects; interrupt execution 
     # when samplers are mismatched. When they are Ray tune objects, the upper 
