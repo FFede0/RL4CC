@@ -21,11 +21,9 @@ from ray.tune.registry import get_trainable_cls
 from ray.tune.search.sample import Domain
 from abc import ABC, abstractmethod
 from collections import namedtuple
-from datetime import datetime
 from ray import tune
 import inspect
 import json
-import os
 
 
 class AlgoConfigGenerator(ABC):
@@ -110,7 +108,7 @@ class AlgoConfigGenerator(ABC):
       self,
       env_config: dict,
       ray_config: dict = None,
-      base_logdir: str = None,
+      exp_logdir: str = None,
       eval_interval: int = None,
       use_tune: bool = False,
     ) -> AlgorithmConfig:
@@ -135,7 +133,7 @@ class AlgoConfigGenerator(ABC):
     # process the parameters
     if ray_config is not None:
       all_params = self.process_config_parameters(
-        ray_config, env_config, base_logdir, eval_interval
+        ray_config, env_config, exp_logdir, eval_interval
       )
       # update the algorithm config
       algo_config.update_from_dict(all_params)
@@ -147,7 +145,7 @@ class AlgoConfigGenerator(ABC):
       self,
       ray_config: dict,
       env_config: dict,
-      base_logdir: str = None,
+      exp_logdir: str = None,
       eval_interval: int = None
     ) -> dict:
     """
@@ -167,7 +165,7 @@ class AlgoConfigGenerator(ABC):
           all_params.update({key: value})
     # manage "special" keys
     self.update_special_keys(
-      all_params, env_config, base_logdir, eval_interval
+      all_params, env_config, exp_logdir, eval_interval
     )
     return all_params
 
@@ -175,7 +173,7 @@ class AlgoConfigGenerator(ABC):
       self,
       all_params: dict,
       env_config: dict,
-      base_logdir: str = None,
+      exp_logdir: str = None,
       eval_interval: int = None
     ):
     """
@@ -207,8 +205,7 @@ class AlgoConfigGenerator(ABC):
       self.convert_training_parameters(all_params)
     # manage the debugging configuration, creating the experiment logdir
     # if required
-    if base_logdir is not None:
-      exp_logdir = self.generate_logdir(base_logdir, env_config["env_name"])
+    if exp_logdir is not None:
       if not_defined("logger_config", all_params):
         all_params["logger_config"] = {}
       if not_defined("type", all_params["logger_config"]):
@@ -341,18 +338,6 @@ class AlgoConfigGenerator(ABC):
     if "num_gpus_master" in all_params:
       num_gpus = all_params.pop("num_gpus_master")
       all_params["num_gpus"] = num_gpus
-
-  def generate_logdir(self, base_logdir: str, env_name: str) -> str:
-    """
-    Generate the experiment `logdir` if an appropriate parameter is provided
-    """
-    now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
-    exp_logdir = os.path.join(
-      os.path.abspath(os.path.expanduser(base_logdir)), 
-      f"{self.algo}_{env_name}_{now}"
-    )
-    os.makedirs(exp_logdir, exist_ok=True)
-    return exp_logdir
 
   def check_num_training_step_calls(self, algo_config: AlgorithmConfig):
     """
