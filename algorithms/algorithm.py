@@ -50,11 +50,11 @@ class Algorithm:
         )
       # ...generate `AlgorithmConfig`
       self.algo_config = self.algo_config_generator.generate_algo_config(
-        ray_config=ray_config,
-        env_config=env_config,
-        eval_interval=eval_interval,
-        base_logdir=base_logdir,
-        use_tune=use_tune
+        ray_config = ray_config,
+        env_config = env_config,
+        eval_interval = eval_interval,
+        base_logdir = base_logdir,
+        use_tune = use_tune
       )
       self.logdir = self.algo_config["logger_config"]["logdir"]
       self.logger.warn(
