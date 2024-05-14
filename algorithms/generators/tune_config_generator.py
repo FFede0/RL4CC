@@ -16,9 +16,10 @@ limitations under the License.
 
 from utilities.logger import Logger
 
-from ray import tune, air
-from ray.tune.schedulers import ASHAScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune import TuneConfig
+from ray.air import RunConfig
 
 
 class TuneConfigGenerator:
@@ -28,7 +29,7 @@ class TuneConfigGenerator:
     self.logger = logger
     self._required_keys = ["num_tune_trials", "metric", "mode"]
 
-  def get_tune_config(self, tune_config: dict) -> tune.TuneConfig:
+  def get_tune_config(self, tune_config: dict) -> TuneConfig:
     """
     Generates a `TuneConfig` object based on the provided configuration 
     dictionary
@@ -74,7 +75,7 @@ class TuneConfigGenerator:
       else:
         raise NotImplementedError(f"Scheduler {scheduler} is not supported")
     # generate `TuneConfig`
-    tune_params = tune.TuneConfig(
+    tune_params = TuneConfig(
       **tune_config_dict,
       trial_name_creator = self.trial_name_string,
       trial_dirname_creator = self.trial_name_string
@@ -87,12 +88,12 @@ class TuneConfigGenerator:
       training_iterations: int = None,
       storage_path: str = None,
       callbacks = None
-    ) -> air.RunConfig:
+    ) -> RunConfig:
     """
     Generates a `RunConfig` object based on the provided configuration 
     parameters
     """
-    run_config = air.RunConfig(
+    run_config = RunConfig(
       name = tune_file_name,
       verbose = 1,
       stop = {"training_iteration": training_iterations},
@@ -106,9 +107,9 @@ class TuneConfigGenerator:
     Validate the configuration dictionary checking for the existence of the 
     mandatory keys
     """
-    if not all(key in tune_config for key in self._required_keys):
+    if any(key not in tune_config for key in self._required_keys):
       raise KeyError(
-        "One or more of the mandatory keys (num_tune_trials, metric, mode) "
+        f"One or more of the mandatory keys {self._required_keys} "
         "are missing from the tune_config file"
       )
   
