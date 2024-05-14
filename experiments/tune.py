@@ -13,14 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from experiments.base_experiment import BaseExperiment
-from algorithms.algorithm import Algorithm
-from algorithms.generators.tune_config_generator import TuneConfigGenerator
 from utilities.common import not_defined, load_config_file, write_config_file
+from experiments.base_experiment import BaseExperiment
 from utilities.logger import Logger
+from algorithms.tuner import Tuner
 
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from ray import tune, air
+from ray.tune.result_grid import ResultGrid
 from datetime import datetime
 import json
 import os
@@ -31,95 +30,57 @@ class TuningExperiment(BaseExperiment):
       self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
     ):
     super().__init__(exp_config_file, logger)
-
-  def run(
-      self,
-      callbacks: DefaultCallbacks = None
-    ):
-    # the tune configuration must be provided
-    if self.tune_config is None:
-      raise FileNotFoundError(
-        "A tune_config_file must be provided in the experiment configuration"
+  
+  def validate_experiment_configuration(self):
+    super().validate_experiment_configuration()
+    # the tuning configuration file is mandatory
+    if "tune_config_file" not in self.exp_config:
+      raise KeyError(
+        "ERROR: provide `tune_config_file` if no previous checkpoint is given"
       )
-    else:
-      self.tune_config = load_config_file(self.tune_config)
-      if self.tune_config is None:
-        raise FileNotFoundError(
-          "The tune_config_file cannot be accessed"
-        )
-      use_tune = True
-    # get tune params
-    tune_config_generator = TuneConfigGenerator()
-    tune_config = tune_config_generator.get_tune_config(
-      tune_config = self.tune_config
-    )
-    # define algorithm
-    algo = Algorithm(
-      algo_name = self.exp_config["algorithm"],
+    self.tune_config = load_config_file(self.exp_config["tune_config_file"])
+  
+  def define_checkpoint_config(self):
+    """
+    Initialize the dictionary storing all configuration parameters related 
+    to checkpointing
+    """
+    super().define_checkpoint_config()
+    self.checkpoint_config["checkpoint_at_end"] = True
+
+  def run(self, callbacks: DefaultCallbacks = None):
+    # define tuner
+    tuner = Tuner(
       checkpoint_path = self.checkpoint_path,
-      env_config = self.env_config,
+      algo = self.exp_config["algorithm"],
+      tune_config = self.tune_config,
       ray_config = self.ray_config,
-      base_logdir = self.logdir,
+      env_config = self.env_config,
+      checkpoint_config = self.checkpoint_config,
+      stopping_criterion = self.stop(),
       eval_interval = self.evaluation_interval,
-      logger = self.logger,
-      use_tune = use_tune
+      storage_path = self.logdir,
+      callbacks = callbacks,
+      logger = self.logger
     )
-    self.logdir =  algo.logdir
+    self.logdir = tuner.storage_path
     # save experiment configuration files
     self.write_config_files()
-    algo.print_algo_config()
-    # prepare Run & Search Space config params
-    algo_name = self.exp_config.get("algorithm")
-    training_iterations = self.exp_config.get(
-      "stopping_criteria", {}
-    ).get("max_iterations", 10)
-    param_space = algo.algo_config
-    try:
-      run_config = tune_config_generator.get_run_config(
-        training_iterations = training_iterations,
-        storage_path = self.logdir,
-        callbacks = callbacks
-      )
-    except Exception as _:
-      raise KeyError(
-        "Error: The program could not parse the run config, make sure you "
-        "have a stopping criteria defined in the exp config file"
-      )
     # tune
-    tune_results = self.tuning(
-      algo_name = algo_name,
-      param_space = param_space,
-      tune_config = tune_config,
-      run_config = run_config
-    )
+    tune_results = self.tuning(tuner)
     # write the configuration and result(s) of the best trial
-    self.write_best_trial(
-      results = tune_results,
-      algo = algo
-    )
+    self.write_best_trial(tune_results, tuner)
     experiment_directory = tune_results.experiment_path
     self.logger.log(
       f"Tuning experiment finished successfully, tuning output directory: {experiment_directory}"
     )
 
-  def tuning(
-      self,
-      algo_name: str = None,
-      param_space:dict = None,
-      tune_config: tune.TuneConfig = None,
-      run_config: air.RunConfig = None
-    ):
+  def tuning(self, tuner: Tuner) -> ResultGrid:
     # logging & updating progress
     start = datetime.now()
     self.logger.log(f"Tuning --> START")
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
-    # runs tuning
-    tuner = tune.Tuner(
-      algo_name,
-      run_config = run_config,
-      param_space = param_space,
-      tune_config = tune_config,
-    )
+    # fit
     results = tuner.fit()
     # logging & updating progress
     end = datetime.now()
@@ -131,15 +92,11 @@ class TuningExperiment(BaseExperiment):
     self.logger.log(f"experiment took: {experiment_duration}")
     return results
 
-  def write_best_trial(
-      self,
-      results: tune.ResultGrid = None,
-      algo = None
-    ):
+  def write_best_trial(self, results: ResultGrid, tuner: Tuner):
     # get best hyperparameters
     best_results = results.get_best_result()
     # convert the config to the desired format
-    best_results_config = algo.algo_config_generator.to_json(
+    best_results_config = tuner.algo_config_generator.to_json(
       best_results.config
     )
     # directory
@@ -182,7 +139,7 @@ class TuningExperiment(BaseExperiment):
     stop_on_max_iter = None
     for key, value in self.exp_config["stopping_criteria"].items():
       if key == "max_iterations":
-        stop_on_max_iter = lambda it : it > value
+        stop_on_max_iter = lambda : {"training_iteration": value}
       else:
         raise NotImplementedError(
           f"Stopping criterion `{key}` is not supported"
