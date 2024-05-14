@@ -17,6 +17,7 @@ from utilities.common import load_config_file, write_config_file
 from utilities.logger import Logger
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 import numpy as np
 import json
 import os
@@ -37,16 +38,11 @@ class BaseExperiment(ABC):
     if "logger" in self.exp_config:
       verbosity = self.exp_config["logger"].get("verbosity", 0)
       self.logger.verbose = verbosity
-    # base output directory
-    self.logdir = os.path.abspath(
-      self.exp_config.get("logdir", "~/ray_results")
-    )
     # validate other parameters
     self.validate_experiment_configuration()
-    # checkpoint/plot/evaluation intervals
-    self.checkpoint_interval = self.exp_config.get(
-      "checkpoint_interval", np.inf
-    )
+    # checkpoint config
+    self.define_checkpoint_config()
+    # plot/evaluation intervals
     self.plot_interval = self.exp_config.get(
       "plot_interval", np.inf
     )
@@ -62,8 +58,9 @@ class BaseExperiment(ABC):
       self.checkpoint_path = self.exp_config["from_checkpoint"]
       self.env_config = None
       self.ray_config = None
+      self.logdir = None
       # ...environment and ray configurations (if provided) are ignored
-      keys = ["env_config_file", "ray_config_file"]
+      keys = ["env_config_file", "ray_config_file", "logdir"]
       for key in keys:
         if key in self.exp_config:
           self.logger.warn(
@@ -77,9 +74,37 @@ class BaseExperiment(ABC):
         )
       self.checkpoint_path = None
       self.env_config = load_config_file(self.exp_config["env_config_file"])
-      self.ray_config = load_config_file(self.exp_config.get("ray_config_file", ""))
-      self.tune_config = self.exp_config.get("tune_config_file", None)
+      self.ray_config = load_config_file(
+        self.exp_config.get("ray_config_file", "")
+      )
+      # base output directory
+      self.generate_logdir(
+        self.exp_config.get("logdir", os.path.expanduser("~/ray_results")), 
+        self.exp_config.get("algorithm"), 
+        self.env_config.get("env_name")
+      )
 
+  def generate_logdir(self, base_logdir: str, algo: str, env_name: str) -> str:
+    """
+    Generate the experiment `logdir` if an appropriate parameter is provided
+    """
+    now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
+    self.logdir = os.path.join(
+      os.path.abspath(base_logdir), f"{algo}_{env_name}_{now}"
+    )
+    os.makedirs(self.logdir, exist_ok=True)
+  
+  def define_checkpoint_config(self):
+    """
+    Initialize the dictionary storing all configuration parameters related 
+    to checkpointing
+    """
+    self.checkpoint_config = {
+      "checkpoint_frequency": self.exp_config.get(
+        "checkpoint_interval", np.inf
+      )
+    }
+  
   def write_config_files(self):
     """
     Write the environment and experiment configuration files into the 
@@ -133,7 +158,7 @@ class BaseExperiment(ABC):
   
   def plot_results(self, result: dict) -> str:
     pass
-  
+
   @abstractmethod
   def define_stopping_criteria(self, exp_config: dict):
     pass

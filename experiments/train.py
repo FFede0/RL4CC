@@ -44,7 +44,7 @@ class TrainingExperiment(BaseExperiment):
       checkpoint_path = self.checkpoint_path,
       env_config = self.env_config,
       ray_config = self.ray_config,
-      base_logdir = self.logdir,
+      logdir = self.logdir,
       eval_interval = self.evaluation_interval,
       logger = self.logger
     )
@@ -74,9 +74,9 @@ class TrainingExperiment(BaseExperiment):
       result = algo.train()
       self.logger.log("iteration completed", 3)
       self.update_progress_file("last_iteration", algo.last_iteration())
-      # save checkpoint at the beginning and every `checkpoint_interval` 
+      # save checkpoint at the beginning and every `checkpoint_frequency` 
       # iterations
-      if it == 1 or it % self.checkpoint_interval == 0:
+      if it == 1 or it % self.checkpoint_config["checkpoint_frequency"] == 0:
         last_chpt_dir = algo.save_checkpoint()
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
       # plot results at the beginning and every `plot_interval` iterations
