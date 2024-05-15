@@ -49,12 +49,14 @@
       "worker_side_prioritization": false
     },
     "model": {
-        "fcnet_hiddens": [256, 256, 128],
-        "fcnet_activation": "ReLU",
-        "post_fcnet_hiddens": [],
-        "post_fcnet_activation": "linear"
-        "vf_share_layers": false,
-        "_disable_preprocessor_api": false
+      "custom_model": "custom_torch_model",
+      "custom_model_config": {
+        "seed": 123,
+        "fun_layers": ["ReLU", "ReLU", "ReLU"],
+        "dropout": true,
+        "dropout_list": [0.02, 0, 0],
+        "n_features": "tune.choice([[256, 256, 32], [128, 128, 32], [64, 64, 16]])"
+      },
     },
     "target_network_update_freq": 500,
     "num_steps_sampled_before_learning_starts": 1000,
