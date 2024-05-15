@@ -20,6 +20,7 @@ from ray.tune.search.hyperopt import HyperOptSearch
 from ray.air import RunConfig, CheckpointConfig
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune import TuneConfig
+from datetime import datetime
 from typing import Tuple
 
 
@@ -106,8 +107,13 @@ class TuneConfigGenerator:
     Generates a `RunConfig` object based on the provided configuration 
     parameters
     """
+    name = None
+    if storage_path is not None:
+      now = datetime.now().strftime('%H-%M-%S.%f')
+      name = f"tuning_experiment_output_{now}"
+    # generate RunConfig
     run_config = RunConfig(
-      name = "tuning_experiment_output" if storage_path is not None else None,
+      name = name,
       verbose = self.convert_verbosity_level(),
       stop = stopping_criterion,
       storage_path = storage_path,
