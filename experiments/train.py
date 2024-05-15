@@ -31,10 +31,10 @@ class TrainingExperiment(BaseExperiment):
   
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
-    # the algorithm name must be provided
-    if not_defined("algorithm", self.exp_config):
+    # check that stopping criteria are provided
+    if not_defined("stopping_criteria", self.exp_config):
       raise KeyError(
-        "ERROR: `algorithm` is required"
+        "`stopping_criteria` must be provided in `exp_config.json`"
       )
   
   def run(self):
@@ -122,11 +122,6 @@ class TrainingExperiment(BaseExperiment):
     terminated, according to the stopping criteria specified in the experiment 
     configuration file
     """
-    # check that stopping criteria are provided
-    if not_defined("stopping_criteria", self.exp_config):
-      raise KeyError(
-        "`stopping_criteria` must be provided in `exp_config.json`"
-      )
     # list possible stopping criteria
     stop_on_max_iter = None
     for key, value in self.exp_config["stopping_criteria"].items():

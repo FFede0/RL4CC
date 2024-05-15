@@ -34,11 +34,14 @@ class TuningExperiment(BaseExperiment):
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
     # the tuning configuration file is mandatory
-    if "tune_config_file" not in self.exp_config:
-      raise KeyError(
-        "ERROR: provide `tune_config_file` if no previous checkpoint is given"
-      )
-    self.tune_config = load_config_file(self.exp_config["tune_config_file"])
+    if not_defined("tune_config_file", self.exp_config):
+      if not_defined("from_checkpoint", self.exp_config): 
+        raise KeyError(
+          "ERROR: provide `tune_config_file` or a previous checkpoint"
+        )
+      self.tune_config = None
+    else:
+      self.tune_config = load_config_file(self.exp_config["tune_config_file"])
   
   def define_checkpoint_config(self):
     """
@@ -130,20 +133,16 @@ class TuningExperiment(BaseExperiment):
     terminated, according to the stopping criteria specified in the experiment
     configuration file
     """
-    # check that stopping criteria are provided
-    if not_defined("stopping_criteria", self.exp_config):
-      raise KeyError(
-        "`stopping_criteria` must be provided in `exp_config.json`"
-      )
     # list possible stopping criteria
-    stop_on_max_iter = None
-    for key, value in self.exp_config["stopping_criteria"].items():
-      if key == "max_iterations":
-        stop_on_max_iter = lambda : {"training_iteration": value}
-      else:
-        raise NotImplementedError(
-          f"Stopping criterion `{key}` is not supported"
-        )
+    stop_on_max_iter = lambda : None
+    if "stopping_criteria" in self.exp_config:
+      for key, value in self.exp_config["stopping_criteria"].items():
+        if key == "max_iterations":
+          stop_on_max_iter = lambda : {"training_iteration": value}
+        else:
+          raise NotImplementedError(
+            f"Stopping criterion `{key}` is not supported"
+          )
     self.stop = stop_on_max_iter
 
   def write_config_files(self):

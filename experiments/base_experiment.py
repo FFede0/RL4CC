@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from utilities.common import load_config_file, write_config_file
+from utilities.common import load_config_file, write_config_file, not_defined
 from utilities.logger import Logger
 
 from abc import ABC, abstractmethod
@@ -53,6 +53,11 @@ class BaseExperiment(ABC):
     self.define_stopping_criteria()
   
   def validate_experiment_configuration(self):
+    # the algorithm name must be provided
+    if not_defined("algorithm", self.exp_config):
+      raise KeyError(
+        "ERROR: `algorithm` is required"
+      )
     # if a previous checkpoint path is provided...
     if "from_checkpoint" in self.exp_config:
       self.checkpoint_path = self.exp_config["from_checkpoint"]
@@ -68,15 +73,13 @@ class BaseExperiment(ABC):
           )
     # otherwise, the environment configuration file is mandatory
     else:
-      if "env_config_file" not in self.exp_config:
+      if not_defined("env_config_file", self.exp_config):
         raise KeyError(
           "ERROR: provide `env_config_file` if no previous checkpoint is given"
         )
       self.checkpoint_path = None
       self.env_config = load_config_file(self.exp_config["env_config_file"])
-      self.ray_config = load_config_file(
-        self.exp_config.get("ray_config_file", "")
-      )
+      self.ray_config = load_config_file(self.exp_config.get("ray_config_file"))
       # base output directory
       base_logdir = self.exp_config.get(
         "logdir"#, os.path.expanduser("~/ray_results"))
