@@ -111,7 +111,6 @@ class TuneConfigGenerator:
       verbose = self.convert_verbosity_level(),
       stop = stopping_criterion,
       storage_path = storage_path,
-      local_dir = storage_path,
       callbacks = callbacks,
       checkpoint_config = checkpoint_config
     )
