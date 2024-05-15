@@ -116,8 +116,14 @@ class AlgoConfigGenerator(ABC):
     Defines the `AlgorithmConfig` considering the provided environment and
     configuration dictionaries
     """
+    if env_config is None:
+      raise RuntimeError(
+        "ERROR: cannot create an algorithm without environment"
+      )
     if "env_name" not in env_config:
-      raise KeyError("ERROR: cannot create an environment without a name")
+      raise KeyError(
+        "ERROR: cannot create an environment without a name"
+      )
     if use_tune:
       self.use_tune = True
     # start config generation
