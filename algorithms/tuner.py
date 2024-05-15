@@ -92,15 +92,16 @@ class Tuner:
       self, checkpoint_path: str, algo: str, tune_config: dict = None
     ):
     if RayTuner.can_restore(checkpoint_path):
+      restore_config = tune_config if tune_config is not None else {}
       self.tuner = RayTuner.restore(
         # path to previous experiments
         path = checkpoint_path,
         # algorithm
         trainable = algo,
         # resume instructions
-        resume_errored = tune_config.get("resume_errored", True),
-        restart_errored = tune_config.get("restart_errored", False),
-        resume_unfinished = tune_config.get("resume_unfinished", True)
+        resume_errored = restore_config.get("resume_errored", False),
+        restart_errored = restore_config.get("restart_errored", False),
+        resume_unfinished = restore_config.get("resume_unfinished", True)
       )
       self.tuner_config = self.tuner._local_tuner._tune_config
       self.run_config = self.tuner._local_tuner.get_run_config()
