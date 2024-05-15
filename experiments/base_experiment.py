@@ -78,11 +78,15 @@ class BaseExperiment(ABC):
         self.exp_config.get("ray_config_file", "")
       )
       # base output directory
-      self.generate_logdir(
-        self.exp_config.get("logdir", os.path.expanduser("~/ray_results")), 
-        self.exp_config.get("algorithm"), 
-        self.env_config.get("env_name")
+      base_logdir = self.exp_config.get(
+        "logdir"#, os.path.expanduser("~/ray_results"))
       )
+      if base_logdir is not None:
+        self.generate_logdir(
+          base_logdir,
+          self.exp_config.get("algorithm"),
+          self.env_config.get("env_name")
+        )
 
   def generate_logdir(self, base_logdir: str, algo: str, env_name: str) -> str:
     """
