@@ -24,8 +24,8 @@ from ray.tune import Tuner as RayTuner
 class Tuner:
   def __init__(
       self,
+      algo: str,
       checkpoint_path: str = None,
-      algo: str = None,
       tune_config: dict = None,
       ray_config: dict = None,
       env_config: dict = None,
@@ -37,20 +37,21 @@ class Tuner:
       logger: Logger = Logger(name="RL4CC-Tuner")
     ):
     self.logger = logger
+    self.tune_config_generator = TuneConfigGenerator(logger = self.logger)
+    self.algo_config_generator = ACGfactory.create(
+      algo, logger = self.logger
+    )
     # load the Ray `Tuner` from a checkpoint (if provided)
     if checkpoint_path is not None:
-      self.load_checkpoint(checkpoint_path)
+      self.load_checkpoint(checkpoint_path, algo, tune_config)
     # otherwise...
     else:
-      if tune_config is None or algo is None or stopping_criterion is None:
+      if tune_config is None or stopping_criterion is None:
         raise RuntimeError(
           "ERROR: missing tune configuration, algorithm name or stopping "
           "criterion (all mandatory parameters to create a new `Tuner` object)"
         )
       # ...generate AlgorithmConfig
-      self.algo_config_generator = ACGfactory.create(
-        algo, logger = self.logger
-      )
       self.algo_config = self.algo_config_generator.generate_algo_config(
         ray_config = ray_config,
         env_config = env_config,
@@ -59,7 +60,6 @@ class Tuner:
         use_tune = True
       )
       # ...generate TunerConfig and RunConfig
-      self.tune_config_generator = TuneConfigGenerator(logger = self.logger)
       self.tuner_config, self.run_config = self.tune_config_generator.generate(
         tune_config = tune_config,
         stopping_criterion = stopping_criterion,
@@ -75,17 +75,40 @@ class Tuner:
         tune_config = self.tuner_config,
       )
       self.storage_path = self.run_config.storage_path
+      if self.storage_path is not None:
+        self.logger.warn(
+          "If ray.__version__ < 2.10, temporary files may be stored in "
+          f"~/ray_results before being moved to {self.storage_path}. Set the "
+          "environment variable `RAY_AIR_LOCAL_CACHE_DIR` to override this"
+        )
+      else:
+        d = self.tuner._local_tuner.get_experiment_checkpoint_dir()
+        self.storage_path = d
       self.logger.warn(
         f"`Tuner` created; output directory: {self.storage_path}"
       )
-      self.logger.warn(
-        "If ray.__version__ < 2.10, temporary files may be stored in "
-        f"~/ray_results before being moved to {self.storage_path}. Set the "
-        "environment variable `RAY_AIR_LOCAL_CACHE_DIR` to override this"
-      )
   
-  def load_checkpoint(self, checkpoint_path: str):
-    raise NotImplementedError("WIP")
+  def load_checkpoint(
+      self, checkpoint_path: str, algo: str, tune_config: dict = None
+    ):
+    if RayTuner.can_restore(checkpoint_path):
+      self.tuner = RayTuner.restore(
+        # path to previous experiments
+        path = checkpoint_path,
+        # algorithm
+        trainable = algo,
+        # resume instructions
+        resume_errored = tune_config.get("resume_errored", True),
+        restart_errored = tune_config.get("restart_errored", False),
+        resume_unfinished = tune_config.get("resume_unfinished", True)
+      )
+      self.tuner_config = self.tuner._local_tuner._tune_config
+      self.run_config = self.tuner._local_tuner.get_run_config()
+      self.storage_path = self.run_config.storage_path
+    else:
+      raise RuntimeError(
+        f"Previous experiment {checkpoint_path} cannot be restored"
+      )
   
   def fit(self) -> ResultGrid:
     return self.tuner.fit()
