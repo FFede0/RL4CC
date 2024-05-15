@@ -38,7 +38,7 @@
     "grad_clip": null,
     "grad_clip_by": "global_norm",
     "lr": 5e-5,
-    "_enable_learner_api": true,
+    "_enable_learner_api": false,
     "model": {
       "custom_model": "custom_torch_model",
       "custom_model_config": {
@@ -70,6 +70,6 @@
     "explore": true
   },
   "rl_module": {
-    "_enable_rl_module_api": true
+    "_enable_rl_module_api": false
   }
 }
