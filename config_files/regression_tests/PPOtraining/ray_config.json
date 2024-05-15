@@ -1,0 +1,21 @@
+{
+  "training": {
+    "batch_size": 128,
+    "num_train_batches": 2,
+    "lr": 0.01
+  },
+  "rollouts": {
+    "num_rollout_workers": 1,
+    "duration_per_worker": 1,
+    "duration_unit": "episodes"
+  },
+  "callbacks": {
+    "callbacks_class": "callbacks.base_callbacks.BaseCallbacks"
+  },
+  "debugging": {
+    "log_level": "ERROR",
+    "logger_config": {
+      "type": "ray.tune.logger.CSVLogger"
+    }
+  }
+}

@@ -16,6 +16,7 @@ limitations under the License.
 from experiments.base_experiment import BaseExperiment
 from algorithms.algorithm import Algorithm
 from utilities.common import not_defined
+from utilities.logger import Logger
 
 from datetime import datetime
 import numpy as np
@@ -23,8 +24,10 @@ import json
 import os
 
 class TrainingExperiment(BaseExperiment):
-  def __init__(self, exp_config_file: str):
-    super().__init__(exp_config_file)
+  def __init__(
+      self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
+    ):
+    super().__init__(exp_config_file, logger)
   
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
@@ -42,9 +45,10 @@ class TrainingExperiment(BaseExperiment):
       env_config = self.env_config,
       ray_config = self.ray_config,
       base_logdir = self.logdir,
-      eval_interval = self.evaluation_interval
+      eval_interval = self.evaluation_interval,
+      logger = self.logger
     )
-
+    # build
     algo.build()
     self.logdir = algo.logdir
     # save experiment configuration files
@@ -58,15 +62,15 @@ class TrainingExperiment(BaseExperiment):
     `Algorithm` training loop
     """
     start = datetime.now()
-    self.logger.log(f"training loop --> START")
+    self.logger.log(f"training loop --> START", 1)
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
     it = 1
     while not self.stop(it):
       # train
       true_it = algo.last_iteration() + 1
-      self.logger.log(f"starting iteration {it} ({true_it})", 2)
+      self.logger.log(f"starting iteration {it} ({true_it})", 3)
       result = algo.train()
-      self.logger.log("iteration completed", 2)
+      self.logger.log("iteration completed", 3)
       self.update_progress_file("last_iteration", algo.last_iteration())
       # save checkpoint at the beginning and every `checkpoint_interval` 
       # iterations
@@ -88,16 +92,16 @@ class TrainingExperiment(BaseExperiment):
     last_chpt_dir = algo.save_checkpoint()
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
     # perform final evaluation
-    self.logger.log(f"starting final evaluation", 1)
+    self.logger.log(f"starting final evaluation", 2)
     self.update_evaluation_metrics_file(
       result["training_iteration"], algo.evaluate()
     )
-    self.logger.log(f"final evaluation performed", 1)
+    self.logger.log(f"final evaluation performed", 2)
     # stop
     algo.stop()
     end = datetime.now()
     self.update_progress_file("experiment_end_timestamp", end.timestamp())
-    self.logger.log("training loop ---> END")
+    self.logger.log("training loop ---> END", 1)
     # last progress update
     experiment_duration = end - start
     avg_time_per_iter = (end - start) / (it - 1)
@@ -107,8 +111,8 @@ class TrainingExperiment(BaseExperiment):
     self.update_progress_file(
       "avg_time_per_iter_s", avg_time_per_iter.total_seconds()
     )
-    self.logger.log(f"training loop took: {experiment_duration}")
-    self.logger.log(f"average time per iteration: {avg_time_per_iter}")
+    self.logger.log(f"training loop took: {experiment_duration}", 1)
+    self.logger.log(f"average time per iteration: {avg_time_per_iter}", 1)
   
   def define_stopping_criteria(self):
     """

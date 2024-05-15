@@ -23,7 +23,9 @@ import os
 
 
 class BaseExperiment(ABC):
-  def __init__(self, exp_config_file: str):
+  def __init__(
+      self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
+    ):
     # load experiment configuration file
     self.exp_config = load_config_file(exp_config_file)
     if self.exp_config is None:
@@ -31,7 +33,7 @@ class BaseExperiment(ABC):
         f"ERROR: file `{exp_config_file}` not found or invalid"
       )
     # initialize logger
-    self.logger = Logger(name = "RL4CC")
+    self.logger = logger
     if "logger" in self.exp_config:
       verbosity = self.exp_config["logger"].get("verbosity", 0)
       self.logger.verbose = verbosity
@@ -78,7 +80,6 @@ class BaseExperiment(ABC):
       self.ray_config = load_config_file(self.exp_config.get("ray_config_file", ""))
       self.tune_config = self.exp_config.get("tune_config_file", None)
 
-  
   def write_config_files(self):
     """
     Write the environment and experiment configuration files into the 
@@ -91,7 +92,6 @@ class BaseExperiment(ABC):
         os.path.join(self.logdir, "complete_config"), 
         "env_config.json"
       )
-
     # write experiment configuration file
     write_config_file(
       json.dumps(self.exp_config, indent = 2), 
@@ -99,10 +99,8 @@ class BaseExperiment(ABC):
       "exp_config.json"
     )
 
-  
   def plot_results(self, result: dict) -> str:
     pass
-
   
   @abstractmethod
   def define_stopping_criteria(self, exp_config: dict):

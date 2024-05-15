@@ -1,0 +1,6 @@
+{
+  "env_name": "BaseEnvironment",
+  "min_time": 0,
+  "max_time": 3600,
+  "time_step": 10
+}
