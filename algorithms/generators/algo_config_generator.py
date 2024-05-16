@@ -125,7 +125,7 @@ class AlgoConfigGenerator(ABC):
       self.base_algo_config
       # environment
       .environment(
-        env_config["env_name"], 
+        env_config["env_name"],
         # pass-along config dictionary avoiding env_name
         env_config={k:v for k,v in env_config.items() if k != "env_name"}
       )
@@ -489,7 +489,6 @@ class AlgoConfigGenerator(ABC):
       return tune_string
     else:
       return config
-
 
   def interpret_tune_config(self, config_key, config_value):
     """

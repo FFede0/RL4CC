@@ -118,3 +118,4 @@ class TuneConfigGenerator:
     Create a custom name for the trial
     """
     return f"{trial.trainable_name}_{trial.trial_id}"
+

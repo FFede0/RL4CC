@@ -29,8 +29,8 @@
     "compress_observations": false,
     "enable_tf1_exec_eagerly": false,
     "sampler_perf_stats_ema_coef": null,
-    "num_rollout_workers": 0,
-    "duration_per_worker": 1,
+    "num_rollout_workers": 2,
+    "duration_per_worker": 180,
     "duration_unit": "timesteps"
   },
   "training": {
@@ -49,15 +49,17 @@
       "worker_side_prioritization": false
     },
     "model": {
-        "fcnet_hiddens": [256, 256, 128],
-        "fcnet_activation": "ReLU",
-        "post_fcnet_hiddens": [],
-        "post_fcnet_activation": "linear"
-        "vf_share_layers": false,
-        "_disable_preprocessor_api": false
+      "custom_model": "custom_torch_model",
+      "custom_model_config": {
+        "seed": 123,
+        "fun_layers": ["ReLU", "ReLU", "ReLU"],
+        "dropout": true,
+        "dropout_list": [0.02, 0, 0],
+        "n_features": "tune.choice([[256, 256, 32], [128, 128, 32], [64, 64, 16]])"
+      }
     },
     "target_network_update_freq": 500,
-    "num_steps_sampled_before_learning_starts": 1000,
+    "num_steps_sampled_before_learning_starts": 360,
     "store_buffer_in_checkpoints": false,
     "lr_schedule": null,
     "adam_epsilon": 1e-8,
@@ -69,14 +71,14 @@
     "noisy": false,
     "sigma0": 0.5,
     "dueling": true,
-    "hiddens": [256],
+    "hiddens": [],
     "double_q": true,
     "n_step": 1,
     "before_learn_on_batch": null,
     "td_error_loss_fn": "huber",
     "categorical_distribution_temperature": 1.0,
-    "batch_size": 32,
-    "num_trained_batches": 1
+    "batch_size": 36,
+    "num_trained_batches": 10
   },
   "exploration": {
     "explore": true,

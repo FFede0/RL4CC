@@ -98,7 +98,7 @@ class BaseExperiment(ABC):
       os.path.join(self.logdir, "complete_config"), 
       "exp_config.json"
     )
-  
+
   def plot_results(self, result: dict) -> str:
     pass
   

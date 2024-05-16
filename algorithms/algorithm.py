@@ -61,12 +61,14 @@ class Algorithm:
         f"`AlgorithmConfig` created; output directory: {self.logdir}"
       )
 
-  def build(self, algo_config: AlgorithmConfig):
+  def build(self, algo_config: AlgorithmConfig = None):
     """
     Build the `Algorithm` according to the provided checkpoint path or 
     configuration dictionaries
     """
-    self.algo = algo_config.build()
+    if algo_config is not None:
+      self.algo_config = algo_config
+    self.algo = self.algo_config.build()
   
   def load_checkpoint(self, path: str):
     """
@@ -77,6 +79,7 @@ class Algorithm:
         f"ERROR: checkpoint path {path} does not exist or is invalid"
       )
     self.algo = RayAlgorithm.from_checkpoint(path)
+    self.algo_config = self.algo.config
     self.logdir = self.algo.logdir
     self.logger.warn(
       f"Algorithm restored from checkpoint; output directory: {self.logdir}"
@@ -134,11 +137,3 @@ class Algorithm:
       )
     else:
       print(jj)
-        
-
-
-
-
-
-
-
