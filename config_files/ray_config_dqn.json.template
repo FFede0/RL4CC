@@ -71,7 +71,7 @@
     "noisy": false,
     "sigma0": 0.5,
     "dueling": true,
-    "hiddens": [256],
+    "hiddens": [],
     "double_q": true,
     "n_step": 1,
     "before_learn_on_batch": null,
