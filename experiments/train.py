@@ -19,9 +19,9 @@ from utilities.common import not_defined
 from utilities.logger import Logger
 
 from datetime import datetime
-import numpy as np
 import json
 import os
+
 
 class TrainingExperiment(BaseExperiment):
   def __init__(
