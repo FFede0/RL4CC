@@ -1,5 +1,5 @@
 """
-Copyright 2024 Federica Filippini
+Copyright 2024 Mohanad Diab, Federica Filippini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,38 +18,39 @@ from utilities.logger import Logger
 
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.utils.typing import ModelConfigDict
-from torch import nn
-from gymnasium.spaces import Space
 from abc import ABC, abstractmethod
+from gymnasium.spaces import Space
+from torch import nn
 
 
 class BaseTorchModel(TorchModelV2, nn.Module, ABC):
-    def __init__(self,
-                 obs_space: Space,
-                 action_space: Space,
-                 num_outputs: int,
-                 model_config: ModelConfigDict,
-                 name: str,
-                 **kwargs):
+  def __init__(
+      self,
+      obs_space: Space,
+      action_space: Space,
+      num_outputs: int,
+      model_config: ModelConfigDict,
+      name: str,
+      **kwargs
+    ):
+    super().__init__(obs_space, action_space, num_outputs, model_config, name)
+    nn.Module.__init__(self)
+    self.logger = Logger("RL4CC-Torch Model Logger")
 
-        super().__init__(obs_space, action_space, num_outputs, model_config, name)
-        nn.Module.__init__(self)
-        self.logger = Logger("RL4CC-Torch Model Logger")
+  @abstractmethod
+  def forward(self, input_dict, state, seq_lens, **kwargs):
+    """
+    Implementation of the forward method logic
 
-    @abstractmethod
-    def forward(self, input_dict, state, seq_lens, **kwargs):
-        """
-        Implementation of the forward method logic
+    return: logits, state
+    """
+    pass
 
-        return: logits, state
-        """
-        pass
+  @abstractmethod
+  def value_function(self):
+    """
+    Implementation of the forward method logic
 
-    @abstractmethod
-    def value_function(self):
-        """
-        Implementation of the forward method logic
-
-        return: value function
-        """
-        pass
+    return: value function
+    """
+    pass

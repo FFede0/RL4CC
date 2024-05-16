@@ -1,5 +1,5 @@
 """
-Copyright 2024 Federica Filippini
+Copyright 2024 Mohanad Diab, Federica Filippini
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,36 +18,37 @@ from utilities.logger import Logger
 
 from ray.rllib.models.tf.tf_modelv2 import TFModelV2
 from ray.rllib.utils.typing import ModelConfigDict
-from gymnasium.spaces import Space
 from abc import ABC, abstractmethod
+from gymnasium.spaces import Space
 
 
 class BaseTFModel(TFModelV2, ABC):
-    def __init__(self,
-                 obs_space: Space,
-                 action_space: Space,
-                 num_outputs: int,
-                 model_config: ModelConfigDict,
-                 name: str,
-                 **kwargs):
+  def __init__(
+      self,
+      obs_space: Space,
+      action_space: Space,
+      num_outputs: int,
+      model_config: ModelConfigDict,
+      name: str,
+      **kwargs
+    ):
+    super().__init__(obs_space, action_space, num_outputs, model_config, name)
+    self.logger = Logger("RL4CC-TF Model Logger")
 
-        super().__init__(obs_space, action_space, num_outputs, model_config, name)
-        self.logger = Logger("RL4CC-TF Model Logger")
+  @abstractmethod
+  def forward(self, input_dict, state, seq_lens, **kwargs):
+    """
+    Implementation of the forward method logic
 
-    @abstractmethod
-    def forward(self, input_dict, state, seq_lens, **kwargs):
-        """
-        Implementation of the forward method logic
+    return: logits, state
+    """
+    pass
 
-        return: logits, state
-        """
-        pass
+  @abstractmethod
+  def value_function(self):
+    """
+    Implementation of the forward method logic
 
-    @abstractmethod
-    def value_function(self):
-        """
-        Implementation of the forward method logic
-
-        return: value function
-        """
-        pass
+    return: value function
+    """
+    pass
