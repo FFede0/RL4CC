@@ -87,6 +87,13 @@ class DQNConfigGenerator(AlgoConfigGenerator):
       else:
         # if only one batch is considered, let Ray figure it out
         all_params["training_intensity"] = None
+    # check potential issues related to the presence of custom models
+    if "model" in all_params and "custom_model" in all_params["model"]:
+      if "hiddens" in all_params and len(all_params["hiddens"]) > 0:
+        self.logger.warn(
+          "The initialization may fail if the custom network size and "
+          f"`hiddens` ({all_params['hiddens']}) are not compatible"
+        )
   
   def count_sampled_steps(
       self, algo_config: AlgorithmConfig
