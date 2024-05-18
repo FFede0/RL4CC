@@ -31,7 +31,7 @@ def load_config_file(filename: str) -> dict:
   (if available)
   """
   config = None
-  if os.path.exists(filename):
+  if filename is not None and os.path.exists(filename):
     with open(filename, "r") as istream:
       config = json.load(istream)
   return config

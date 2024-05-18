@@ -1,4 +1,5 @@
-from utilities.common import load_config_file, compare_dictionaries
+from utilities.common import load_config_file, write_config_file
+from utilities.common import compare_dictionaries
 from utilities.logger import Logger
 from algorithms.generators_factory import ACGfactory
 
@@ -21,6 +22,11 @@ def test_default_generator(
   equal = compare_dictionaries(algo_config_dict, expected_dict)
   if not equal:
     logger.err(f"failed test_default_generator() on algo: {algo}")
+    write_config_file(
+      generator.to_json(generator.base_algo_config),
+      "utilities/regression_tests/ERRORS",
+      f"{algo}_default_config.json"
+    )
   return equal
 
 
@@ -41,7 +47,6 @@ def test_algo_config_generator(
   algo_config = generator.generate_algo_config(
     env_config = env_config,
     ray_config = ray_config,
-    base_logdir = exp_config.get("logdir"),
     eval_interval = exp_config.get("evaluation_interval")
   )
   algo_config_dict = generator.to_dict(algo_config)
@@ -50,6 +55,11 @@ def test_algo_config_generator(
   equal = compare_dictionaries(algo_config_dict, expected_dict)
   if not equal:
     logger.err(f"failed test_generator() on algo: {algo}")
+    write_config_file(
+      generator.to_json(algo_config),
+      "utilities/regression_tests/ERRORS",
+      f"{algo}_config.json"
+    )
   return equal
 
 

@@ -13,10 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from utilities.common import load_config_file, write_config_file
+from utilities.common import load_config_file, write_config_file, not_defined
 from utilities.logger import Logger
 
 from abc import ABC, abstractmethod
+from datetime import datetime
 import numpy as np
 import json
 import os
@@ -37,16 +38,11 @@ class BaseExperiment(ABC):
     if "logger" in self.exp_config:
       verbosity = self.exp_config["logger"].get("verbosity", 0)
       self.logger.verbose = verbosity
-    # base output directory
-    self.logdir = os.path.abspath(
-      self.exp_config.get("logdir", "~/ray_results")
-    )
     # validate other parameters
     self.validate_experiment_configuration()
-    # checkpoint/plot/evaluation intervals
-    self.checkpoint_interval = self.exp_config.get(
-      "checkpoint_interval", np.inf
-    )
+    # checkpoint config
+    self.define_checkpoint_config()
+    # plot/evaluation intervals
     self.plot_interval = self.exp_config.get(
       "plot_interval", np.inf
     )
@@ -57,13 +53,19 @@ class BaseExperiment(ABC):
     self.define_stopping_criteria()
   
   def validate_experiment_configuration(self):
+    # the algorithm name must be provided
+    if not_defined("algorithm", self.exp_config):
+      raise KeyError(
+        "ERROR: `algorithm` is required"
+      )
     # if a previous checkpoint path is provided...
     if "from_checkpoint" in self.exp_config:
       self.checkpoint_path = self.exp_config["from_checkpoint"]
       self.env_config = None
       self.ray_config = None
+      self.logdir = None
       # ...environment and ray configurations (if provided) are ignored
-      keys = ["env_config_file", "ray_config_file"]
+      keys = ["env_config_file", "ray_config_file", "logdir"]
       for key in keys:
         if key in self.exp_config:
           self.logger.warn(
@@ -71,15 +73,45 @@ class BaseExperiment(ABC):
           )
     # otherwise, the environment configuration file is mandatory
     else:
-      if "env_config_file" not in self.exp_config:
+      if not_defined("env_config_file", self.exp_config):
         raise KeyError(
           "ERROR: provide `env_config_file` if no previous checkpoint is given"
         )
       self.checkpoint_path = None
       self.env_config = load_config_file(self.exp_config["env_config_file"])
-      self.ray_config = load_config_file(self.exp_config.get("ray_config_file", ""))
-      self.tune_config = self.exp_config.get("tune_config_file", None)
+      self.ray_config = load_config_file(self.exp_config.get("ray_config_file"))
+      # base output directory
+      base_logdir = self.exp_config.get(
+        "logdir"#, os.path.expanduser("~/ray_results"))
+      )
+      if base_logdir is not None:
+        self.generate_logdir(
+          base_logdir,
+          self.exp_config.get("algorithm"),
+          self.env_config.get("env_name")
+        )
 
+  def generate_logdir(self, base_logdir: str, algo: str, env_name: str) -> str:
+    """
+    Generate the experiment `logdir` if an appropriate parameter is provided
+    """
+    now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
+    self.logdir = os.path.join(
+      os.path.abspath(base_logdir), f"{algo}_{env_name}_{now}"
+    )
+    os.makedirs(self.logdir, exist_ok=True)
+  
+  def define_checkpoint_config(self):
+    """
+    Initialize the dictionary storing all configuration parameters related 
+    to checkpointing
+    """
+    self.checkpoint_config = {
+      "checkpoint_frequency": self.exp_config.get(
+        "checkpoint_interval", np.inf
+      )
+    }
+  
   def write_config_files(self):
     """
     Write the environment and experiment configuration files into the 
@@ -98,10 +130,42 @@ class BaseExperiment(ABC):
       os.path.join(self.logdir, "complete_config"), 
       "exp_config.json"
     )
-
+  
+  def update_progress_file(self, key: str, value):
+    """
+    Update the information written in the experiment progress file
+    """
+    exp_progress = {}
+    exp_progress_file = os.path.join(self.logdir, "exp_progress.json")
+    # load existing content (if any)
+    if os.path.exists(exp_progress_file):
+      with open(exp_progress_file, "r") as istream:
+        exp_progress = json.load(istream)
+    # update
+    exp_progress[key] = value
+    # write updated file
+    with open(exp_progress_file, "w") as ostream:
+      ostream.write(json.dumps(exp_progress, indent = 2))
+  
+  def update_evaluation_metrics_file(
+      self, last_iter: int, evaluation_metrics: dict
+    ):
+    """
+    Save the result of the last evaluation
+    """
+    # create the serialized dictionary of the last evaluation results
+    evaluation = {
+      "after_training_iteration": last_iter,
+      **self.serialize_evaluation_metrics(evaluation_metrics)
+    }
+    # write
+    evaluation_file = os.path.join(self.logdir, "evaluation.txt")
+    with open(evaluation_file, "a") as ostream:
+      ostream.write(f"{evaluation}\n")
+  
   def plot_results(self, result: dict) -> str:
     pass
-  
+
   @abstractmethod
   def define_stopping_criteria(self, exp_config: dict):
     pass

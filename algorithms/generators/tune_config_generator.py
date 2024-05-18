@@ -16,9 +16,12 @@ limitations under the License.
 
 from utilities.logger import Logger
 
-from ray import tune, air
-from ray.tune.schedulers import ASHAScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
+from ray.air import RunConfig, CheckpointConfig
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune import TuneConfig
+from datetime import datetime
+from typing import Tuple
 
 
 class TuneConfigGenerator:
@@ -28,7 +31,7 @@ class TuneConfigGenerator:
     self.logger = logger
     self._required_keys = ["num_tune_trials", "metric", "mode"]
 
-  def get_tune_config(self, tune_config: dict) -> tune.TuneConfig:
+  def generate_tune_config(self, tune_config: dict) -> TuneConfig:
     """
     Generates a `TuneConfig` object based on the provided configuration 
     dictionary
@@ -74,43 +77,98 @@ class TuneConfigGenerator:
       else:
         raise NotImplementedError(f"Scheduler {scheduler} is not supported")
     # generate `TuneConfig`
-    tune_params = tune.TuneConfig(
+    tune_params = TuneConfig(
       **tune_config_dict,
       trial_name_creator = self.trial_name_string,
       trial_dirname_creator = self.trial_name_string
     )
     return tune_params
+  
+  def generate_checkpoint_config(
+      self, checkpoint_config: dict
+    ) -> CheckpointConfig:
+    """
+    Generates a `CheckpointConfig` object based on the provided configuration 
+    parameters
+    """
+    config = None
+    if checkpoint_config is not None:
+      config = CheckpointConfig(**checkpoint_config)
+    return config
 
-  def get_run_config(
+  def generate_run_config(
       self,
-      tune_file_name: str = None,
-      training_iterations: int = None,
+      stopping_criterion: dict,
       storage_path: str = None,
-      callbacks = None
-    ) -> air.RunConfig:
+      callbacks: list = None,
+      checkpoint_config: CheckpointConfig = None
+    ) -> RunConfig:
     """
     Generates a `RunConfig` object based on the provided configuration 
     parameters
     """
-    run_config = air.RunConfig(
-      name = tune_file_name,
-      verbose = 1,
-      stop = {"training_iteration": training_iterations},
+    name = None
+    if storage_path is not None:
+      now = datetime.now().strftime('%H-%M-%S.%f')
+      name = f"tuning_experiment_output_{now}"
+    # generate RunConfig
+    run_config = RunConfig(
+      name = name,
+      verbose = self.convert_verbosity_level(),
+      stop = stopping_criterion,
       storage_path = storage_path,
-      callbacks = callbacks
+      callbacks = callbacks,
+      checkpoint_config = checkpoint_config
     )
     return run_config
+  
+  def generate(
+      self,
+      tune_config: dict,
+      stopping_criterion: dict,
+      storage_path: str = None,
+      callbacks: list = None,
+      checkpoint_config: dict = None
+    ) -> Tuple[TuneConfig, RunConfig]:
+    """
+    Generates the `TuneConfig` and `RunConfig` objects based on the provided 
+    configuration parameters
+    """
+    # generate `TuneConfig`
+    tune = self.generate_tune_config(tune_config)
+    # generate `CheckpointConfig`
+    checkpoint = self.generate_checkpoint_config(checkpoint_config)
+    # load callbacks
+    # generate `RunConfig`
+    run = self.generate_run_config(
+      stopping_criterion = stopping_criterion,
+      storage_path = storage_path,
+      callbacks = callbacks,
+      checkpoint_config = checkpoint
+    )
+    return tune, run
 
   def validate_tune_config(self, tune_config: dict):
     """
     Validate the configuration dictionary checking for the existence of the 
     mandatory keys
     """
-    if not all(key in tune_config for key in self._required_keys):
+    if any(key not in tune_config for key in self._required_keys):
       raise KeyError(
-        "One or more of the mandatory keys (num_tune_trials, metric, mode) "
+        f"One or more of the mandatory keys {self._required_keys} "
         "are missing from the tune_config file"
       )
+  
+  def convert_verbosity_level(self) -> int:
+    """
+    0 = silent, 1 = default, 2 = verbose
+    """
+    v = 2
+    if self.logger.verbose == 0:
+      v = 0
+    elif 1 <= self.logger.verbose <= 2:
+      v = 1
+    return v
   
   @staticmethod
   def trial_name_string(trial):

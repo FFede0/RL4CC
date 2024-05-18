@@ -78,7 +78,7 @@
     "td_error_loss_fn": "huber",
     "categorical_distribution_temperature": 1.0,
     "batch_size": 36,
-    "num_trained_batches": 10
+    "num_train_batches": 10
   },
   "exploration": {
     "explore": true,

@@ -19,12 +19,21 @@ factory of Ray `AlgorithmConfig`
 - a simple [`Callbacks`](callbacks/base_callbacks.py) implementation, 
 that should be used as base class when defining more complex problems.
 
+- two simple [custom neural network models](models), based on PyTorch and 
+TensorFlow, that can be used as starting points to implement more complex 
+networks if needed.
+
 - a [`TrainingExperiment`](experiments/train.py) class, to be used as 
 entrypoint to define training experiments, as explained in 
 the following [section](#how-to-start-a-training-experiment).
 
-- a `TuningExperiment` class, to be used as entrypoint to define automatic 
-hyperparameter tuning, as explained in 
+- an [`Tuner`](algorithms/tuner.py) class, used to define hyperparameter 
+tuning experiments, supported by the `Algorithm` class that works as 
+trainable and by a `TuneConfig` and `RunConfig` 
+[generator](algorithms/generators/tune_config_generator.py).
+
+- a [`TuningExperiment`](experiments/tune.py) class, to be used as entrypoint 
+to define automatic hyperparameter tuning, as explained in 
 the following [section](#how-to-start-hyperparameter-tuning).
 
 - a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages 
@@ -90,6 +99,48 @@ exp.run()
 
 i.e., you must ensure that `src/__init__.py` is actually executed. 
 
+### Training experiments with a custom Model
+
+To use a custom neural network, this needs to be registered in the 
+`ray.rllib.models.ModelCatalog`. As an example, suppose that your code 
+directory follows the structure:
+
+```
+.
+├── RL4CC
+├── src
+│   ├── __init__.py
+│   └── my_custom_model.py
+└── main.py
+```
+
+and that the `src/__init__.py` file includes, similarly to the one reported 
+in the `models` directory here,
+
+```
+from .my_custom_model import MyCustomModel
+from ray.rllib.models import ModelCatalog
+
+ModelCatalog.register_custom_model("my_custom_model", MyCustomModel)
+```
+
+To guarantee that the model is properly loaded when starting the 
+experiment, your `main.py` file should include:
+
+```
+import src
+from RL4CC.experiments.train import TrainingExperiment
+
+exp = TrainingExperiment("config_files/exp_config.json")
+exp.run()
+```
+
+i.e., you must ensure that `src/__init__.py` is actually executed. 
+
+Moreover, the `custom_model` section of the ray_config.json file must be 
+properly defined, as detailed in the corresponding 
+[README](config_files/README.md#how-to-use-custom-policy-models).
+
 ### Expected outputs
 
 The outputs produced during the training experiment are saved in a suitable sub-directory of the `logdir` specified in the 
@@ -147,15 +198,20 @@ Hyperparameter Tuning is an integration of the Ray Tune, Air, Rllib libraries.
 
 To define and start a tuning experiment exploiting one of the available 
 algorithms:
-1. define the `tune_config.json` file in the `exp_config.json` file as indicated
-[in the README](config_files/README.md);
+1. define the `tune_config.json` file in the `exp_config.json` file as 
+indicated [in the README](config_files/README.md); note that, since the 
+tuning experiment will run multiple training experiments, also the 
+`env_config.json` and `ray_config.json` files need to be defined as 
+described in the [previous section](#how-to-start-a-training-experiment).
 2. initialize a `TuningExperiment` object by providing the path to the 
 `exp_config.json` file;
 3. call the `TrainingExperiment.run()` method.
-4. Alternatively, Since Air's RunConfig is used on top of the algorithm object, the user can provide the callbacks (class) directly in the run method in a list (which will overwrite any previous callbacks indicated).
+  - Note that, since Air's RunConfig is used on top of the algorithm object, 
+  the user can provide a list of callbacks (classes) as parameters to the run 
+  method, overwriting any previous callbacks indicated.
 
-Example (when using the pre-defined `BaseEnvironment` and `BaseCallbacks` 
-classes):
+Example (when using the pre-defined `BaseEnvironment` and, possibly, custom 
+callbacks classes):
 
 ```
 # Basic usage:
@@ -168,7 +224,6 @@ exp = TuningExperiment("config_files/exp_config.json")
 callbacks = [Mycallbacks, Mycallbacks2]
 exp.run(callbacks=callbacks)
 ```
-
 
 ## The RL4CC Logger
 
