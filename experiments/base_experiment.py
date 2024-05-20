@@ -38,8 +38,8 @@ class BaseExperiment(ABC):
       verbosity = self.exp_config["logger"].get("verbosity", 0)
       self.logger.verbose = verbosity
     # base output directory
-    self.logdir = os.path.abspath(
-      self.exp_config.get("logdir", "~/ray_results")
+    self.logdir = self.exp_config.get(
+      "logdir"#, os.path.expanduser("~/ray_results")
     )
     # validate other parameters
     self.validate_experiment_configuration()
