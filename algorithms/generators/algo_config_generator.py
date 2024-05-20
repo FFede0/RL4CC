@@ -192,9 +192,10 @@ class AlgoConfigGenerator(ABC):
     # appropriate standard keys
     if using_suggested_keys:
       self.convert_rollout_parameters(all_params, env_config)
-      self.convert_evaluation_parameters(all_params, env_config, eval_interval)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
+    # process the evaluation interval
+    self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
     # if required
     if base_logdir is not None:
@@ -300,7 +301,11 @@ class AlgoConfigGenerator(ABC):
       "evaluation_num_workers",
       max(1, self.base_algo_config["evaluation_num_workers"])
     )
-    duration = self.base_algo_config["evaluation_duration"]
+    duration = all_params.get(
+      "evaluation_duration",  # needed if the method is called when 
+                              # using protected keys
+      self.base_algo_config["evaluation_duration"]
+    )
     if "evaluation_duration_per_worker" in all_params:
       duration = all_params.pop("evaluation_duration_per_worker") * num_workers
       if unit == "episodes":
