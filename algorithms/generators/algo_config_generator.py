@@ -125,12 +125,12 @@ class AlgoConfigGenerator(ABC):
         env_config={k:v for k,v in env_config.items() if k != "env_name"}
       )
     )
-    # process the parameters
-    if ray_config is not None:
-      all_params = self.process_config_parameters(
-        ray_config, env_config, base_logdir, eval_interval
-      )
-      # update the algorithm config
+    # process the configuration parameters
+    all_params = self.process_config_parameters(
+      ray_config, env_config, base_logdir, eval_interval
+    )
+    # update the algorithm config
+    if len(all_params) > 0:
       algo_config.update_from_dict(all_params)
     # validate the number of collected and trained steps
     self.validate_collection_and_training_size(algo_config)
@@ -205,6 +205,8 @@ class AlgoConfigGenerator(ABC):
       if not_defined("type", all_params["logger_config"]):
         all_params["logger_config"]["type"] = "ray.tune.logger.UnifiedLogger"
       all_params["logger_config"]["logdir"] = exp_logdir
+    else:
+      all_params["logger_config"] = None
   
   def validate_key_usage(self, all_params: dict):
     """
