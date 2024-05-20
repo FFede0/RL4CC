@@ -20,6 +20,7 @@ from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
 from abc import ABC, abstractmethod
 from datetime import datetime
+import numpy as np
 import inspect
 import json
 import os
@@ -285,7 +286,7 @@ class AlgoConfigGenerator(ABC):
     according to the provided keys
     """
     # evaluation interval
-    if eval_interval is not None:
+    if eval_interval is not None and not np.isinf(eval_interval):
       all_params["evaluation_interval"] = eval_interval
     # duration unit
     unit = all_params.get(
@@ -313,10 +314,10 @@ class AlgoConfigGenerator(ABC):
     # (force the local (non-eval) worker to have an environment to evaluate on)
     if not_defined("evaluation_interval", all_params):
       all_params["create_env_on_driver"] = True
-      msg = "no `evaluation_interval` is set in `exp_config.json`. "
-      msg += "A final evaluation will still be performed, with "
       self.logger.warn(
-        msg + f"{num_workers} worker(s) collecting overall {duration} {unit}"
+        "no `evaluation_interval` is set in `exp_config.json`. "
+        "A final evaluation will still be performed, with "
+        f"{num_workers} worker(s) collecting overall {duration} {unit}"
       )
 
   def convert_resources_parameters(self, all_params):
