@@ -317,7 +317,7 @@ class AlgoConfigGenerator(ABC):
         )
 
   def convert_evaluation_parameters(
-      self, all_params: dict, env_config: dict, eval_interval: int = None
+      self, all_params: dict, eval_interval: int = None
     ):
     """
     Defines the appropriate parameters related to the evaluation length,
