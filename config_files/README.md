@@ -103,7 +103,7 @@ passed to the algorithm (or the algorithm configuration) initializer, while `eva
 **Additional note:** in the `callbacks` section, the `callbacks_class` 
 parameter should correspond to the path to the callbacks class as it would 
 be reported while importing the module (e.g., 
-`"callbacks/base_callbacks/BaseCallbacks"`).
+`"callbacks.base_callbacks.BaseCallbacks"`).
 
 Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and 
 [DQN](ray_config_dqn.json.template) are provided.
