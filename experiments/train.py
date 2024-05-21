@@ -162,6 +162,6 @@ class TrainingExperiment(BaseExperiment):
       **self.serialize_evaluation_metrics(evaluation_metrics)
     }
     # write
-    evaluation_file = os.path.join(self.logdir, "evaluation.txt")
+    evaluation_file = os.path.join(self.logdir, "evaluations.txt")
     with open(evaluation_file, "a") as ostream:
       ostream.write(f"{evaluation}\n")
