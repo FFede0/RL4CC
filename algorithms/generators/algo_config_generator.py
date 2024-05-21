@@ -206,10 +206,11 @@ class AlgoConfigGenerator(ABC):
     # appropriate standard keys
     if using_suggested_keys:
       self.convert_rollout_parameters(all_params, env_config)
-      self.convert_evaluation_parameters(all_params, env_config, eval_interval)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
-    # manage the debugging configuration, creating the experiment logdir
+    # process the evaluation interval
+    self.convert_evaluation_parameters(all_params, eval_interval)
+    # manage the debugging configuration, creating the experiment logdir 
     # if required
     if exp_logdir is not None:
       if not_defined("logger_config", all_params):
@@ -293,7 +294,7 @@ class AlgoConfigGenerator(ABC):
         )
 
   def convert_evaluation_parameters(
-      self, all_params: dict, env_config: dict, eval_interval: int = None
+      self, all_params: dict, eval_interval: int = None
     ):
     """
     Defines the appropriate parameters related to the evaluation length,
@@ -317,9 +318,6 @@ class AlgoConfigGenerator(ABC):
     duration = self.base_algo_config["evaluation_duration"]
     if "evaluation_duration_per_worker" in all_params:
       duration = all_params.pop("evaluation_duration_per_worker") * num_workers
-      if unit == "episodes":
-        n_steps = self.compute_num_steps_per_episode(env_config)
-        duration *= n_steps
       all_params["evaluation_duration"] = duration
     # guarantee that at least the final evaluation can be surely performed
     # (force the local (non-eval) worker to have an environment to evaluate on)
