@@ -132,9 +132,29 @@ class AlgoConfigGenerator(ABC):
     # update the algorithm config
     if len(all_params) > 0:
       algo_config.update_from_dict(all_params)
+      # properly set the environment configuration for validation (if required)
+      eval_config = all_params.pop("evaluation_config", {})
+      if len(eval_config) > 0:
+        algo_config.evaluation(
+          evaluation_config = AlgorithmConfig.overrides(
+            env_config = eval_config
+          )
+        )
     # validate the number of collected and trained steps
     self.validate_collection_and_training_size(algo_config)
     return algo_config
+  
+  def generate_eval_config(
+       self, env_config: dict, new_env_config: dict
+     ) -> dict:
+     """
+     Generate and evaluation environment config by suitably modifying the 
+     original one through the given parameters
+     """
+     eval_config = {**env_config}
+     for key, val in new_env_config.items():
+       eval_config[key] = val
+     return eval_config
   
   def process_config_parameters(
       self, 
@@ -195,7 +215,7 @@ class AlgoConfigGenerator(ABC):
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
     # process the evaluation interval
-    self.convert_evaluation_parameters(all_params, eval_interval)
+    self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
     # if required
     if base_logdir is not None:
@@ -282,7 +302,7 @@ class AlgoConfigGenerator(ABC):
         all_params["rollout_fragment_length"] = duration * n_steps
   
   def convert_evaluation_parameters(
-      self, all_params: dict, eval_interval: int = None
+      self, all_params: dict, env_config: dict, eval_interval: int = None
     ):
     """
     Defines the appropriate parameters related to the evaluation length, 
@@ -319,6 +339,11 @@ class AlgoConfigGenerator(ABC):
         "no `evaluation_interval` is set in `exp_config.json`. "
         "A final evaluation will still be performed, with "
         f"{num_workers} worker(s) collecting overall {duration} {unit}"
+      )
+    # define the environment parameters for algorithm evaluation
+    if "evaluation_config" in all_params:
+      all_params["evaluation_config"] = self.generate_eval_config(
+        env_config, all_params["evaluation_config"]
       )
 
   def convert_resources_parameters(self, all_params):
