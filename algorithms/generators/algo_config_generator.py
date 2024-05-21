@@ -195,7 +195,7 @@ class AlgoConfigGenerator(ABC):
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
     # process the evaluation interval
-    self.convert_evaluation_parameters(all_params, env_config, eval_interval)
+    self.convert_evaluation_parameters(all_params, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
     # if required
     if base_logdir is not None:
@@ -282,7 +282,7 @@ class AlgoConfigGenerator(ABC):
         all_params["rollout_fragment_length"] = duration * n_steps
   
   def convert_evaluation_parameters(
-      self, all_params: dict, env_config: dict, eval_interval: int = None
+      self, all_params: dict, eval_interval: int = None
     ):
     """
     Defines the appropriate parameters related to the evaluation length, 
@@ -310,12 +310,6 @@ class AlgoConfigGenerator(ABC):
     )
     if "evaluation_duration_per_worker" in all_params:
       duration = all_params.pop("evaluation_duration_per_worker") * num_workers
-      if unit == "episodes":
-        min_time = env_config["min_time"]
-        max_time = env_config["max_time"]
-        time_step = env_config["time_step"]
-        n_steps = (max_time - min_time) // time_step
-        duration *= n_steps
       all_params["evaluation_duration"] = duration
     # guarantee that at least the final evaluation can be surely performed 
     # (force the local (non-eval) worker to have an environment to evaluate on)
