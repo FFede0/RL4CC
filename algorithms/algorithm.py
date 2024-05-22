@@ -56,10 +56,6 @@ class Algorithm:
         exp_logdir = logdir,
         use_tune = use_tune
       )
-      self.logdir = self.algo_config["logger_config"]["logdir"]
-      self.logger.warn(
-        f"`AlgorithmConfig` created; output directory: {self.logdir}"
-      )
 
   def build(self, algo_config: AlgorithmConfig = None):
     """
@@ -69,6 +65,10 @@ class Algorithm:
     if algo_config is not None:
       self.algo_config = algo_config
     self.algo = self.algo_config.build()
+    self.logdir = self.algo.logdir
+    self.logger.warn(
+      f"`Algorithm` created; output directory: {self.logdir}"
+    )
   
   def load_checkpoint(self, path: str):
     """

@@ -90,6 +90,8 @@ class BaseExperiment(ABC):
           self.exp_config.get("algorithm"),
           self.env_config.get("env_name")
         )
+      else:
+        self.logdir = None
 
   def generate_logdir(self, base_logdir: str, algo: str, env_name: str) -> str:
     """
