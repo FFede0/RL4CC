@@ -16,6 +16,7 @@ limitations under the License.
 from algorithms.generators.algo_config_generator import AlgoConfigGenerator
 from algorithms.generators.ppo_config_generator import PPOConfigGenerator
 from algorithms.generators.dqn_config_generator import DQNConfigGenerator
+from algorithms.generators.sac_config_generator import SACConfigGenerator
 
 
 
@@ -46,4 +47,5 @@ class AlgoConfigGeneratorsFactory:
 ACGfactory = AlgoConfigGeneratorsFactory()
 ACGfactory.register("PPO", PPOConfigGenerator)
 ACGfactory.register("DQN", DQNConfigGenerator)
+ACGfactory.register('SAC', SACConfigGenerator)
 

@@ -17,6 +17,7 @@ limitations under the License.
 from models.base_torch_model import BaseTorchModel
 
 from ray.rllib.utils.typing import ModelConfigDict
+
 from gymnasium.spaces import Space
 from torch import nn
 import inspect

@@ -18,6 +18,7 @@ from utilities.logger import Logger
 
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.utils.typing import ModelConfigDict
+
 from abc import ABC, abstractmethod
 from gymnasium.spaces import Space
 from torch import nn
