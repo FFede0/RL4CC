@@ -1,0 +1,98 @@
+{
+  "resources": {
+    "num_gpus_master": 0,
+    "num_cpus_master": 1,
+    "num_cpus_per_worker": 1,
+    "num_gpus_per_worker": 0,
+    "num_learner_workers": 0,
+    "num_gpus_per_learner_worker": 0,
+    "num_cpus_per_learner_worker": 1,
+    "_fake_gpus": false,
+    "local_gpu_idx": 0,
+    "custom_resources_per_worker": {},
+    "placement_strategy": "PACK"
+  },
+  "framework": "torch",
+  "rollouts": {
+    "env_runner_cls": null,
+    "num_envs_per_worker": 1,
+    "create_env_on_local_worker": false,
+    "sample_async": false,
+    "enable_connectors": true,
+    "update_worker_filter_stats": true,
+    "use_worker_filter_stats": true,
+    "remote_worker_envs": false,
+    "remote_env_batch_wait_ms": 0,
+    "validate_workers_after_construction": true,
+    "preprocessor_pref": "deepmind",
+    "observation_filter": "NoFilter",
+    "compress_observations": false,
+    "enable_tf1_exec_eagerly": false,
+    "sampler_perf_stats_ema_coef": null,
+    "num_rollout_workers": 2,
+    "duration_per_worker": 500,
+    "duration_unit": "timesteps"
+  },
+  "training": {
+    "gamma": 0.99,
+    "grad_clip_by": "global_norm",
+    "lr": 5e-4,
+    "_enable_learner_api": false,
+    "optimization": {
+      "actor_learning_rate": 0.0003,
+      "critic_learning_rate": 0.0003,
+      "entropy_learning_rate": 0.0003
+    },
+    "replay_buffer_config": {
+      "type": "MultiAgentPrioritizedReplayBuffer",
+      "prioritized_replay": -1,
+      "capacity": 50000,
+      "prioritized_replay_alpha": 0.6,
+      "prioritized_replay_beta": 0.4,
+      "prioritized_replay_eps": 1e-6,
+      "replay_sequence_length": 1,
+      "worker_side_prioritization": false
+    },
+    "twin_q": "true",
+    "q_model_config": {
+      "custom_model": "custom_torch_model",
+      "custom_model_config": {
+        "seed": 123,
+        "fun_layers": ["ReLU", "ReLU", "ReLU"],
+        "dropout": true,
+        "dropout_list": [0.02, 0, 0],
+        "n_features": [128, 128, 64]
+      }
+    },
+    "policy_model_config": {
+      "custom_model": "custom_torch_model",
+      "custom_model_config": {
+        "seed": 123,
+        "fun_layers": ["ReLU", "ReLU"],
+        "dropout": true,
+        "dropout_list": [0.02, 0],
+        "n_features": [256, 64]
+      }
+    },
+    "target_network_update_freq": 500,
+    "num_steps_sampled_before_learning_starts": 1000,
+    "store_buffer_in_checkpoints": false,
+    "grad_clip": 40.0,
+    "tau": 1.0,
+    "n_step": 1,
+    "batch_size": 32,
+    "num_train_batches": 31
+  },
+  "exploration": {
+    "explore": true,
+    "exploration_config": {
+      "type": "EpsilonGreedy",
+      "initial_epsilon": 1.0,
+      "final_epsilon": 0.02,
+      "epsilon_timesteps": 10000
+    }
+  },
+  "rl_module": {
+    "_enable_rl_module_api": false
+  }
+}
