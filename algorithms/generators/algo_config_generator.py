@@ -45,7 +45,7 @@ class AlgoConfigGenerator(ABC):
       ("min_sample_timesteps_per_iteration", "reporting"),
       ("min_train_timesteps_per_iteration", "reporting"),
       ("num_gpus", "resources"),
-      ("num_cpus_per_local_worker", "resources"),
+      ("num_cpus_for_local_worker", "resources"),
       ("logger_config", "debugging"),
       ("evaluation_interval", "evaluation"),
       ("evaluation_duration", "evaluation"),
@@ -362,7 +362,7 @@ class AlgoConfigGenerator(ABC):
     # master CPUs
     if "num_cpus_master" in all_params:
       num_cpus = all_params.pop("num_cpus_master")
-      all_params["num_cpus_per_local_worker"] = num_cpus
+      all_params["num_cpus_for_local_worker"] = num_cpus
     # master GPUs
     if "num_gpus_master" in all_params:
       num_gpus = all_params.pop("num_gpus_master")
