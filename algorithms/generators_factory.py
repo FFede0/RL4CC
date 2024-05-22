@@ -47,5 +47,5 @@ class AlgoConfigGeneratorsFactory:
 ACGfactory = AlgoConfigGeneratorsFactory()
 ACGfactory.register("PPO", PPOConfigGenerator)
 ACGfactory.register("DQN", DQNConfigGenerator)
-ACGfactory.register('SAC', SACConfigGenerator)
+ACGfactory.register("SAC", SACConfigGenerator)
 
