@@ -17,10 +17,10 @@ from utilities.common import load_config_file, write_config_file
 from utilities.logger import Logger
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 import numpy as np
 import json
 import os
-
 
 class BaseExperiment(ABC):
   def __init__(
@@ -39,7 +39,9 @@ class BaseExperiment(ABC):
       self.logger.verbose = verbosity
     # base output directory
     self.logdir = self.exp_config.get(
-      "logdir"#, os.path.expanduser("~/ray_results")
+      # FIXME: Use only Path in the future, to guarantee support on non POSIX
+      # platforms (Windows).
+      "logdir", Path.home().joinpath("ray_results").as_posix()
     )
     # validate other parameters
     self.validate_experiment_configuration()
@@ -89,14 +91,14 @@ class BaseExperiment(ABC):
     # write environment configuration file
     if self.env_config is not None:
       write_config_file(
-        json.dumps(self.env_config, indent = 2), 
-        os.path.join(self.logdir, "complete_config"), 
+        json.dumps(self.env_config, indent = 2),
+        os.path.join(self.logdir, "complete_config"),
         "env_config.json"
       )
     # write experiment configuration file
     write_config_file(
-      json.dumps(self.exp_config, indent = 2), 
-      os.path.join(self.logdir, "complete_config"), 
+      json.dumps(self.exp_config, indent = 2),
+      os.path.join(self.logdir, "complete_config"),
       "exp_config.json"
     )
   
