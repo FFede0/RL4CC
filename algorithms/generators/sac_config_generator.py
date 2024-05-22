@@ -16,6 +16,8 @@ limitations under the License.
 from algorithms.generators.dqn_config_generator import DQNConfigGenerator
 from utilities.logger import Logger
 
+from ray.rllib.algorithms import AlgorithmConfig
+
 
 class SACConfigGenerator(DQNConfigGenerator):
   def __init__(
@@ -23,6 +25,10 @@ class SACConfigGenerator(DQNConfigGenerator):
     ):
     super().__init__(logger)
     self.algo = "SAC"
+    # generate default `AlgorithmConfig`
+    self.generate_default_config()
+    # save a dictionary of algo methods and corresponding parameters
+    self.save_algo_methods_dict()
   
   def validate_key_usage(self, all_params: dict):
     using_suggested_keys, using_protected_keys = super().validate_key_usage(
@@ -35,4 +41,11 @@ class SACConfigGenerator(DQNConfigGenerator):
         "config is ignored"
       )
     return using_suggested_keys, using_protected_keys
-    
+  
+  def to_dict(self, algo_config: AlgorithmConfig) -> dict:
+    ray_config = super().to_dict(algo_config)
+    # config dict for optimization (parameter and member have different names)
+    if "optimization" in ray_config.get("not_classified", {}):
+      opt = ray_config["not_classified"].pop("optimization")
+      ray_config["training"]["optimization_config"] = opt
+    return ray_config
