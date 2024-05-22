@@ -38,10 +38,10 @@
     "grad_clip_by": "global_norm",
     "lr": 5e-4,
     "_enable_learner_api": false,
-    'optimization': {
-      'actor_learning_rate': 0.0003,
-      'critic_learning_rate': 0.0003,
-      'entropy_learning_rate': 0.0003
+    "optimization": {
+      "actor_learning_rate": 0.0003,
+      "critic_learning_rate": 0.0003,
+      "entropy_learning_rate": 0.0003
     },
     "replay_buffer_config": {
       "type": "MultiAgentPrioritizedReplayBuffer",
@@ -54,14 +54,6 @@
       "worker_side_prioritization": false
     },
     "twin_q": "true",
-    "model": {
-      'fcnet_hiddens': [256, 256],
-      'fcnet_activation': 'relu',
-      'post_fcnet_hiddens': [],
-      'post_fcnet_activation': None,
-      'custom_model': None,
-      'custom_model_config': {}
-    },
     "q_model_config": {
       "custom_model": "custom_torch_model",
       "custom_model_config": {
