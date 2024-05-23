@@ -57,6 +57,8 @@ Example (when using the pre-defined `BaseEnvironment` and `BaseCallbacks`
 classes):
 
 ```
+from RL4CC.experiments.train import TrainingExperiment
+
 exp = TrainingExperiment("config_files/exp_config.json")
 exp.run()
 ```
@@ -214,6 +216,8 @@ Example (when using the pre-defined `BaseEnvironment` and, possibly, custom
 callbacks classes):
 
 ```
+from RL4CC.experiments.tune import TuningExperiment
+
 # Basic usage:
 exp = TuningExperiment("config_files/exp_config.json")
 exp.run()
