@@ -263,3 +263,9 @@ To expand the module with generators for new algorithms:
 [PPO algorithm](algorithms/generators/ppo_config_generator.py))
 2. add the new generator to the 
 [generators factory](algorithms/generators_factory.py)
+
+## How to contribute
+
+### Regression tests
+
+WIP (do not touch yet)
