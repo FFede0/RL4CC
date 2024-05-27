@@ -22,6 +22,7 @@ from ray.tune.search.sample import Domain
 from abc import ABC, abstractmethod
 from collections import namedtuple
 from ray import tune
+import numpy as np
 import inspect
 import json
 
@@ -131,17 +132,17 @@ class AlgoConfigGenerator(ABC):
       self.base_algo_config
       # environment
       .environment(
-        env_config["env_name"],
+        env_config["env_name"], 
         # pass-along config dictionary avoiding env_name
         env_config={k:v for k,v in env_config.items() if k != "env_name"}
       )
     )
-    # process the parameters
-    if ray_config is not None:
-      all_params = self.process_config_parameters(
-        ray_config, env_config, exp_logdir, eval_interval
-      )
-      # update the algorithm config
+    # process the configuration parameters
+    all_params = self.process_config_parameters(
+      ray_config, env_config, exp_logdir, eval_interval
+    )
+    # update the algorithm config
+    if len(all_params) > 0:
       algo_config.update_from_dict(all_params)
       # properly set the environment configuration for validation (if required)
       eval_config = all_params.pop("evaluation_config", {})
@@ -156,17 +157,17 @@ class AlgoConfigGenerator(ABC):
     return algo_config
   
   def generate_eval_config(
-      self, env_config: dict, new_env_config: dict
-    ) -> dict:
-    """
-    Generate and evaluation environment config by suitably modifying the 
-    original one through the given parameters
-    """
-    eval_config = {**env_config}
-    for key, val in new_env_config.items():
-      eval_config[key] = val
-    return eval_config
-
+       self, env_config: dict, new_env_config: dict
+     ) -> dict:
+     """
+     Generate and evaluation environment config by suitably modifying the 
+     original one through the given parameters
+     """
+     eval_config = {**env_config}
+     for key, val in new_env_config.items():
+       eval_config[key] = val
+     return eval_config
+  
   def process_config_parameters(
       self,
       ray_config: dict,
@@ -238,7 +239,9 @@ class AlgoConfigGenerator(ABC):
       if not_defined("type", all_params["logger_config"]):
         all_params["logger_config"]["type"] = "ray.tune.logger.UnifiedLogger"
       all_params["logger_config"]["logdir"] = exp_logdir
-
+    else:
+      all_params["logger_config"] = None
+  
   def validate_key_usage(self, all_params: dict):
     """
     Checks if the user is setting any protected/suggested key and throws
@@ -321,7 +324,7 @@ class AlgoConfigGenerator(ABC):
     according to the provided keys
     """
     # evaluation interval
-    if eval_interval is not None:
+    if eval_interval is not None and not np.isinf(eval_interval):
       all_params["evaluation_interval"] = eval_interval
     # duration unit
     unit = all_params.get(
@@ -335,7 +338,11 @@ class AlgoConfigGenerator(ABC):
       "evaluation_num_workers",
       max(1, self.base_algo_config["evaluation_num_workers"])
     )
-    duration = self.base_algo_config["evaluation_duration"]
+    duration = all_params.get(
+      "evaluation_duration",  # needed if the method is called when 
+                              # using protected keys
+      self.base_algo_config["evaluation_duration"]
+    )
     if "evaluation_duration_per_worker" in all_params:
       duration = all_params.pop("evaluation_duration_per_worker") * num_workers
       all_params["evaluation_duration"] = duration
@@ -343,10 +350,15 @@ class AlgoConfigGenerator(ABC):
     # (force the local (non-eval) worker to have an environment to evaluate on)
     if not_defined("evaluation_interval", all_params):
       all_params["create_env_on_driver"] = True
-      msg = "no `evaluation_interval` is set in `exp_config.json`. "
-      msg += "A final evaluation will still be performed, with "
       self.logger.warn(
-        msg + f"{num_workers} worker(s) collecting overall {duration} {unit}"
+        "no `evaluation_interval` is set in `exp_config.json`. "
+        "A final evaluation will still be performed, with "
+        f"{num_workers} worker(s) collecting overall {duration} {unit}"
+      )
+    # define the environment parameters for algorithm evaluation
+    if "evaluation_config" in all_params:
+      all_params["evaluation_config"] = self.generate_eval_config(
+        env_config, all_params["evaluation_config"]
       )
     # define the environment parameters for algorithm evaluation
     if "evaluation_config" in all_params:
@@ -396,8 +408,8 @@ class AlgoConfigGenerator(ABC):
     )
     tot_sampled = self.count_sampled_steps(algo_config)
     tot_trained = self.count_trained_steps(algo_config)
-    self.logger.breakline()
-    # raise a WARNING if the number of collected and trained steps are too
+    self.logger.breakline(1)
+    # raise a WARNING if the number of collected and trained steps are too 
     # unbalanced
     if tot_trained.lower < tot_sampled.lower * 0.9:
       self.logger.warn(

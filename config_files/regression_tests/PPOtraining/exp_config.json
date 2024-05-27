@@ -4,9 +4,6 @@
   "ray_config_file": "config_files/regression_tests/PPOtraining/ray_config.json",
   "logdir": "utilities/regression_tests/LOGDIR/PPOtraining",
   "evaluation_interval": 5,
-  "logger": {
-    "verbosity": 1
-  },
   "stopping_criteria": {
     "max_iterations": 10
   }

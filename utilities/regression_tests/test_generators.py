@@ -19,9 +19,11 @@ def test_default_generator(
   algo_config_dict = generator.to_dict(generator.base_algo_config)
   # load expected output for comparison
   expected_dict = load_config_file(expected_out)
-  equal = compare_dictionaries(algo_config_dict, expected_dict)
+  equal, different_keys = compare_dictionaries(algo_config_dict, expected_dict)
   if not equal:
-    logger.err(f"failed test_default_generator() on algo: {algo}")
+    logger.err(
+      f"failed test_default_generator() on algo: {algo}; different keys: {different_keys}"
+    )
     write_config_file(
       generator.to_json(generator.base_algo_config),
       "utilities/regression_tests/ERRORS",
@@ -52,9 +54,11 @@ def test_algo_config_generator(
   algo_config_dict = generator.to_dict(algo_config)
   # load expected output for comparison
   expected_dict = load_config_file(expected_out)
-  equal = compare_dictionaries(algo_config_dict, expected_dict)
+  equal, different_keys = compare_dictionaries(algo_config_dict, expected_dict)
   if not equal:
-    logger.err(f"failed test_generator() on algo: {algo}")
+    logger.err(
+      f"failed test_generator() on algo: {algo}; different keys: {different_keys}"
+    )
     write_config_file(
       generator.to_json(algo_config),
       "utilities/regression_tests/ERRORS",
