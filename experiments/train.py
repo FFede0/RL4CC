@@ -16,22 +16,25 @@ limitations under the License.
 from experiments.base_experiment import BaseExperiment
 from algorithms.algorithm import Algorithm
 from utilities.common import not_defined
+from utilities.logger import Logger
 
 from datetime import datetime
-import numpy as np
 import json
 import os
 
+
 class TrainingExperiment(BaseExperiment):
-  def __init__(self, exp_config_file: str):
-    super().__init__(exp_config_file)
+  def __init__(
+      self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
+    ):
+    super().__init__(exp_config_file, logger)
   
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
-    # the algorithm name must be provided
-    if not_defined("algorithm", self.exp_config):
+    # check that stopping criteria are provided
+    if not_defined("stopping_criteria", self.exp_config):
       raise KeyError(
-        "ERROR: `algorithm` is required"
+        "`stopping_criteria` must be provided in `exp_config.json`"
       )
   
   def run(self):
@@ -41,9 +44,14 @@ class TrainingExperiment(BaseExperiment):
       checkpoint_path = self.checkpoint_path,
       env_config = self.env_config,
       ray_config = self.ray_config,
-      base_logdir = self.logdir,
-      eval_interval = self.evaluation_interval
+      logdir = self.logdir,
+      eval_interval = self.evaluation_interval,
+      logger = self.logger
     )
+    # build (if the algorithm is not loaded from an existing checkpoint)
+    if self.checkpoint_path is None:
+      algo.build()
+    # save logdir
     self.logdir = algo.logdir
     # save experiment configuration files
     self.write_config_files()
@@ -56,19 +64,19 @@ class TrainingExperiment(BaseExperiment):
     `Algorithm` training loop
     """
     start = datetime.now()
-    self.logger.log(f"training loop --> START")
+    self.logger.log(f"training loop --> START", 1)
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
     it = 1
     while not self.stop(it):
       # train
       true_it = algo.last_iteration() + 1
-      self.logger.log(f"starting iteration {it} ({true_it})", 2)
+      self.logger.log(f"starting iteration {it} ({true_it})", 3)
       result = algo.train()
-      self.logger.log("iteration completed", 2)
+      self.logger.log("iteration completed", 3)
       self.update_progress_file("last_iteration", algo.last_iteration())
-      # save checkpoint at the beginning and every `checkpoint_interval` 
+      # save checkpoint at the beginning and every `checkpoint_frequency` 
       # iterations
-      if it == 1 or it % self.checkpoint_interval == 0:
+      if it == 1 or it % self.checkpoint_config["checkpoint_frequency"] == 0:
         last_chpt_dir = algo.save_checkpoint()
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
       # plot results at the beginning and every `plot_interval` iterations
@@ -78,7 +86,7 @@ class TrainingExperiment(BaseExperiment):
       if it % self.evaluation_interval == 0:
         self.update_evaluation_metrics_file(
           result["training_iteration"], 
-          result.evaluation_metrics
+          result["evaluation"]
         )
       # move to the next iteration
       it += 1
@@ -86,16 +94,16 @@ class TrainingExperiment(BaseExperiment):
     last_chpt_dir = algo.save_checkpoint()
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
     # perform final evaluation
-    self.logger.log(f"starting final evaluation", 1)
+    self.logger.log(f"starting final evaluation", 2)
     self.update_evaluation_metrics_file(
       result["training_iteration"], algo.evaluate()
     )
-    self.logger.log(f"final evaluation performed", 1)
+    self.logger.log(f"final evaluation performed", 2)
     # stop
     algo.stop()
     end = datetime.now()
     self.update_progress_file("experiment_end_timestamp", end.timestamp())
-    self.logger.log("training loop ---> END")
+    self.logger.log("training loop ---> END", 1)
     # last progress update
     experiment_duration = end - start
     avg_time_per_iter = (end - start) / (it - 1)
@@ -105,8 +113,8 @@ class TrainingExperiment(BaseExperiment):
     self.update_progress_file(
       "avg_time_per_iter_s", avg_time_per_iter.total_seconds()
     )
-    self.logger.log(f"training loop took: {experiment_duration}")
-    self.logger.log(f"average time per iteration: {avg_time_per_iter}")
+    self.logger.log(f"training loop took: {experiment_duration}", 1)
+    self.logger.log(f"average time per iteration: {avg_time_per_iter}", 1)
   
   def define_stopping_criteria(self):
     """
@@ -114,11 +122,6 @@ class TrainingExperiment(BaseExperiment):
     terminated, according to the stopping criteria specified in the experiment 
     configuration file
     """
-    # check that stopping criteria are provided
-    if not_defined("stopping_criteria", self.exp_config):
-      raise KeyError(
-        "`stopping_criteria` must be provided in `exp_config.json`"
-      )
     # list possible stopping criteria
     stop_on_max_iter = None
     for key, value in self.exp_config["stopping_criteria"].items():
@@ -129,35 +132,3 @@ class TrainingExperiment(BaseExperiment):
           f"Stopping criterion `{key}` is not supported"
         )
     self.stop = stop_on_max_iter
-  
-  def update_progress_file(self, key: str, value):
-    """
-    Update the information written in the experiment progress file
-    """
-    exp_progress = {}
-    exp_progress_file = os.path.join(self.logdir, "exp_progress.json")
-    # load existing content (if any)
-    if os.path.exists(exp_progress_file):
-      with open(exp_progress_file, "r") as istream:
-        exp_progress = json.load(istream)
-    # update
-    exp_progress[key] = value
-    # write updated file
-    with open(exp_progress_file, "w") as ostream:
-      ostream.write(json.dumps(exp_progress, indent = 2))
-
-  def update_evaluation_metrics_file(
-      self, last_iter: int, evaluation_metrics: dict
-    ):
-    """
-    Save the result of the last evaluation
-    """
-    # create the serialized dictionary of the last evaluation results
-    evaluation = {
-      "after_training_iteration": last_iter,
-      **self.serialize_evaluation_metrics(evaluation_metrics)
-    }
-    # write
-    evaluation_file = os.path.join(self.logdir, "evaluation.txt")
-    with open(evaluation_file, "a") as ostream:
-      ostream.write(f"{evaluation}\n")

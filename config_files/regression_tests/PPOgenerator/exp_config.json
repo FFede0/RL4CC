@@ -1,0 +1,9 @@
+{
+  "algorithm": "PPO",
+  "env_config_file": "config_files/regression_tests/PPOgenerator/env_config.json",
+  "ray_config_file": "config_files/regression_tests/PPOgenerator/ray_config.json",
+  "evaluation_interval": 5,
+  "stopping_criteria": {
+    "max_iterations": 10
+  }
+}

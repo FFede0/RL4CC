@@ -1,7 +1,11 @@
+# Output of regression tests
+utilities/regression_tests/LOGDIR/*
+
 # Configuration files (except the README and some templates)
 config_files/*
 !config_files/README.md
 !config_files/*.template
+!config_files/regression_tests/
 
 # MacOS files
 .DS_Store
@@ -166,4 +170,6 @@ cython_debug/
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+.idea/
+test.py
+

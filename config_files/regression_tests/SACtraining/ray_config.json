@@ -1,0 +1,23 @@
+{
+  "training": {
+    "batch_size": 128,
+    "num_train_batches": 2,
+    "lr": 0.01,
+    "num_steps_sampled_before_learning_starts": 0,
+    "target_network_update_freq": 256
+  },
+  "rollouts": {
+    "num_rollout_workers": 1,
+    "duration_per_worker": 1,
+    "duration_unit": "episodes"
+  },
+  "callbacks": {
+    "callbacks_class": "callbacks.base_callbacks.BaseCallbacks"
+  },
+  "debugging": {
+    "log_level": "ERROR"
+  },
+  "evaluation": {
+    "always_attach_evaluation_results": false
+  }
+}

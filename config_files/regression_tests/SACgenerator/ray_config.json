@@ -30,7 +30,7 @@
     "enable_tf1_exec_eagerly": false,
     "sampler_perf_stats_ema_coef": null,
     "num_rollout_workers": 2,
-    "duration_per_worker": 180,
+    "duration_per_worker": 500,
     "duration_unit": "timesteps"
   },
   "training": {
@@ -38,6 +38,11 @@
     "grad_clip_by": "global_norm",
     "lr": 5e-4,
     "_enable_learner_api": false,
+    "optimization": {
+      "actor_learning_rate": 0.0003,
+      "critic_learning_rate": 0.0003,
+      "entropy_learning_rate": 0.0003
+    },
     "replay_buffer_config": {
       "type": "MultiAgentPrioritizedReplayBuffer",
       "prioritized_replay": -1,
@@ -48,37 +53,35 @@
       "replay_sequence_length": 1,
       "worker_side_prioritization": false
     },
-    "model": {
+    "twin_q": "true",
+    "q_model_config": {
       "custom_model": "custom_torch_model",
       "custom_model_config": {
         "seed": 123,
         "fun_layers": ["ReLU", "ReLU", "ReLU"],
         "dropout": true,
         "dropout_list": [0.02, 0, 0],
-        "n_features": "tune.choice([[256, 256, 32], [128, 128, 32], [64, 64, 16]])"
+        "n_features": [128, 128, 64]
+      }
+    },
+    "policy_model_config": {
+      "custom_model": "custom_torch_model",
+      "custom_model_config": {
+        "seed": 123,
+        "fun_layers": ["ReLU", "ReLU"],
+        "dropout": true,
+        "dropout_list": [0.02, 0],
+        "n_features": [256, 64]
       }
     },
     "target_network_update_freq": 500,
-    "num_steps_sampled_before_learning_starts": 360,
+    "num_steps_sampled_before_learning_starts": 1000,
     "store_buffer_in_checkpoints": false,
-    "lr_schedule": null,
-    "adam_epsilon": 1e-8,
     "grad_clip": 40.0,
     "tau": 1.0,
-    "num_atoms": 1,
-    "v_min": -10.0,
-    "v_max": 10.0,
-    "noisy": false,
-    "sigma0": 0.5,
-    "dueling": true,
-    "hiddens": [],
-    "double_q": true,
     "n_step": 1,
-    "before_learn_on_batch": null,
-    "td_error_loss_fn": "huber",
-    "categorical_distribution_temperature": 1.0,
-    "batch_size": 36,
-    "num_train_batches": 10
+    "batch_size": 32,
+    "num_train_batches": 31
   },
   "exploration": {
     "explore": true,
