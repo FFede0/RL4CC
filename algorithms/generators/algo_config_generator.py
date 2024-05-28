@@ -152,14 +152,6 @@ class AlgoConfigGenerator(ABC):
             env_config = eval_config
           )
         )
-      # properly set the environment configuration for validation (if required)
-      eval_config = all_params.pop("evaluation_config", {})
-      if len(eval_config) > 0:
-        algo_config.evaluation(
-          evaluation_config = AlgorithmConfig.overrides(
-            env_config = eval_config
-          )
-        )
     # validate the number of collected and trained steps
     self.validate_collection_and_training_size(algo_config)
     return algo_config
@@ -238,7 +230,6 @@ class AlgoConfigGenerator(ABC):
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
     # process the evaluation interval
-    self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
     # if required
@@ -360,7 +351,9 @@ class AlgoConfigGenerator(ABC):
     if not_defined("evaluation_interval", all_params):
       all_params["create_env_on_driver"] = True
       self.logger.warn(
-        msg + f"{num_workers} worker(s) collecting overall {duration} {unit}"
+        "no `evaluation_interval` is set in `exp_config.json`. "
+        "A final evaluation will still be performed, with "
+        f"{num_workers} worker(s) collecting overall {duration} {unit}"
       )
     # define the environment parameters for algorithm evaluation
     if "evaluation_config" in all_params:
