@@ -18,6 +18,7 @@ from algorithms.algorithm import Algorithm
 from utilities.common import not_defined
 from utilities.logger import Logger
 
+from ray.rllib.policy.policy import Policy
 from datetime import datetime
 import numpy as np
 import json
@@ -37,7 +38,7 @@ class TrainingExperiment(BaseExperiment):
         "ERROR: `algorithm` is required"
       )
   
-  def run(self):
+  def run(self) -> Policy:
     # define algorithm
     algo = Algorithm(
       algo_name = self.exp_config["algorithm"], 
@@ -54,6 +55,8 @@ class TrainingExperiment(BaseExperiment):
     algo.print_algo_config()
     # train
     self.training_loop(algo)
+    # return the trained policy
+    return algo.get_policy()
   
   def training_loop(self, algo: Algorithm):
     """

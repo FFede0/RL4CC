@@ -16,6 +16,7 @@ limitations under the License.
 from utilities.common import load_config_file, write_config_file
 from utilities.logger import Logger
 
+from ray.rllib.policy.policy import Policy
 from abc import ABC, abstractmethod
 import numpy as np
 import json
@@ -108,7 +109,7 @@ class BaseExperiment(ABC):
     pass
   
   @abstractmethod
-  def run(self):
+  def run(self) -> Policy:
     pass
 
   @staticmethod
