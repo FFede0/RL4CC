@@ -19,6 +19,7 @@ from utilities.logger import Logger
 
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
+from ray.rllib.policy.policy import Policy
 import os
 
 
@@ -130,3 +131,6 @@ class Algorithm:
       )
     else:
       print(jj)
+  
+  def get_policy(self) -> Policy:
+    return self.algo.get_policy()
