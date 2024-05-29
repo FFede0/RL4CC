@@ -44,9 +44,11 @@ def evaluate_policy(
     [
       {
         "step": int,
-        "state": np.ndarray
-        "action": tuple
-        "next_state":
+        "state": environment observation spec
+        "action": environment action spec
+        "action_RNN_state_outputs": dict
+        "action_extra_info": dict
+        "next_state": environment observation spec
         "reward": float
         "done": bool
         "truncated": bool
@@ -54,6 +56,9 @@ def evaluate_policy(
         "total_reward": float
       }
     ]
+
+    Note: the environment observation/action spec refer to the type of 
+    each observation/action, which vary depending on the environment definition
   """
   evaluation_episodes = []
   # start evaluation
@@ -68,13 +73,17 @@ def evaluate_policy(
     step = 0
     # run episode
     while not done:
-      action = policy.compute_single_action(obs, explore=explore)
+      action, RNN_state_outputs, extra_info = policy.compute_single_action(
+        obs, explore=explore
+      )
       next_obs, reward, done, truncated, obs_info = env.step(action)
       total_episode_reward += reward
       evaluation_steps.append({
         "step": step,
         "state": obs,
         "action": action,
+        "action_RNN_state_outputs": RNN_state_outputs,
+        "action_extra_info": extra_info,
         "next_state": next_obs,
         "reward": reward,
         "done": done,
