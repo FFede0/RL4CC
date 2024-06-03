@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
+import collections
 from models.base_torch_model import BaseTorchModel
 
 from ray.rllib.utils.typing import ModelConfigDict
@@ -48,7 +49,7 @@ class CustomTorchModel(BaseTorchModel):
     fun_layers = config.get("fun_layers", [])
     dropout = config.get("dropout", False)
     dropout_list = config.get("dropout_list", [])
-    seed = config.get("seed", 1234)
+    # seed = config.get("seed", 1234)
     # build structure
     if len(n_features) > 0 and len(n_features) == len(fun_layers):
       hidden_layers = []
@@ -92,7 +93,23 @@ class CustomTorchModel(BaseTorchModel):
 
     return: logits, state
     """
-    obs = input_dict["obs"].float()
+
+    obs = input_dict["obs"]
+    
+    if isinstance(obs, torch.Tensor):
+        obs = obs.float()
+    elif isinstance(obs, collections.OrderedDict):
+        # Handle the OrderedDict case
+        tensors = []
+        for key, value in obs.items():
+            if not isinstance(value, torch.Tensor):
+                raise TypeError(f"Expected each item in input_dict['obs'] to be a torch.Tensor but got {type(value)} for key '{key}'")
+            tensors.append(value.float())
+        # Concatenate tensors along the last dimension (assuming they need to be concatenated)
+        obs = torch.cat(tensors, dim=-1)
+    else:
+        raise TypeError(f"Expected input_dict['obs'] to be a torch.Tensor or OrderedDict but got {type(obs)}")
+
     q_values = self.network(obs)
     self._last_q_values = q_values
     return q_values, state
