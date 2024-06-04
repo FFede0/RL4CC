@@ -171,33 +171,33 @@ information:
 Examples are reported for both the PPO and DQN algorithms in the the 
 corresponding template files.
 
-:warning::warning::warning: The framework the model is based on **must** match 
-the framework passed in the ray_config.json file, otherwise this will result 
-in runtime errors.
+> [!WARNING]
+> The framework the model is based on **must** match the framework passed in the
+> `ray_config`, otherwise this will result in runtime errors.
 
 ### Configure hyperparameter tuning
 
 To run hyperparameter tuning, the user should: 
-1. provide a tune_config.json file (including parameters related to the 
-configuration of the `Tuner` object), and
-2. adapt the ray_config.json file to properly define the search space.
+
+1. provide a `tune_config` (including parameters related to the configuration of
+   the `Tuner` object), and
+2. adapt the `ray_config` file to properly define the search space.
 
 Details are provided in the following.
 
-#### `Tuner` configuration file
+#### `Tuner` configuration
 
-The `tune_config.json` file includes **three** mandatory parameter, which 
-are related to the number of tune trials and the identification of the 
-best result. 
+The `tune_config` must include **three** mandatory parameter, which are related
+to the number of tune trials and the identification of the best result.
 
 These are:
-- `num_tune_trials`: the number of tuning trials (possibly run in parallel, 
-if the cluster resources are enough to do so). These trials will sample from 
-the Tune search space (defined according to the elements in the 
-ray_config.json file, as detailed in 
-[the next section](#configuring-the-search-space-for-parameters)). **Note 
-that,** if the `num_tune_trials` parameter is -1, (virtually) 
-infinite samples are generated until a stopping condition is met.
+
+- `num_tune_trials`: the number of tuning trials (possibly run in parallel, if
+  the cluster resources are enough to do so). These trials will sample from the
+  Tune search space (defined according to the elements in the `ray_config`, as
+  detailed in [the next section](#configuring-the-search-space-for-parameters)).
+  **Note that,** if the `num_tune_trials` parameter is -1, (virtually) infinite
+  samples are generated until a stopping condition is met.
 - `metric`: the metric used to evaluate the performance of a given set of 
 parameters in a trial.
 - `mode`: the mode on which the values returned by the metric are evaluated. 
@@ -217,13 +217,15 @@ checkpoint. These include:
   - the `resume_unfinished` field, related to the possibilty of resuming an 
   experiment left in the `RUNNING` state. By default, it is `True`.
 
-**Note**: currently, only the `HyperOpt` search algorithm and the 
-`ASHAScheduler` are implemented.
+> [!NOTE]
+> Currently, only the `HyperOpt` search algorithm and the `ASHAScheduler` are
+> implemented.
 
-:warning::warning::warning: **Note:** experiments left in the `TERMINATED` 
-state cannot be resumed: you have to start a new experiment from scratch if 
-you want to test new parameters or change other configuration terms as 
-the metric, mode or number of tune trials.
+> [!WARNING]
+> **Note:** experiments left in the `TERMINATED` 
+state cannot be resumed: you have to start a new experiment from scratch if you
+want to test new parameters or change other configuration terms as the metric,
+mode or number of tune trials.
 
 Sample configuration:
 
@@ -250,17 +252,16 @@ Sample configuration:
 
 #### Configuring the `search space` for parameters
 
-The Tuner configurations file `tune_config.json` described in the section 
-[above](#tuner-configuration-file) is responsible for the behaviour of the 
-`Tuner` and how it handles the `Trials` running in parallel. However, 
-to actually fine-tune algorithm parameters, the user should define the 
-search space by suitably adapting the `ray_config.json` file.
+The Tuner configuration `tune_config` described in the section
+[above](#tuner-configuration) is responsible for the behaviour of the `Tuner`
+and how it handles the `Trials` running in parallel. However, to actually
+fine-tune algorithm parameters, the user should define the search space by
+suitably adapting the `ray_config`.
 
-This can be simply done by providing the values of each parameter to be 
-tuned as a `tune.**search_space` string. 
-For example, if the learning rate for the PPO algorithm is to be tuned, locate 
-the corresponding parameter (`lr`, in the `training` section) in the 
-ray_config.json file and set it as:
+This can be simply done by providing the values of each parameter to be tuned as
+a `tune.**search_space` string.  For example, if the learning rate for the PPO
+algorithm is to be tuned, locate the corresponding parameter (`lr`, in the
+`training` section) in the `ray_config` file and set it as:
 
 ```
 "training": {
@@ -274,20 +275,19 @@ ray_config.json file and set it as:
 }
 ```
 
-In the above example, the `Tuner` will sample `num_tune_trials` (present in 
-the `tune_config.json` file) trials; each trial will run for the specified
-number of `max_iterations` (present in the `exp_config.json` file, as 
-discussed in [the following](#experiment-configuration-file)), considering a 
-different `lr` value sampled from the `loguniform` distribution 
-over the range of `(1e-4, 1e-1)`.
+In the above example, the `Tuner` will sample `num_tune_trials` (present in the
+`tune_config` file) trials; each trial will run for the specified number of
+`max_iterations` (present in the `exp_config` file, as discussed in [the
+following](#experiment-configuration)), considering a different `lr` value
+sampled from the `loguniform` distribution over the range of `(1e-4, 1e-1)`.
 
 For more about tune search spaces see 
 [the relative documentation](https://docs.ray.io/en/latest/tune/api/search_space.html).
 
-:warning::warning::warning: **Note**: When the user tries to start a new tuning 
-experiment without specifying the path to a `tune_config.json` file in the 
-`exp_config.json` file, the execution will be interrupted prompting the user to 
-provide them.
+> [!WARNING]
+> When the user tries to start a new tuning experiment without specifying the
+> path to a `tune_config.json` file in the `exp_config.json` file, the execution
+> will be interrupted prompting the user to provide them.
 
 ### Experiment configuration
 
@@ -320,9 +320,10 @@ directory if no value is provided here is `~/ray_results`.
 - `from_checkpoint`: path to the directory where the checkpoint to be 
 restored is saved. If this is provided, further information related to the 
 Environment or the Ray Algorithm configuration files are neglected.
-  - :warning::warning::warning: in the case of `TuningExperiment`s, the 
-  path is the path to the general tuning experiment outputs folder within 
-  `logdir`, not the path to a specific checkpoint directory.
+    > [!WARNING]
+    > In the case of `TuningExperiment`s, the path is the path to the general
+    > tuning experiment outputs folder within `logdir`, not the path to a
+    > specific checkpoint directory.
 - `env_config_file`: path to the `env_config.json` file described
   [above](#environment-configuration).
 - `env_config`: dictionary containing the environment configuration described
@@ -331,9 +332,10 @@ Environment or the Ray Algorithm configuration files are neglected.
   [above](#ray-algorithm-configuration).
 - `ray_config`: dictionary containing the Ray configuration described
   [above](#ray-algorithm-configuration).
-- `tune_config_file`: path to the `tune_config.json` file described 
-[above](#tuner-configuration-file). This parameter is **mandatory** if 
-no previous checkpoint is provided.
+- `tune_config_file`: path to the `tune_config.json` file described
+  [above](#tuner-configuration).
+- `tune_config`: dictionary containing the tuner configuration described
+  [above](#tuner-configuration).
 - `evaluation_interval`: after how many iterations the evaluation should be 
 performed. **Important note:** one evaluation step is always performed at the 
 end of the training loop, even if no parameter is provided here.
@@ -345,7 +347,8 @@ end of the training loop, even if no parameter is provided here.
 > [!WARNING]
 > If no previously checkpoint is provided, you **must** specify either
 > `env_config_file` or `env_config` but not both. The same applies to
-> `ray_config_file` and `ray_config`.
+> Ray config (`ray_config_file` and `ray_config`) and tuner configuration
+> (`tune_config_file` and `tune_config`),
 
 Example (for a training experiment): 
 
