@@ -1,9 +1,20 @@
-## Expected structure of the configuration files
+## Expected structure of the configuration
 
-Each experiment is controlled by one base configuration file, in `JSON` 
-format, denoted in the following as `exp_config.json`. It includes information 
-about the experiment to run (e.g., the name of the algorithm to use, 
-whether to start from an existing checkpoint, etc.). 
+Each experiment is controlled by a base configuration, a dictionary, called
+`exp_config`. It contains information about the experiment to run (e.g., the
+name of the algorithm to use, whether to start from an existing checkpoint,
+etc.).
+
+RL4CC experiment classes (`BaseExperiment`, `TrainingExperiment` and
+`TuningExperiment`) can read the `exp_config` in two ways:
+
+1. From a JSON file (like `exp_config.json`) using the `exp_config_file`
+   parameter,
+2. From a dictionary using the `exp_config` parameter.
+
+> [!WARNING]
+> You must specify one of the two parameters and they cannot be specified at the
+> same time.
 
 If the experiment should start from scratch (i.e., no previous checkpoints 
 are available), the configuration is completed by two (or three) additional 
@@ -12,10 +23,10 @@ and, possibly, the `Tuner` configuration.
 
 The corresponding structure is detailed in the following.
 
-### `Environment` configuration file
+### `Environment` configuration
 
-The `env_config.json` file includes **four** mandatory parameters, which 
-are related to Environment name and the simulation time management within it. 
+The `env_config` must include **four** mandatory parameters, which are related
+to Environment name and the simulation time management within it.
 
 These are:
 - `env_name`: the name of the Environment, as it is registered in the 
@@ -43,10 +54,11 @@ new agent decision is taken every 10 seconds.
 **Important note:** these parameters should be set even in a non-episodic 
 environment. Use `max_time` to represent the Environment horizon.
 
-### Ray `Algorithm` configuration file
+### Ray `Algorithm` configuration
 
-The `ray_config.json` file includes parameters related to the definition 
-of a Ray [`AlgorithmConfig`](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms) object. 
+The `ray_config` file must include parameters related to the definition of a Ray
+[`AlgorithmConfig`](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms)
+object.
 
 Parameters should be grouped in sub-dictionaries following the callbacks 
 structure of `AlgorithmConfig`. The most relevant families of parameters are:
@@ -89,16 +101,16 @@ the two approaches cannot be mixed.
 
 :warning::warning::warning: **Important note:** there are few elements that, 
 differently from what is explained in the Ray documentation **should not** be 
-managed through `ray_config.json`. These are:
+managed through `ray_config`. These are:
 - `env` and `env_config`, from the `environment` parameters group;
 - `evaluation_interval`, from the `evaluation` parameters group;
 - `logdir`, from the `logger_config` dictionary in the `debugging` parameters 
 group.
 
-In particular, `env` and `env_config` are indirectly controlled through the 
-[`env_config.json`](#environment-configuration-file) file, while 
-`evaluation_interval` and `logdir` are set from the 
-[experiment configuration file](#experiment-configuration-file).
+In particular, `env` and `env_config` are indirectly controlled through the
+[`env_config`](#environment-configuration) configuration, while
+`evaluation_interval` and `logdir` are set from the [experiment configuration
+file](#experiment-configuration).
 
 **Additional note:** in the `callbacks` section, the `callbacks_class` 
 parameter should correspond to the path to the callbacks class as it would 
@@ -277,9 +289,10 @@ experiment without specifying the path to a `tune_config.json` file in the
 `exp_config.json` file, the execution will be interrupted prompting the user to 
 provide them.
 
-### Experiment configuration file
+### Experiment configuration
 
-The `exp_config.json` includes parameters related to the training and/or  hyperparameter tuning experiment (e.g., the algorithm to use, the stopping 
+The `exp_config` includes parameters related to the training and/or
+hyperparameter tuning experiment (e.g., the algorithm to use, the stopping
 criteria, etc.).
 
 The **mandatory parameters** vary depending on whether a simple training or 
@@ -310,11 +323,14 @@ Environment or the Ray Algorithm configuration files are neglected.
   - :warning::warning::warning: in the case of `TuningExperiment`s, the 
   path is the path to the general tuning experiment outputs folder within 
   `logdir`, not the path to a specific checkpoint directory.
-- `env_config_file`: path to the `env_config.json` file described 
-[above](#environment-configuration-file). This parameter is **mandatory** if 
-no previous checkpoint is provided.
-- `ray_config_file`: path to the `ray_config.json` file described 
-[above](#ray-algorithm-configuration-file).
+- `env_config_file`: path to the `env_config.json` file described
+  [above](#environment-configuration).
+- `env_config`: dictionary containing the environment configuration described
+  [above](#environment-configuration).
+- `ray_config_file`: path to the `ray_config.json` file described
+  [above](#ray-algorithm-configuration).
+- `ray_config`: dictionary containing the Ray configuration described
+  [above](#ray-algorithm-configuration).
 - `tune_config_file`: path to the `tune_config.json` file described 
 [above](#tuner-configuration-file). This parameter is **mandatory** if 
 no previous checkpoint is provided.
@@ -325,6 +341,11 @@ end of the training loop, even if no parameter is provided here.
 should be saved. **Important note:** one checkpoint is always saved at the 
 end of the training loop, even if no parameter is provided here.
 - `plot_interval`: TBA
+
+> [!WARNING]
+> If no previously checkpoint is provided, you **must** specify either
+> `env_config_file` or `env_config` but not both. The same applies to
+> `ray_config_file` and `ray_config`.
 
 Example (for a training experiment): 
 
