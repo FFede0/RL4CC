@@ -183,3 +183,18 @@ To expand the module with generators for new algorithms:
 [PPO algorithm](algorithms/generators/ppo_config_generator.py))
 2. add the new generator to the 
 [generators factory](algorithms/generators_factory.py)
+
+## How to contribute to RL4CC
+
+The RL4CC repository is organized as follows:
+- the branch `main` hosts production-ready releases, i.e. tested code that
+has passed reviews on lower stages;
+- the branch `develop` hosts changes that may not be completely stable.
+This is basically a quality/staging branch. When the changes have been tested
+and are stable, we can make a PR to main;
+- the branch `test` is the collector of the initial merges among all
+developers. From here we move on to `develop`.
+
+Each developer can create their own branch named `test-[your-initials]`, 
+from which you can merge to `test`. No direct PR will be accepted on any 
+branch that is not `test`.
