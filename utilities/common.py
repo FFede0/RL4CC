@@ -25,6 +25,12 @@ def not_defined(param: str, params_dict: dict) -> bool:
   """
   return (param not in params_dict) or (params_dict[param] is None)
 
+def defined(param: str, params_dict: dict) -> bool:
+  """
+  Return True if the given parameter is set in a parameters dictionary.
+  """
+  return param in params_dict and params_dict[param] is not None
+
 def load_config_file(filename: str) -> dict:
   """
   Load the configuration file whose name is provided as parameter 
