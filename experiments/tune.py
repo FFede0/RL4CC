@@ -26,10 +26,11 @@ import os
 
 
 class TuningExperiment(BaseExperiment):
-  def __init__(
-      self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
-    ):
-    super().__init__(exp_config_file, logger)
+  def __init__(self,
+               exp_config_file: str = None,
+               exp_config: dict = None
+               logger: Logger = Logger(name = "RL4CC")):
+    super().__init__(exp_config_file, exp_config, logger)
   
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()

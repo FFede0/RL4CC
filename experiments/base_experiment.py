@@ -24,15 +24,25 @@ import os
 
 
 class BaseExperiment(ABC):
-  def __init__(
-      self, exp_config_file: str, logger: Logger = Logger(name = "RL4CC")
-    ):
-    # load experiment configuration file
-    self.exp_config = load_config_file(exp_config_file)
-    if self.exp_config is None:
-      raise RuntimeError(
-        f"ERROR: file `{exp_config_file}` not found or invalid"
-      )
+  def __init__(self,
+               exp_config_file: str = None,
+               exp_config: dict = None,
+               logger: Logger = Logger(name = "RL4CC")):
+    # Handle exp_config_file and exp_config, they cannot be both None or both
+    # set.
+    if exp_config_file is None and exp_config is None:
+      raise RuntimeError("ERROR: exp_config_file and exp_config cannot both be None")
+    if exp_config_file is not None and exp_config is not None:
+      raise RuntimeError("ERROR: exp_config_file and exp_config cannot both be defined")
+
+    # Set self.exp_config.
+    if exp_config_file is not None:
+      self.exp_config = load_config_file(exp_config_file)
+      if self.exp_config is None:
+        raise RuntimeError(f"ERROR: file {exp_config_file!r} not found or invalid")
+    else:
+      self.exp_config = exp_config
+
     # initialize logger
     self.logger = logger
     if "logger" in self.exp_config:
