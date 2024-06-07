@@ -154,12 +154,12 @@ config](config_files/README.md#experiment-configuration) (or in `~/ray_results`
 if nothing is provided). These include:
 
 - `complete_config`: a directory containing the configuration (`exp_config`,
-  `envconfig` and `ray_config`) used to define the experiment, saved as JSON
+  `env_config` and `ray_config`) used to define the experiment, saved as JSON
   files.
 > [!NOTE]
 > Two important notes:
->   - The configuration is saved as files even if you pass to RL4CC dictionaries
->     and not JSON files.
+>   - JSON files are saved here, regardless the fact that the user passed the
+>     configuration(s) as file(s) or as `dict` object(s).
 >   - While `env_config.json` and `exp_config.json` are simply copied from the
 >     user-defined configurations, the `ray_config.json` file reported here
 >     includes also the default values assigned to keys that were not included
@@ -274,7 +274,8 @@ where:
 - The `MESSAGE_TYPE` is `INFO` when calling `Logger.log()`, `WARNING` when 
 calling `Logger.warn()` and `ERROR` when calling `Logger.error()`.
 
-:warning::warning::warning: file streams TBA
+> [!WARNING]
+> file streams TBA
 
 ## How to add new RL methods
 

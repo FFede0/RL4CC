@@ -74,48 +74,60 @@ rate) and algorithm-specific properties.
 A more comprehensive list is provided in 
 [the Ray documentation](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms).
 
-:warning::warning::warning: **Important note:** to simplify the management of 
-some parameters related to the experience sampling and training, RL4CC offers 
-the possibility of setting higher-level *suggested* keywords insted of 
-using directly the ones defined in Ray. These are:
-- In the `rollouts` section:
-  - `duration_unit`: it can take the value `episodes`, if rollout workers 
-  should collect entire episodes during the experience sampling phase, or 
-  `timesteps`, if episodes can be truncated during the experience sampling;
-  - `duration_per_worker`: how many episodes/steps should be collected by 
-  each rollout worker.
-- In the `training` section:
-  - `batch_size`: dimension of each batch extracted from the collected 
-  experience (or the replay buffer, if defined) during the training phase;
-  - `num_train_batches`: how many batches should be trained in each iteration.
-- in the `resources` section:
-  - `num_gpus_master`: number of GPUs assigned to the master node;
-  - `num_cpus_master`: number of CPUs assigned to the master node.
-- in the `evaluation` section:
-  - `evaluation_duration_per_worker`: how many episodes/steps should be collected by each evaluation worker.
+> [!WARNING]
+> To simplify the management of some parameters related to the experience
+> sampling and training, RL4CC offers the possibility of setting higher-level
+> *suggested* keywords instead of directly using the ones defined in Ray. These
+> are:
+>
+> - In the `rollouts` section:
+>   - `duration_unit`: it can take the value `episodes`, if rollout workers
+>     should collect entire episodes during the experience sampling phase, or
+>     `timesteps`, if episodes can be truncated during the experience sampling;
+>
+>   - `duration_per_worker`: how many episodes/steps should be collected by each
+>     rollout worker.
+>
+> - In the `training` section:
+>   - `batch_size`: dimension of each batch extracted from the collected
+>     experience (or the replay buffer, if defined) during the training phase;
+>
+>   - `num_train_batches`: how many batches should be trained in each iteration.
+>
+> - in the `resources` section:
+>   - `num_gpus_master`: number of GPUs assigned to the master node;
+>
+>   - `num_cpus_master`: number of CPUs assigned to the master node.
+>
+> - in the `evaluation` section:
+>   - `evaluation_duration_per_worker`: how many episodes/steps should be
+>     collected by each evaluation worker.
+>
+> These keywords mask a lower-level management performed by Ray, where different
+> algorithms use different parameters to control the same elements. An
+> **expert** user is free to set directly the Ray *protected* keywords, but the
+> two approaches cannot be mixed.
 
-These keywords mask a lower-level management performed by Ray, where different 
-algorithms use different parameters to control the same elements. An 
-**expert** user is free to set directly the Ray *protected* keywords, but 
-the two approaches cannot be mixed.
+> [!WARNING]
+> There are few elements that, differently from what is explained in the Ray
+> documentation **should not** be managed through `ray_config`. These are:
+>
+> - `env` and `env_config`, from the `environment` parameters group;
+>
+> - `evaluation_interval`, from the `evaluation` parameters group;
+>
+> - `logdir`, from the `logger_config` dictionary in the `debugging` parameters
+>   group.
+>
+> In particular, `env` and `env_config` are indirectly controlled through the
+> [`env_config`](#environment-configuration) configuration, while
+> `evaluation_interval` and `logdir` are set from the [experiment configuration
+> file](#experiment-configuration).
 
-:warning::warning::warning: **Important note:** there are few elements that, 
-differently from what is explained in the Ray documentation **should not** be 
-managed through `ray_config`. These are:
-- `env` and `env_config`, from the `environment` parameters group;
-- `evaluation_interval`, from the `evaluation` parameters group;
-- `logdir`, from the `logger_config` dictionary in the `debugging` parameters 
-group.
-
-In particular, `env` and `env_config` are indirectly controlled through the
-[`env_config`](#environment-configuration) configuration, while
-`evaluation_interval` and `logdir` are set from the [experiment configuration
-file](#experiment-configuration).
-
-**Additional note:** in the `callbacks` section, the `callbacks_class` 
-parameter should correspond to the path to the callbacks class as it would 
-be reported while importing the module (e.g., 
-`"callbacks.base_callbacks.BaseCallbacks"`).
+> [!NOTE]
+> In the `callbacks` section, the `callbacks_class` parameter should correspond
+> to the path to the callbacks class as it would be reported while importing the
+> module (e.g., `"callbacks.base_callbacks.BaseCallbacks"`).
 
 Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and 
 [DQN](ray_config_dqn.json.template) are provided.
