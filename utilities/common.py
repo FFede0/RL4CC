@@ -23,7 +23,7 @@ def not_defined(param: str, params_dict: dict) -> bool:
   """
   Return True if the given parameter is not set in a parameters dictionary
   """
-  return (param not in params_dict) or (params_dict[param] is None)
+  return not defined(param, params_dict)
 
 def defined(param: str, params_dict: dict) -> bool:
   """
