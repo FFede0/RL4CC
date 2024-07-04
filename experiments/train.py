@@ -56,9 +56,22 @@ class TrainingExperiment(BaseExperiment):
     # save experiment configuration files
     self.write_config_files()
     algo.print_algo_config()
+    
+    self.execute_before_training()
+
     # train
     self.training_loop(algo)
+
+    self.execute_after_training()
+    
+    print('DONE')
+    
+    return algo
   
+  def execute_before_training(self):
+    print("execute_before_training, train.py")
+    pass
+
   def training_loop(self, algo: Algorithm):
     """
     `Algorithm` training loop
@@ -115,6 +128,9 @@ class TrainingExperiment(BaseExperiment):
     )
     self.logger.log(f"training loop took: {experiment_duration}", 1)
     self.logger.log(f"average time per iteration: {avg_time_per_iter}", 1)
+
+  def execute_after_training(self):
+    pass
   
   def define_stopping_criteria(self):
     """
