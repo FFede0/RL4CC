@@ -39,7 +39,6 @@ class BaseCallbacksForPlots(BaseCallbacks):
 		# add worker index
 		episode.user_data["worker_index"] = []
 		episode.hist_data["worker_index"] = []
-		episode.custom_metrics["worker_index"] = []
 
 	def on_episode_step(
 		self,
@@ -57,19 +56,24 @@ class BaseCallbacksForPlots(BaseCallbacks):
 			"ERROR: `on_episode_step()` callback should not be called right "
 			"after env reset!"
 		)
-
+		
 		for key in self.RELEVANT_KEYS:
 			val = episode.last_info_for()[key]
-			if isinstance(val, np.ndarray):
-				val = val.tolist()
+			if not isinstance(val, (int, float, list)):
+				if isinstance(val, np.ndarray):
+					val = val.tolist()
+				elif isinstance(val, np.int32) or isinstance(val, np.int64):
+					val = int(val)
+				elif isinstance(val, np.float32) or isinstance(val, np.float64):
+					val = float(val)
+				elif np.isnan(val):
+					val = None
 			# add to user_data
 			episode.user_data[key].append(val)
 			# add worker index
 		episode.user_data["worker_index"].append(worker.worker_index)
 
 		self.step_id += 1
-
-		# print("Episode {} step {} ended".format(episode.episode_id, self.step_id))
 
 	def on_episode_end(
 		self,
@@ -85,22 +89,24 @@ class BaseCallbacksForPlots(BaseCallbacks):
 		# "batch_mode": "truncate_episodes".
 		if worker.config.batch_mode == "truncate_episodes":
 			# Make sure this episode is really done.
-			assert episode.batch_builder.policy_collectors["default_policy"].batches[
-				-1
-			]["dones"][-1], (
-				"ERROR: `on_episode_end()` should only be called "
-				"after episode is done!"
-			)
+			if hasattr(episode, "batch_builder"):
+				assert episode.batch_builder.policy_collectors["default_policy"].batches[
+					-1
+				]["dones"][-1], (
+					"ERROR: `on_episode_end()` should only be called "
+					"after episode is done!"
+				)
 		# # add averages to custom metrics
 		# response_time = np.mean(episode.user_data["response_times"])
 		# episode.custom_metrics["response_times_avg"] = response_time
 		# add to hist data
 		for key in self.RELEVANT_KEYS:
-			episode.hist_data[key] = episode.user_data[key]
-			episode.custom_metrics[key] = episode.user_data[key]
+			if key in episode.user_data:
+				episode.hist_data[key] = episode.user_data[key]
+				episode.custom_metrics[key] = episode.user_data[key]
+
 		# add worker index
 		episode.hist_data["worker_index"] = episode.user_data["worker_index"]
-		episode.custom_metrics["worker_index"] = episode.user_data["worker_index"]
 
 	def on_sample_end(
 		self, 
@@ -114,10 +120,12 @@ class BaseCallbacksForPlots(BaseCallbacks):
 
 	def on_train_result(self, *, algorithm, result: dict, **kwargs):
 		#generate a random number, then use it to extract one element of each array from result['custom_metrics'], then save them to file
-		random_index = np.random.randint(0, len(result['custom_metrics']['current_time']))
+		first_key = list(result['custom_metrics'].keys())[0]
+		random_index = np.random.randint(0, len(result['custom_metrics'][first_key]))
 		random_custom_metrics = {}
 		for key in self.RELEVANT_KEYS:
-			random_custom_metrics[key] = result['custom_metrics'][key][random_index]
+			if key in result['custom_metrics']:
+				random_custom_metrics[key] = result['custom_metrics'][key][random_index]
 
 		simulation_folder = algorithm.config['logger_config']['logdir']
 
@@ -158,6 +166,4 @@ class BaseCallbacksForPlots(BaseCallbacks):
 		original_batches: Dict[str, Tuple[Policy, SampleBatch]],
 		**kwargs,
 	):
-		if "num_batches" not in episode.custom_metrics:
-			episode.custom_metrics['num_batches'] = 0
-		episode.custom_metrics['num_batches'] += 1
+		pass
