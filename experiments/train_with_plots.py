@@ -16,7 +16,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
         self.merged_evaluations = {}
         self.custom_metrics_keys = []
         if self.logdir is None:
-            self.logdir = os.path.join('/home/cavadini/rl4cc-test/output_nas/other', datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+            self.logdir = os.path.join('/home/cavadini/figaro-on-rl4cc/output_nas/other', datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
         self.plots_folder = os.path.join(self.logdir, 'plots')
 
     def run(self):
@@ -43,6 +43,9 @@ class TrainingExperimentWithPlots(TrainingExperiment):
             with open(os.path.join(self.logdir, 'evaluations.txt')) as f:
                 for line in f.readlines():
                     line = line.replace("\'", "\"")
+                    line = line.replace("True", "true")
+                    line = line.replace("False", "false")
+                    line = line.replace("None", "null")
                     line_json = json.loads(line)
                     self.evaluations.append(line_json)
             

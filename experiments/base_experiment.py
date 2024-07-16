@@ -183,8 +183,15 @@ class BaseExperiment(ABC):
     """
     if "evaluation" in evaluation_metrics:
       evaluation_metrics = evaluation_metrics["evaluation"]
-    em = {**evaluation_metrics}
-    for key, val in evaluation_metrics["hist_stats"].items():
+
+    em = {}
+    if 'env_runners' in evaluation_metrics.keys() and 'hist_stats' in evaluation_metrics['env_runners'].keys():
+      items_for_loop = evaluation_metrics['env_runners']['hist_stats'].items()
+      em = {**evaluation_metrics['env_runners']}
+    elif 'hist_stats' in evaluation_metrics.keys() and len(evaluation_metrics['hist_stats'].keys()) > 0:
+      items_for_loop = evaluation_metrics['hist_stats'].items()
+      em = {**evaluation_metrics}
+    for key, val in items_for_loop:
       newval = []
       for x in val:
         if isinstance(x, np.ndarray):

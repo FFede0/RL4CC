@@ -36,6 +36,7 @@ class BaseCallbacksForPlots(BaseCallbacks):
 			episode.user_data[key] = []
 			episode.hist_data[key] = []
 			episode.custom_metrics[key] = []
+		
 		# add worker index
 		episode.user_data["worker_index"] = []
 		episode.hist_data["worker_index"] = []
@@ -119,13 +120,22 @@ class BaseCallbacksForPlots(BaseCallbacks):
 		pass
 
 	def on_train_result(self, *, algorithm, result: dict, **kwargs):
-		#generate a random number, then use it to extract one element of each array from result['custom_metrics'], then save them to file
-		first_key = list(result['custom_metrics'].keys())[0]
-		random_index = np.random.randint(0, len(result['custom_metrics'][first_key]))
+		custom_metrics = []
+		if 'env_runners' in result.keys() and 'custom_metrics' in result['env_runners'].keys():
+			custom_metrics = result['env_runners']['custom_metrics']
+		elif 'custom_metrics' in result.keys() and len(result['custom_metrics'].keys()) > 0:
+			custom_metrics = result['custom_metrics']
+		else:
+			result['callback_ok'] = False
+			return
+		
+		first_key = list(custom_metrics.keys())[0]
+		random_index = np.random.randint(0, len(custom_metrics[first_key]))
+		
 		random_custom_metrics = {}
 		for key in self.RELEVANT_KEYS:
-			if key in result['custom_metrics']:
-				random_custom_metrics[key] = result['custom_metrics'][key][random_index]
+			if key in custom_metrics:
+				random_custom_metrics[key] = custom_metrics[key][random_index]
 
 		simulation_folder = algorithm.config['logger_config']['logdir']
 
