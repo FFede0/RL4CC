@@ -86,7 +86,7 @@ class TrainingExperiment(BaseExperiment):
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
     it = 1
     while not self.stop(it):
-      self.on_iteration_start()
+      self.on_iteration_start(algo, it)
       # train
       true_it = algo.last_iteration() + 1
       self.logger.log(f"starting iteration {it} ({true_it})", 3)
