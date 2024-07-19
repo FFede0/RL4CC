@@ -23,7 +23,13 @@ def not_defined(param: str, params_dict: dict) -> bool:
   """
   Return True if the given parameter is not set in a parameters dictionary
   """
-  return (param not in params_dict) or (params_dict[param] is None)
+  return not defined(param, params_dict)
+
+def defined(param: str, params_dict: dict) -> bool:
+  """
+  Return True if the given parameter is set in a parameters dictionary.
+  """
+  return param in params_dict and params_dict[param] is not None
 
 def load_config_file(filename: str) -> dict:
   """
@@ -47,28 +53,39 @@ def write_config_file(jconfig: str, dirname: str, filename: str) -> str:
     ostream.write(jconfig)
   return filename
 
-def compare_dictionaries(d1: dict, d2: dict) -> bool:
+def compare_dictionaries(d1: dict, d2: dict) -> Tuple[bool, list]:
   """
   Return True if the content of two dictionaries (possibly with nested keys) 
   is equal
   """
   equal = True
+  different_keys = []
   for key, val in d1.items():
     if key in d2:
       if isinstance(val, dict):
-        equal = equal and compare_dictionaries(d1[key], d2[key])
+        e, d = compare_dictionaries(d1[key], d2[key])
+        if not e:
+          different_keys += d
+          equal = False 
       elif isinstance(val, list) or isinstance(val, tuple):
-        equal = equal and all([v1 == v2 for v1, v2 in zip(val, d2[key])])
+        if any([v1 != v2 for v1, v2 in zip(val, d2[key])]):
+          different_keys.append(key)
+          equal = False
       else:
         if key == "logdir":
           v1 = "/".join(val.split("/")[:-1])
           v2 = "/".join(d2[key].split("/")[:-1])
-          equal = equal and (v1 == v2)
+          if v1 != v2:
+            different_keys.append(key)
+            equal = False
         else:
-          equal = equal and (val == d2[key])
+          if val != d2[key]:
+            different_keys.append(key)
+            equal = False
     else:
-      return False
-  return equal
+      different_keys.append(key)
+      return False, different_keys
+  return equal, different_keys
 
 def compute_deviation(
     baseline: pd.Series, target: pd.Series

@@ -49,7 +49,7 @@ class CustomTorchModel(BaseTorchModel):
     fun_layers = config.get("fun_layers", [])
     dropout = config.get("dropout", False)
     dropout_list = config.get("dropout_list", [])
-    # seed = config.get("seed", 1234)
+    seed = config.get("seed", 1234)
     # build structure
     if len(n_features) > 0 and len(n_features) == len(fun_layers):
       hidden_layers = []
