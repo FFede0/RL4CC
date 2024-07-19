@@ -48,6 +48,7 @@ class TrainingExperiment(BaseExperiment):
       eval_interval = self.evaluation_interval,
       logger = self.logger
     )
+    self.edit_algo_before_build(algo)
     # build (if the algorithm is not loaded from an existing checkpoint)
     if self.checkpoint_path is None:
       algo.build()
@@ -59,7 +60,6 @@ class TrainingExperiment(BaseExperiment):
     
     self.execute_before_training()
 
-    # train
     self.training_loop(algo)
 
     self.execute_after_training()
@@ -68,8 +68,10 @@ class TrainingExperiment(BaseExperiment):
     
     return algo
   
+  def edit_algo_before_build(self, algo: Algorithm):
+    pass
+
   def execute_before_training(self):
-    print("execute_before_training, train.py")
     pass
 
   def on_iteration_start(self):
