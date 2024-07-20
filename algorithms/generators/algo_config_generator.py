@@ -360,11 +360,6 @@ class AlgoConfigGenerator(ABC):
       all_params["evaluation_config"] = self.generate_eval_config(
         env_config, all_params["evaluation_config"]
       )
-    # define the environment parameters for algorithm evaluation
-    if "evaluation_config" in all_params:
-      all_params["evaluation_config"] = self.generate_eval_config(
-        env_config, all_params["evaluation_config"]
-      )
 
   def convert_resources_parameters(self, all_params):
     """
@@ -408,8 +403,8 @@ class AlgoConfigGenerator(ABC):
     )
     tot_sampled = self.count_sampled_steps(algo_config)
     tot_trained = self.count_trained_steps(algo_config)
-    self.logger.breakline()
-    # raise a WARNING if the number of collected and trained steps are too
+    self.logger.breakline(1)
+    # raise a WARNING if the number of collected and trained steps are too 
     # unbalanced
     if tot_trained.lower < tot_sampled.lower * 0.9:
       self.logger.warn(

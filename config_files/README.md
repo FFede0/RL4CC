@@ -1,11 +1,5 @@
 ## Expected structure of the configuration
 
-<<<<<<< HEAD
-Each experiment is controlled by one base configuration file, in `JSON` 
-format, denoted in the following as `exp_config.json`. It includes information 
-about the experiment to run (e.g., the name of the algorithm to use, 
-whether to start from an existing checkpoint, etc.). 
-=======
 Each experiment is controlled by a base configuration, a dictionary, called
 `exp_config`. It contains information about the experiment to run (e.g., the
 name of the algorithm to use, whether to start from an existing checkpoint,
@@ -21,11 +15,10 @@ RL4CC experiment classes (`BaseExperiment`, `TrainingExperiment` and
 > [!WARNING]
 > You must specify one of the two parameters and they cannot be specified at the
 > same time.
->>>>>>> origin/test
 
-If the experiment should start from scratch (i.e., no previous checkpoints 
-are available), the configuration is completed by two (or three) additional 
-files, which provide information about the `Environment`, the Ray `Algorithm` 
+If the experiment should start from scratch (i.e., no previous checkpoints
+are available), the configuration is completed by two (or three) additional
+files, which provide information about the `Environment`, the Ray `Algorithm`
 and, possibly, the `Tuner` configuration.
 
 The corresponding structure is detailed in the following.
@@ -36,14 +29,15 @@ The `env_config` must include **four** mandatory parameters, which are related
 to Environment name and the simulation time management within it.
 
 These are:
-- `env_name`: the name of the Environment, as it is registered in the 
-[`ray.tune.registry`](../environment/__init__.py);
+
+- `env_name`: the name of the Environment, as it is registered in the
+  [`ray.tune.registry`](../environment/__init__.py);
 - `min_time`: the start time of the simulation (in seconds);
 - `max_time`: the end time of the simulation (in seconds);
-- `time_step`: the time elapsed between two subsequent calls to 
-`Environment.step()` (in seconds).
+- `time_step`: the time elapsed between two subsequent calls to
+  `Environment.step()` (in seconds).
 
-The interval `[min_time, max_time]` corresponds to an **episode**; therefore, 
+The interval `[min_time, max_time]` corresponds to an **episode**; therefore,
 a sample configuration as:
 
 ```
@@ -55,10 +49,10 @@ a sample configuration as:
 }
 ```
 
-can be used to represent a scenario where episodes last 1 hour each and a 
+can be used to represent a scenario where episodes last 1 hour each and a
 new agent decision is taken every 10 seconds.
 
-**Important note:** these parameters should be set even in a non-episodic 
+**Important note:** these parameters should be set even in a non-episodic
 environment. Use `max_time` to represent the Environment horizon.
 
 ### Ray `Algorithm` configuration
@@ -67,27 +61,29 @@ The `ray_config` file must include parameters related to the definition of a Ray
 [`AlgorithmConfig`](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms)
 object.
 
-Parameters should be grouped in sub-dictionaries following the callbacks 
+Parameters should be grouped in sub-dictionaries following the callbacks
 structure of `AlgorithmConfig`. The most relevant families of parameters are:
-- `framework`, for the Deep Learning framework options;
-- `rollouts`, for parameters related to the configuration of rollout workers, 
-i.e., to how experience trajectories are collected;
-- `evaluation`, to configure the `Algorithm` evaluation;
-- `resources`, to determine which types and how many resources are devoted 
-to experience collection and algorithm training;
-- `training`, to set both common training parameters (e.g., the learning 
-rate) and algorithm-specific properties.
 
-A more comprehensive list is provided in 
+- `framework`, for the Deep Learning framework options;
+- `rollouts`, for parameters related to the configuration of rollout workers,
+  i.e., to how experience trajectories are collected;
+- `evaluation`, to configure the `Algorithm` evaluation;
+- `resources`, to determine which types and how many resources are devoted
+  to experience collection and algorithm training;
+- `training`, to set both common training parameters (e.g., the learning
+  rate) and algorithm-specific properties.
+
+A more comprehensive list is provided in
 [the Ray documentation](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms).
 
 > [!WARNING]
 > To simplify the management of some parameters related to the experience
 > sampling and training, RL4CC offers the possibility of setting higher-level
-> *suggested* keywords instead of directly using the ones defined in Ray. These
+> _suggested_ keywords instead of directly using the ones defined in Ray. These
 > are:
 >
 > - In the `rollouts` section:
+>
 >   - `duration_unit`: it can take the value `episodes`, if rollout workers
 >     should collect entire episodes during the experience sampling phase, or
 >     `timesteps`, if episodes can be truncated during the experience sampling;
@@ -96,12 +92,14 @@ A more comprehensive list is provided in
 >     rollout worker.
 >
 > - In the `training` section:
+>
 >   - `batch_size`: dimension of each batch extracted from the collected
 >     experience (or the replay buffer, if defined) during the training phase;
 >
 >   - `num_train_batches`: how many batches should be trained in each iteration.
 >
 > - in the `resources` section:
+>
 >   - `num_gpus_master`: number of GPUs assigned to the master node;
 >
 >   - `num_cpus_master`: number of CPUs assigned to the master node.
@@ -112,7 +110,7 @@ A more comprehensive list is provided in
 >
 > These keywords mask a lower-level management performed by Ray, where different
 > algorithms use different parameters to control the same elements. An
-> **expert** user is free to set directly the Ray *protected* keywords, but the
+> **expert** user is free to set directly the Ray _protected_ keywords, but the
 > two approaches cannot be mixed.
 
 > [!WARNING]
@@ -131,54 +129,34 @@ A more comprehensive list is provided in
 > `evaluation_interval` and `logdir` are set from the [experiment configuration
 > file](#experiment-configuration).
 
-<<<<<<< HEAD
-:warning::warning::warning: **Important note:** there are few elements that, 
-differently from what is explained in the Ray documentation **should not** be 
-managed through `ray_config.json`. These are:
-- `env` and `env_config`, from the `environment` parameters group;
-- `evaluation_interval`, from the `evaluation` parameters group;
-- `logdir`, from the `logger_config` dictionary in the `debugging` parameters 
-group.
-
-In particular, `env` and `env_config` are indirectly controlled through the 
-[`env_config.json`](#environment-configuration-file) file, while 
-`evaluation_interval` and `logdir` are set from the 
-[experiment configuration file](#experiment-configuration-file).
-
-**Additional note:** in the `callbacks` section, the `callbacks_class` 
-parameter should correspond to the path to the callbacks class as it would 
-be reported while importing the module (e.g., 
-`"callbacks.base_callbacks.BaseCallbacks"`).
-=======
 > [!NOTE]
 > In the `callbacks` section, the `callbacks_class` parameter should correspond
 > to the path to the callbacks class as it would be reported while importing the
 > module (e.g., `"callbacks.base_callbacks.BaseCallbacks"`).
->>>>>>> origin/test
 
-Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and 
+Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and
 [DQN](ray_config_dqn.json.template) are provided.
 
 #### How to use custom Policy models
 
 Ray supports the use of Torch and TF models using the ModelV2 implementation.
 
-One can easily implement their own custom network by extending either the 
+One can easily implement their own custom network by extending either the
 [Torch](../models/base_torch_model.py) or the
-[Tensorflow](../models/base_tf_model.py) Base models, and then registering in 
-Ray `ModelCatalog`. We provide two sample custom models as starting points, 
-and the instructions to register them can be seen in the 
+[Tensorflow](../models/base_tf_model.py) Base models, and then registering in
+Ray `ModelCatalog`. We provide two sample custom models as starting points,
+and the instructions to register them can be seen in the
 [models initialization file](../models/__init__.py).
 
-To actually indicate the use of a custom model after building and registering 
-it, one must specify the **name** of the model (as it was registered in the 
-catalog) and the associated custom model config dictionary in the `training` 
-section of the Ray configuration file. 
+To actually indicate the use of a custom model after building and registering
+it, one must specify the **name** of the model (as it was registered in the
+catalog) and the associated custom model config dictionary in the `training`
+section of the Ray configuration file.
 
-For example, to use the provided Torch-based 
-[CustomTorchModel](../models/custom_torch_model.py), which is registered 
-under the name `custom_torch_model`, provide in the ray_config.json file, 
-under the `model` dictionary in the `training` section, the following 
+For example, to use the provided Torch-based
+[CustomTorchModel](../models/custom_torch_model.py), which is registered
+under the name `custom_torch_model`, provide in the ray_config.json file,
+under the `model` dictionary in the `training` section, the following
 information:
 
 ```
@@ -207,44 +185,16 @@ information:
 .
 ```
 
-Examples are reported for both the PPO and DQN algorithms in the the 
+Examples are reported for both the PPO and DQN algorithms in the the
 corresponding template files.
 
-<<<<<<< HEAD
-:warning::warning::warning: The framework the model is based on **must** match 
-the framework passed in the ray_config.json file, otherwise this will result 
-in runtime errors.
-=======
 > [!WARNING]
 > The framework the model is based on **must** match the framework passed in the
 > `ray_config`, otherwise this will result in runtime errors.
->>>>>>> origin/test
 
 ### Configure hyperparameter tuning
 
-To run hyperparameter tuning, the user should: 
-<<<<<<< HEAD
-1. provide a tune_config.json file (including parameters related to the 
-configuration of the `Tuner` object), and
-2. adapt the ray_config.json file to properly define the search space.
-
-Details are provided in the following.
-
-#### `Tuner` configuration file
-
-The `tune_config.json` file includes **three** mandatory parameter, which 
-are related to the number of tune trials and the identification of the 
-best result. 
-
-These are:
-- `num_tune_trials`: the number of tuning trials (possibly run in parallel, 
-if the cluster resources are enough to do so). These trials will sample from 
-the Tune search space (defined according to the elements in the 
-ray_config.json file, as detailed in 
-[the next section](#configuring-the-search-space-for-parameters)). **Note 
-that,** if the `num_tune_trials` parameter is -1, (virtually) 
-infinite samples are generated until a stopping condition is met.
-=======
+To run hyperparameter tuning, the user should:
 
 1. provide a `tune_config` (including parameters related to the configuration of
    the `Tuner` object), and
@@ -265,45 +215,34 @@ These are:
   detailed in [the next section](#configuring-the-search-space-for-parameters)).
   **Note that,** if the `num_tune_trials` parameter is -1, (virtually) infinite
   samples are generated until a stopping condition is met.
->>>>>>> origin/test
-- `metric`: the metric used to evaluate the performance of a given set of 
-parameters in a trial.
-- `mode`: the mode on which the values returned by the metric are evaluated. 
-For instance, setting this parameter to `max` when considering an 
-`epsiode_reward_mean` metric, will place the trial that returns the highest 
-numerical value of the mean reward as the best trials.
+- `metric`: the metric used to evaluate the performance of a given set of
+  parameters in a trial.
+- `mode`: the mode on which the values returned by the metric are evaluated.
+  For instance, setting this parameter to `max` when considering an
+  `epsiode_reward_mean` metric, will place the trial that returns the highest
+  numerical value of the mean reward as the best trials.
 
 Additional (optional) parameters are:
-- `search_algorithm`: a search algorithm, as specified in the 
-[tune.search](https://docs.ray.io/en/latest/tune/api/suggestion.html#hyperopt-tune-search-hyperopt-hyperoptsearch) page
+
+- `search_algorithm`: a search algorithm, as specified in the
+  [tune.search](https://docs.ray.io/en/latest/tune/api/suggestion.html#hyperopt-tune-search-hyperopt-hyperoptsearch) page
 - `scheduler`: a scheduler, as specified in [tune.schedulers](https://docs.ray.io/en/latest/tune/api/schedulers.html#tune-scheduler-hyperband) page
-- instructions on how to proceed when restoring a `Tuner` from an existing 
-checkpoint. These include:
-  - the `resume_errored` and `restart_errored` fields, which are related to 
-  the possibility of resuming or restarting an experiment left in the 
-  `ERRORED` state, respectively. By default, both are `False`.
-  - the `resume_unfinished` field, related to the possibilty of resuming an 
-  experiment left in the `RUNNING` state. By default, it is `True`.
+- instructions on how to proceed when restoring a `Tuner` from an existing
+  checkpoint. These include:
+  - the `resume_errored` and `restart_errored` fields, which are related to
+    the possibility of resuming or restarting an experiment left in the
+    `ERRORED` state, respectively. By default, both are `False`.
+  - the `resume_unfinished` field, related to the possibilty of resuming an
+    experiment left in the `RUNNING` state. By default, it is `True`.
 
-<<<<<<< HEAD
-**Note**: currently, only the `HyperOpt` search algorithm and the 
-`ASHAScheduler` are implemented.
-
-:warning::warning::warning: **Note:** experiments left in the `TERMINATED` 
-state cannot be resumed: you have to start a new experiment from scratch if 
-you want to test new parameters or change other configuration terms as 
-the metric, mode or number of tune trials.
-=======
 > [!NOTE]
 > Currently, only the `HyperOpt` search algorithm and the `ASHAScheduler` are
 > implemented.
 
-> [!WARNING]
-> **Note:** experiments left in the `TERMINATED` 
-state cannot be resumed: you have to start a new experiment from scratch if you
-want to test new parameters or change other configuration terms as the metric,
-mode or number of tune trials.
->>>>>>> origin/test
+> [!WARNING] > **Note:** experiments left in the `TERMINATED`
+> state cannot be resumed: you have to start a new experiment from scratch if you
+> want to test new parameters or change other configuration terms as the metric,
+> mode or number of tune trials.
 
 Sample configuration:
 
@@ -330,19 +269,6 @@ Sample configuration:
 
 #### Configuring the `search space` for parameters
 
-<<<<<<< HEAD
-The Tuner configurations file `tune_config.json` described in the section 
-[above](#tuner-configuration-file) is responsible for the behaviour of the 
-`Tuner` and how it handles the `Trials` running in parallel. However, 
-to actually fine-tune algorithm parameters, the user should define the 
-search space by suitably adapting the `ray_config.json` file.
-
-This can be simply done by providing the values of each parameter to be 
-tuned as a `tune.**search_space` string. 
-For example, if the learning rate for the PPO algorithm is to be tuned, locate 
-the corresponding parameter (`lr`, in the `training` section) in the 
-ray_config.json file and set it as:
-=======
 The Tuner configuration `tune_config` described in the section
 [above](#tuner-configuration) is responsible for the behaviour of the `Tuner`
 and how it handles the `Trials` running in parallel. However, to actually
@@ -350,10 +276,9 @@ fine-tune algorithm parameters, the user should define the search space by
 suitably adapting the `ray_config`.
 
 This can be simply done by providing the values of each parameter to be tuned as
-a `tune.**search_space` string.  For example, if the learning rate for the PPO
+a `tune.**search_space` string. For example, if the learning rate for the PPO
 algorithm is to be tuned, locate the corresponding parameter (`lr`, in the
 `training` section) in the `ray_config` file and set it as:
->>>>>>> origin/test
 
 ```
 "training": {
@@ -367,34 +292,15 @@ algorithm is to be tuned, locate the corresponding parameter (`lr`, in the
 }
 ```
 
-<<<<<<< HEAD
-In the above example, the `Tuner` will sample `num_tune_trials` (present in 
-the `tune_config.json` file) trials; each trial will run for the specified
-number of `max_iterations` (present in the `exp_config.json` file, as 
-discussed in [the following](#experiment-configuration-file)), considering a 
-different `lr` value sampled from the `loguniform` distribution 
-over the range of `(1e-4, 1e-1)`.
-=======
 In the above example, the `Tuner` will sample `num_tune_trials` (present in the
 `tune_config` file) trials; each trial will run for the specified number of
 `max_iterations` (present in the `exp_config` file, as discussed in [the
 following](#experiment-configuration)), considering a different `lr` value
 sampled from the `loguniform` distribution over the range of `(1e-4, 1e-1)`.
->>>>>>> origin/test
 
-For more about tune search spaces see 
+For more about tune search spaces see
 [the relative documentation](https://docs.ray.io/en/latest/tune/api/search_space.html).
 
-<<<<<<< HEAD
-:warning::warning::warning: **Note**: When the user tries to start a new tuning 
-experiment without specifying the path to a `tune_config.json` file in the 
-`exp_config.json` file, the execution will be interrupted prompting the user to 
-provide them.
-
-### Experiment configuration file
-
-The `exp_config.json` includes parameters related to the training and/or  hyperparameter tuning experiment (e.g., the algorithm to use, the stopping 
-=======
 > [!WARNING]
 > When the user tries to start a new tuning experiment without specifying the
 > path to a `tune_config.json` file in the `exp_config.json` file, the execution
@@ -404,51 +310,35 @@ The `exp_config.json` includes parameters related to the training and/or  hyperp
 
 The `exp_config` includes parameters related to the training and/or
 hyperparameter tuning experiment (e.g., the algorithm to use, the stopping
->>>>>>> origin/test
 criteria, etc.).
 
-The **mandatory parameters** vary depending on whether a simple training or 
-a hyperparameter tuning experiment is defined. Note, however, that: 
-- the `algorithm` parameter, which corresponds to the name of the RL Algorithm 
-to use, is always mandatory.
-- the path to the environment configuration file (and for the tuning 
-configuration file in the case of a `TuningExperiment`) is always mandatory 
-if the experiment is not restored from an existing checkpoint. 
-- the `stopping_criteria` dictionary must be provided list the (possibly, 
-multiple) stopping criteria to be considered during the training. The only 
-exception is when a `TuningExperiment` is restored from a checkpoint, when the 
-stopping criterion is copied from the previous run. The available termination 
-conditions are:
+The **mandatory parameters** vary depending on whether a simple training or
+a hyperparameter tuning experiment is defined. Note, however, that:
+
+- the `algorithm` parameter, which corresponds to the name of the RL Algorithm
+  to use, is always mandatory.
+- the path to the environment configuration file (and for the tuning
+  configuration file in the case of a `TuningExperiment`) is always mandatory
+  if the experiment is not restored from an existing checkpoint.
+- the `stopping_criteria` dictionary must be provided list the (possibly,
+  multiple) stopping criteria to be considered during the training. The only
+  exception is when a `TuningExperiment` is restored from a checkpoint, when the
+  stopping criterion is copied from the previous run. The available termination
+  conditions are:
   - `max_iterations`: the maximum number of training iterations.
 
 Additional parameters are:
-- `logdir`: the base directory where all the experiments outputs should be 
-saved. If, e.g., `OUTPUT` is provided as `logdir`, a subdirectory is created 
-there with the following name: `f"{algo}_{environment}_{now}"`, where `algo` 
-is the name of the Ray `Algorithm`, `environment` is the name of the chosen 
-`Environment` and `now` is given by 
-`datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')`. The default base result 
-directory if no value is provided here is `~/ray_results`.
-- `from_checkpoint`: path to the directory where the checkpoint to be 
-restored is saved. If this is provided, further information related to the 
-Environment or the Ray Algorithm configuration files are neglected.
-<<<<<<< HEAD
-  - :warning::warning::warning: in the case of `TuningExperiment`s, the 
-  path is the path to the general tuning experiment outputs folder within 
-  `logdir`, not the path to a specific checkpoint directory.
-- `env_config_file`: path to the `env_config.json` file described 
-[above](#environment-configuration-file). This parameter is **mandatory** if 
-no previous checkpoint is provided.
-- `ray_config_file`: path to the `ray_config.json` file described 
-[above](#ray-algorithm-configuration-file).
-- `tune_config_file`: path to the `tune_config.json` file described 
-[above](#tuner-configuration-file). This parameter is **mandatory** if 
-no previous checkpoint is provided.
-=======
-    > [!WARNING]
-    > In the case of `TuningExperiment`s, the path is the path to the general
-    > tuning experiment outputs folder within `logdir`, not the path to a
-    > specific checkpoint directory.
+
+- `logdir`: the base directory where all the experiments outputs should be
+  saved. If, e.g., `OUTPUT` is provided as `logdir`, a subdirectory is created
+  there with the following name: `f"{algo}_{environment}_{now}"`, where `algo`
+  is the name of the Ray `Algorithm`, `environment` is the name of the chosen
+  `Environment` and `now` is given by
+  `datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')`. The default base result
+  directory if no value is provided here is `~/ray_results`.
+- `from_checkpoint`: path to the directory where the checkpoint to be
+  restored is saved. If this is provided, further information related to the
+  Environment or the Ray Algorithm configuration files are neglected. > [!WARNING] > In the case of `TuningExperiment`s, the path is the path to the general > tuning experiment outputs folder within `logdir`, not the path to a > specific checkpoint directory.
 - `env_config_file`: path to the `env_config.json` file described
   [above](#environment-configuration).
 - `env_config`: dictionary containing the environment configuration described
@@ -461,25 +351,21 @@ no previous checkpoint is provided.
   [above](#tuner-configuration).
 - `tune_config`: dictionary containing the tuner configuration described
   [above](#tuner-configuration).
->>>>>>> origin/test
-- `evaluation_interval`: after how many iterations the evaluation should be 
-performed. **Important note:** one evaluation step is always performed at the 
-end of the training loop, even if no parameter is provided here.
-- `checkpoint_interval`: after how many iterations an algorithm checkpoint 
-should be saved. **Important note:** one checkpoint is always saved at the 
-end of the training loop, even if no parameter is provided here.
+- `evaluation_interval`: after how many iterations the evaluation should be
+  performed. **Important note:** one evaluation step is always performed at the
+  end of the training loop, even if no parameter is provided here.
+- `checkpoint_interval`: after how many iterations an algorithm checkpoint
+  should be saved. **Important note:** one checkpoint is always saved at the
+  end of the training loop, even if no parameter is provided here.
 - `plot_interval`: TBA
 
-<<<<<<< HEAD
-=======
 > [!WARNING]
 > If no previously checkpoint is provided, you **must** specify either
 > `env_config_file` or `env_config` but not both. The same applies to
 > Ray config (`ray_config_file` and `ray_config`) and tuner configuration
 > (`tune_config_file` and `tune_config`),
 
->>>>>>> origin/test
-Example (for a training experiment): 
+Example (for a training experiment):
 
 ```
 {
@@ -495,7 +381,7 @@ Example (for a training experiment):
 }
 ```
 
-Example (for a hyperparameter tuning experiment): 
+Example (for a hyperparameter tuning experiment):
 
 ```
 {
@@ -514,13 +400,14 @@ Example (for a hyperparameter tuning experiment):
 
 #### Configure experiment logging
 
-To configure the RL4CC `Logger` verbosity level and the output/error stream 
-it considers, a `logger` sub-dictionary should be added, including the 
+To configure the RL4CC `Logger` verbosity level and the output/error stream
+it considers, a `logger` sub-dictionary should be added, including the
 following parameters:
-- `verbosity`: an integer between 0 (minimum verbosity) and 3 (maximum 
-verbosity), which controls how many messages are printed during the 
-experiment. Indeed, while warnings and errors are always printed, generic 
-information are printed only if the verbosity is higher than the corresponding 
-message level.
-- `file_streams`: `True` to log on files instead of using `sys.stdout` and 
-`sys.stderr`.
+
+- `verbosity`: an integer between 0 (minimum verbosity) and 3 (maximum
+  verbosity), which controls how many messages are printed during the
+  experiment. Indeed, while warnings and errors are always printed, generic
+  information are printed only if the verbosity is higher than the corresponding
+  message level.
+- `file_streams`: `True` to log on files instead of using `sys.stdout` and
+  `sys.stderr`.
