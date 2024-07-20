@@ -16,7 +16,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
         self.merged_evaluations = {}
         self.custom_metrics_keys = []
         if self.logdir is None:
-            self.logdir = os.path.join('/home/cavadini/figaro-on-rl4cc/output_nas/other', datetime.now().strftime('%Y-%m-%d_%H-%M-%S'))
+            Logger.warn("logdir is not defined. Using default logdir.")
         self.plots_folder = os.path.join(self.logdir, 'plots')
 
     def run(self):
