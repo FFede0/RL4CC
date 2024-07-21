@@ -39,7 +39,7 @@ class TuningExperiment(BaseExperiment):
     if (defined("from_checkpoint", self.exp_config)
         and (defined("tune_config_file", self.exp_config)
              or defined("tune_config", self.exp_config))):
-      Logger.warn("'tune_config_file' and 'tune_config' ignored because checkpoint is provided")
+      self.logger.warn("'tune_config_file' and 'tune_config' ignored because checkpoint is provided")
     if defined("from_checkpoint", self.exp_config):
       self.tune_config = None
       return
