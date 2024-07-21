@@ -69,6 +69,12 @@ class Algorithm:
     self.logger.warn(
       f"`Algorithm` created; output directory: {self.logdir}"
     )
+
+  def get_policy(self):
+    """
+    Get the policy of the `Algorithm`
+    """
+    return self.algo.get_policy()
   
   def load_checkpoint(self, path: str):
     """

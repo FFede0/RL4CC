@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from utilities.common import not_defined, load_config_file, write_config_file
+from utilities.common import not_defined, load_config_file, write_config_file, defined
 from experiments.base_experiment import BaseExperiment
 from utilities.logger import Logger
 from algorithms.tuner import Tuner
@@ -28,7 +28,7 @@ import os
 class TuningExperiment(BaseExperiment):
   def __init__(self,
                exp_config_file: str = None,
-               exp_config: dict = None
+               exp_config: dict = None,
                logger: Logger = Logger(name = "RL4CC")):
     super().__init__(exp_config_file, exp_config, logger)
   
@@ -39,7 +39,7 @@ class TuningExperiment(BaseExperiment):
     if (defined("from_checkpoint", self.exp_config)
         and (defined("tune_config_file", self.exp_config)
              or defined("tune_config", self.exp_config))):
-      logger.warn("'tune_config_file' and 'tune_config' ignored because checkpoint is provided")
+      self.logger.warn("'tune_config_file' and 'tune_config' ignored because checkpoint is provided")
     if defined("from_checkpoint", self.exp_config):
       self.tune_config = None
       return

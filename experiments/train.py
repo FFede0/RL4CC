@@ -49,6 +49,7 @@ class TrainingExperiment(BaseExperiment):
       eval_interval = self.evaluation_interval,
       logger = self.logger
     )
+    self.edit_algo_before_build(algo)
     # build (if the algorithm is not loaded from an existing checkpoint)
     if self.checkpoint_path is None:
       algo.build()
@@ -57,9 +58,28 @@ class TrainingExperiment(BaseExperiment):
     # save experiment configuration files
     self.write_config_files()
     algo.print_algo_config()
-    # train
+    
+    self.execute_before_training()
+
     self.training_loop(algo)
+
+    self.execute_after_training()
+    
+    print('DONE')
+    
+    return algo
   
+  def edit_algo_before_build(self, algo: Algorithm):
+    pass
+
+  def execute_before_training(self):
+    pass
+
+  def on_iteration_start(self):
+    pass
+  def on_iteration_end(self):
+    pass
+
   def training_loop(self, algo: Algorithm):
     """
     `Algorithm` training loop
@@ -69,6 +89,7 @@ class TrainingExperiment(BaseExperiment):
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
     it = 1
     while not self.stop(it):
+      self.on_iteration_start(algo, it)
       # train
       true_it = algo.last_iteration() + 1
       self.logger.log(f"starting iteration {it} ({true_it})", 3)
@@ -89,6 +110,7 @@ class TrainingExperiment(BaseExperiment):
           result["training_iteration"], 
           result["evaluation"]
         )
+      self.on_iteration_end()
       # move to the next iteration
       it += 1
     # save last checkpoint
@@ -116,6 +138,9 @@ class TrainingExperiment(BaseExperiment):
     )
     self.logger.log(f"training loop took: {experiment_duration}", 1)
     self.logger.log(f"average time per iteration: {avg_time_per_iter}", 1)
+
+  def execute_after_training(self):
+    pass
   
   def define_stopping_criteria(self):
     """

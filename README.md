@@ -1,7 +1,7 @@
 # RL4CC
 
-The **R**einforcement **L**earning for the **C**omputing **C**ontinuum module 
-provides a common interface to define environments and RL algorithms based 
+The **R**einforcement **L**earning for the **C**omputing **C**ontinuum module
+provides a common interface to define environments and RL algorithms based
 on the [Ray RLLib](https://docs.ray.io/en/latest/rllib/index.html) library.
 
 It includes the following components:
@@ -11,35 +11,35 @@ It includes the following components:
   created by loading the parameters included in the [`env_config`
   configuration](config_files/README.md#environment-configuration).
 
-- an [`Algorithm`](algorithms/algorithm.py) class, used to define RL 
-algorithms for training/hyperparameter tuning experiments, supported by a 
-factory of Ray `AlgorithmConfig` 
-[generators](algorithms/generators_factory.py).
+- an [`Algorithm`](algorithms/algorithm.py) class, used to define RL
+  algorithms for training/hyperparameter tuning experiments, supported by a
+  factory of Ray `AlgorithmConfig`
+  [generators](algorithms/generators_factory.py).
 
-- a simple [`Callbacks`](callbacks/base_callbacks.py) implementation, 
-that should be used as base class when defining more complex problems.
+- a simple [`Callbacks`](callbacks/base_callbacks.py) implementation,
+  that should be used as base class when defining more complex problems.
 
-- two simple [custom neural network models](models), based on PyTorch and 
-TensorFlow, that can be used as starting points to implement more complex 
-networks if needed.
+- two simple [custom neural network models](models), based on PyTorch and
+  TensorFlow, that can be used as starting points to implement more complex
+  networks if needed.
 
-- a [`TrainingExperiment`](experiments/train.py) class, to be used as 
-entrypoint to define training experiments, as explained in 
-the following [section](#how-to-start-a-training-experiment).
+- a [`TrainingExperiment`](experiments/train.py) class, to be used as
+  entrypoint to define training experiments, as explained in
+  the following [section](#how-to-start-a-training-experiment).
 
-- an [`Tuner`](algorithms/tuner.py) class, used to define hyperparameter 
-tuning experiments, supported by the `Algorithm` class that works as 
-trainable and by a `TuneConfig` and `RunConfig` 
-[generator](algorithms/generators/tune_config_generator.py).
+- an [`Tuner`](algorithms/tuner.py) class, used to define hyperparameter
+  tuning experiments, supported by the `Algorithm` class that works as
+  trainable and by a `TuneConfig` and `RunConfig`
+  [generator](algorithms/generators/tune_config_generator.py).
 
-- a [`TuningExperiment`](experiments/tune.py) class, to be used as entrypoint 
-to define automatic hyperparameter tuning, as explained in 
-the following [section](#how-to-start-hyperparameter-tuning).
+- a [`TuningExperiment`](experiments/tune.py) class, to be used as entrypoint
+  to define automatic hyperparameter tuning, as explained in
+  the following [section](#how-to-start-hyperparameter-tuning).
 
-- a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages 
-in a standard format.
+- a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages
+  in a standard format.
 
-Detailed information about these components are provided in the following 
+Detailed information about these components are provided in the following
 sections.
 
 ## How to start a training experiment
@@ -56,7 +56,7 @@ To define and start a training experiment exploiting one of the available algori
 
 3. call the `TrainingExperiment.run()` method.
 
-Example using the predefined  `BaseEnvironment` and `BaseCallbacks` classes and
+Example using the predefined `BaseEnvironment` and `BaseCallbacks` classes and
 with a JSON file for `exp_config`:
 
 ```
@@ -68,8 +68,8 @@ exp.run()
 
 ### Training experiments with a custom Environment
 
-To use a custom Environment implementation, this needs to be registered in the 
-`ray.tune.registry`. As an example, suppose that your code directory follows 
+To use a custom Environment implementation, this needs to be registered in the
+`ray.tune.registry`. As an example, suppose that your code directory follows
 the structure:
 
 ```
@@ -81,7 +81,7 @@ the structure:
 └── main.py
 ```
 
-and that the `src/__init__.py` file includes, similarly to the one reported 
+and that the `src/__init__.py` file includes, similarly to the one reported
 here for the base Environment,
 
 ```
@@ -91,7 +91,7 @@ from ray.tune.registry import register_env
 register_env("MyCustomEnvironment", lambda config: MyCustomEnvironment(config))
 ```
 
-To guarantee that the environment is properly loaded when starting the 
+To guarantee that the environment is properly loaded when starting the
 experiment, your `main.py` file should include:
 
 ```
@@ -102,12 +102,12 @@ exp = TrainingExperiment(exp_config_file="config_files/exp_config.json")
 exp.run()
 ```
 
-i.e., you must ensure that `src/__init__.py` is actually executed. 
+i.e., you must ensure that `src/__init__.py` is actually executed.
 
 ### Training experiments with a custom Model
 
-To use a custom neural network, this needs to be registered in the 
-`ray.rllib.models.ModelCatalog`. As an example, suppose that your code 
+To use a custom neural network, this needs to be registered in the
+`ray.rllib.models.ModelCatalog`. As an example, suppose that your code
 directory follows the structure:
 
 ```
@@ -119,7 +119,7 @@ directory follows the structure:
 └── main.py
 ```
 
-and that the `src/__init__.py` file includes, similarly to the one reported 
+and that the `src/__init__.py` file includes, similarly to the one reported
 in the `models` directory here,
 
 ```
@@ -129,7 +129,7 @@ from ray.rllib.models import ModelCatalog
 ModelCatalog.register_custom_model("my_custom_model", MyCustomModel)
 ```
 
-To guarantee that the model is properly loaded when starting the 
+To guarantee that the model is properly loaded when starting the
 experiment, your `main.py` file should include:
 
 ```
@@ -140,11 +140,16 @@ exp = TrainingExperiment(exp_config_file="config_files/exp_config.json")
 exp.run()
 ```
 
-i.e., you must ensure that `src/__init__.py` is actually executed. 
+i.e., you must ensure that `src/__init__.py` is actually executed.
 
 Moreover, the `custom_model` section of the `ray_config` configuration must be
 properly defined, as detailed in the corresponding
 [README](config_files/README.md#how-to-use-custom-policy-models).
+
+### Training experiments with plots
+
+If you want to automatically generate plots during the training, you can use the `TrainingExperimentWithPlots` class, which is a subclass of `TrainingExperiment`. This class will automatically generate plots the last iteration and a moving average of all the iterations. The plots will be saved in the `plots` directory in the `logdir` previously specified.
+In order to specify the plots to be generated, you can use the `RELEVANT_KEYS` of the callbacks: in particular, define a custom callback class (extending the `BaseCallbacksForPlots`class).
 
 ### Expected outputs
 
@@ -156,20 +161,22 @@ if nothing is provided). These include:
 - `complete_config`: a directory containing the configuration (`exp_config`,
   `env_config` and `ray_config`) used to define the experiment, saved as JSON
   files.
-> [!NOTE]
-> Two important notes:
->   - JSON files are saved here, regardless the fact that the user passed the
->     configuration(s) as file(s) or as `dict` object(s).
->   - While `env_config.json` and `exp_config.json` are simply copied from the
->     user-defined configurations, the `ray_config.json` file reported here
->     includes also the default values assigned to keys that were not included
->     in the user-defined configuration.
 
-- `exp_progress.json`: a file that, during the training, is progressively 
-updated with information related to the last executed iteration, the last 
-saved checkpoint, etc. It also reports the start and end timestamps of the 
-experiment, its duration (in seconds) and the average length (in seconds) of 
-each training iteration.
+  > [!NOTE]
+  > Two important notes:
+  >
+  > - JSON files are saved here, regardless the fact that the user passed the
+  >   configuration(s) as file(s) or as `dict` object(s).
+  > - While `env_config.json` and `exp_config.json` are simply copied from the
+  >   user-defined configurations, the `ray_config.json` file reported here
+  >   includes also the default values assigned to keys that were not included
+  >   in the user-defined configuration.
+
+- `exp_progress.json`: a file that, during the training, is progressively
+  updated with information related to the last executed iteration, the last
+  saved checkpoint, etc. It also reports the start and end timestamps of the
+  experiment, its duration (in seconds) and the average length (in seconds) of
+  each training iteration.
 
 - `checkpoints`: a directory with checkpoints saved according to the frequency
   specified in the [`exp_config`
@@ -225,10 +232,10 @@ algorithms:
    configuration, as a dictionary or as a path to an `exp_config.json` file.
 
 3. call the `TrainingExperiment.run()` method.
-  > [!NOTE]
-  > Note that, since Air's RunConfig is used on top of the algorithm object, the
-  > user can provide a list of callbacks (classes) as parameters to the run
-  > method, overwriting any previous callbacks indicated.
+   > [!NOTE]
+   > Note that, since Air's RunConfig is used on top of the algorithm object, the
+   > user can provide a list of callbacks (classes) as parameters to the run
+   > method, overwriting any previous callbacks indicated.
 
 Example when using the predefined `BaseEnvironment`, a `exp_config` given as
 file and, possibly, custom callbacks classes:
@@ -261,9 +268,10 @@ The format of logged messages is:
 ```
 
 where:
+
 - `TIME` is given by `datetime.datetime.now()`.
-- The `LOGGER_NAME` is provided as parameter in the `Logger` constructor 
-(default: `RL4CCLogger`).
+- The `LOGGER_NAME` is provided as parameter in the `Logger` constructor
+  (default: `RL4CCLogger`).
 - The message `LEVEL` is 0 for warnings and errors (which are always printed
   regardless the verbosity level specified by the user), while it is specified
   as parameter when calling the `Logger.log()` method for generic messages. As
@@ -271,8 +279,8 @@ where:
   config](config_files/README.md#configure-experiment-logging), generic messages
   are printed only if the corresponding `LEVEL` is lower than the verbosity
   imposed by the user.
-- The `MESSAGE_TYPE` is `INFO` when calling `Logger.log()`, `WARNING` when 
-calling `Logger.warn()` and `ERROR` when calling `Logger.error()`.
+- The `MESSAGE_TYPE` is `INFO` when calling `Logger.log()`, `WARNING` when
+  calling `Logger.warn()` and `ERROR` when calling `Logger.error()`.
 
 > [!WARNING]
 > file streams TBA
@@ -280,12 +288,13 @@ calling `Logger.warn()` and `ERROR` when calling `Logger.error()`.
 ## How to add new RL methods
 
 To expand the module with generators for new algorithms:
-1. implement a suitable subclass of the base 
-[`AlgoConfigGenerator`](algorithms/generators/algo_config_generator.py) 
-(see, as an example, what is provided for the 
-[PPO algorithm](algorithms/generators/ppo_config_generator.py))
-2. add the new generator to the 
-[generators factory](algorithms/generators_factory.py)
+
+1. implement a suitable subclass of the base
+   [`AlgoConfigGenerator`](algorithms/generators/algo_config_generator.py)
+   (see, as an example, what is provided for the
+   [PPO algorithm](algorithms/generators/ppo_config_generator.py))
+2. add the new generator to the
+   [generators factory](algorithms/generators_factory.py)
 
 ## How to contribute
 
