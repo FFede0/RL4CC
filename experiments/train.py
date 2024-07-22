@@ -19,15 +19,15 @@ from utilities.common import not_defined
 from utilities.logger import Logger
 
 from datetime import datetime
-import json
-import os
 
 
 class TrainingExperiment(BaseExperiment):
-  def __init__(self,
-               exp_config_file: str = None,
-               exp_config: dict = None,
-               logger: Logger = Logger(name = "RL4CC")):
+  def __init__(
+      self,
+      exp_config_file: str = None,
+      exp_config: dict = None,
+      logger: Logger = Logger(name = "RL4CC")
+    ):
     super().__init__(exp_config_file, exp_config, logger)
   
   def validate_experiment_configuration(self):
@@ -58,15 +58,10 @@ class TrainingExperiment(BaseExperiment):
     # save experiment configuration files
     self.write_config_files()
     algo.print_algo_config()
-    
+    # training loop
     self.execute_before_training()
-
     self.training_loop(algo)
-
     self.execute_after_training()
-    
-    print('DONE')
-    
     return algo
   
   def edit_algo_before_build(self, algo: Algorithm):
@@ -77,6 +72,7 @@ class TrainingExperiment(BaseExperiment):
 
   def on_iteration_start(self):
     pass
+
   def on_iteration_end(self):
     pass
 

@@ -13,7 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from utilities.common import load_config_file, write_config_file, not_defined, defined
+from utilities.common import load_config_file, write_config_file
+from utilities.common import not_defined, defined
 from utilities.logger import Logger
 
 from abc import ABC, abstractmethod
@@ -31,18 +32,22 @@ class BaseExperiment(ABC):
     # Handle exp_config_file and exp_config, they cannot be both None or both
     # set.
     if exp_config_file is None and exp_config is None:
-      raise RuntimeError("ERROR: exp_config_file and exp_config cannot both be None")
+      raise RuntimeError(
+        "ERROR: exp_config_file and exp_config cannot both be None"
+      )
     if exp_config_file is not None and exp_config is not None:
-      raise RuntimeError("ERROR: exp_config_file and exp_config cannot both be defined")
-
+      raise RuntimeError(
+        "ERROR: exp_config_file and exp_config cannot both be defined"
+      )
     # Set self.exp_config.
     if exp_config_file is not None:
       self.exp_config = load_config_file(exp_config_file)
       if self.exp_config is None:
-        raise RuntimeError(f"ERROR: file {exp_config_file!r} not found or invalid")
+        raise RuntimeError(
+          f"ERROR: file {exp_config_file!r} not found or invalid"
+        )
     else:
       self.exp_config = exp_config
-
     # initialize logger
     self.logger = logger
     if "logger" in self.exp_config:
@@ -75,11 +80,13 @@ class BaseExperiment(ABC):
       self.ray_config = None
       self.logdir = None
       # ...environment and ray configurations (if provided) are ignored
-      keys = ["env_config_file",
-              "env_config",
-              "ray_config_file",
-              "ray_config",
-              "logdir"]
+      keys = [
+        "env_config_file",
+        "env_config",
+        "ray_config_file",
+        "ray_config",
+        "logdir"
+      ]
       for key in keys:
         if key in self.exp_config:
           self.logger.warn(
@@ -91,30 +98,36 @@ class BaseExperiment(ABC):
       # env_config_file parameter or directly via the env_config parameter.
       if (not_defined("env_config_file", self.exp_config)
           and not_defined("env_config", self.exp_config)):
-        raise KeyError("ERROR: provide 'env_config_file' or 'env_config' if no previous checkpoint is given")
+        raise KeyError(
+          "ERROR: provide 'env_config_file' or 'env_config' if no previous "
+          "checkpoint is given"
+        )
       if (defined("env_config_file", self.exp_config)
           and defined("env_config", self.exp_config)):
-        raise KeyError("ERROR: 'env_config_file' or 'env_config' cannot be both set!")
-
+        raise KeyError(
+          "ERROR: 'env_config_file' or 'env_config' cannot be both set!"
+        )
       if defined("env_config_file", self.exp_config):
         self.env_config = load_config_file(self.exp_config["env_config_file"])
       else:
         self.env_config = self.exp_config["env_config"]
-
       # Load the ray_config. The user can specify the ray_config via the
       # ray_config_file parameter or directly via the ray_config parameter.
       if (not_defined("ray_config_file", self.exp_config)
           and not_defined("ray_config", self.exp_config)):
-        raise KeyError("ERROR: provide 'ray_config_file' or 'ray_config' if no previous checkpoint is given")
+        raise KeyError(
+          "ERROR: provide 'ray_config_file' or 'ray_config' if no previous "
+          "checkpoint is given"
+        )
       if (defined("ray_config_file", self.exp_config)
           and defined("ray_config", self.exp_config)):
-        raise KeyError("ERROR: 'ray_config_file' or 'ray_config' cannot be both set!")
-
+        raise KeyError(
+          "ERROR: 'ray_config_file' or 'ray_config' cannot be both set!"
+        )
       if defined("ray_config_file", self.exp_config):
         self.ray_config = load_config_file(self.exp_config["ray_config_file"])
       else:
         self.ray_config = self.exp_config["ray_config"]
-
       self.checkpoint_path = None
       # base output directory
       base_logdir = self.exp_config.get(
@@ -219,13 +232,19 @@ class BaseExperiment(ABC):
     """
     if "evaluation" in evaluation_metrics:
       evaluation_metrics = evaluation_metrics["evaluation"]
-
     em = {}
-    if 'env_runners' in evaluation_metrics.keys() and 'hist_stats' in evaluation_metrics['env_runners'].keys():
-      items_for_loop = evaluation_metrics['env_runners']['hist_stats'].items()
-      em = {**evaluation_metrics['env_runners']}
-    elif 'hist_stats' in evaluation_metrics.keys() and len(evaluation_metrics['hist_stats'].keys()) > 0:
-      items_for_loop = evaluation_metrics['hist_stats'].items()
+    items_for_loop = {}
+    if (
+      "env_runners" in evaluation_metrics.keys() and 
+        "hist_stats" in evaluation_metrics["env_runners"].keys()
+    ):
+      items_for_loop = evaluation_metrics["env_runners"]["hist_stats"].items()
+      em = {**evaluation_metrics["env_runners"]}
+    elif (
+      "hist_stats" in evaluation_metrics.keys() and 
+        len(evaluation_metrics["hist_stats"].keys()) > 0
+    ):
+      items_for_loop = evaluation_metrics["hist_stats"].items()
       em = {**evaluation_metrics}
     for key, val in items_for_loop:
       newval = []
