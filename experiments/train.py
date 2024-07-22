@@ -70,7 +70,7 @@ class TrainingExperiment(BaseExperiment):
   def execute_before_training(self):
     pass
 
-  def on_iteration_start(self):
+  def on_iteration_start(self, algo: Algorithm, it: int):
     pass
 
   def on_iteration_end(self):
