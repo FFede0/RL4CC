@@ -113,6 +113,12 @@ class TuningExperiment(BaseExperiment):
       "experiment_duration_s", experiment_duration.total_seconds()
     )
     self.logger.log(f"experiment took: {experiment_duration}")
+    # save the tuning results as a dataframe
+    results_df = results.get_dataframe()
+    results_df.to_csv(
+      os.path.join(results.experiment_path, "tuning_results_df.csv"),
+      index = False
+    )
     return results
 
   def write_best_trial(self, results: ResultGrid, tuner: Tuner):
