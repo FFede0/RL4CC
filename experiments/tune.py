@@ -13,8 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from utilities.common import not_defined, load_config_file, write_config_file, defined
+from utilities.common import load_config_file, write_config_file
 from experiments.base_experiment import BaseExperiment
+from utilities.common import not_defined, defined
 from utilities.logger import Logger
 from algorithms.tuner import Tuner
 
@@ -34,29 +35,32 @@ class TuningExperiment(BaseExperiment):
   
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
-
-    # If a checkpoint is provided, it is not necessary to load tune_config.
-    if (defined("from_checkpoint", self.exp_config)
-        and (defined("tune_config_file", self.exp_config)
-             or defined("tune_config", self.exp_config))):
-      self.logger.warn("'tune_config_file' and 'tune_config' ignored because checkpoint is provided")
-    if defined("from_checkpoint", self.exp_config):
-      self.tune_config = None
-      return
-
-    # Load the tune_config. The user can specify the tune_config via the
-    # tune_config_file parameter or directly via the tune_config parameter.
-    if (not_defined("tune_config_file", self.exp_config)
-        and not_defined("tune_config", self.exp_config)):
-      raise KeyError("ERROR: provide 'tune_config_file' or 'tune_config' if no previous checkpoint is given")
-    if (defined("tune_config_file", self.exp_config)
-        and defined("tune_config", self.exp_config)):
-      raise KeyError("ERROR: 'tune_config_file' or 'tune_config' cannot be both set!")
-
+    # if no checkpoint is provided, the tune configuration is mandatory
+    if (
+      not_defined("from_checkpoint", self.exp_config) and 
+        not_defined("tune_config_file", self.exp_config) and 
+          not_defined("tune_config", self.exp_config)
+    ):
+      raise KeyError(
+        "ERROR: provide 'tune_config_file' or 'tune_config' if no previous "
+        "checkpoint is given"
+      )
+    # the tune configuration cannot be simultaneously provided as a file and 
+    # as a dictionary
+    if (
+      defined("tune_config_file", self.exp_config) and 
+        defined("tune_config", self.exp_config)
+    ):
+      raise KeyError(
+        "ERROR: 'tune_config_file' or 'tune_config' cannot be both set!"
+      )
+    # load the tune_config. The user can specify the tune_config via the
+    # tune_config_file parameter or directly via the tune_config parameter
+    self.tune_config = None
     if defined("tune_config_file", self.exp_config):
       self.tune_config = load_config_file(self.exp_config["env_config_file"])
-    else:
-        self.tune_config = self.exp_config["tune_config"]
+    elif defined("tune_config", self.exp_config):
+      self.tune_config = self.exp_config["tune_config"]
 
   def define_checkpoint_config(self):
     """
@@ -90,7 +94,8 @@ class TuningExperiment(BaseExperiment):
     self.write_best_trial(tune_results, tuner)
     experiment_directory = tune_results.experiment_path
     self.logger.log(
-      f"Tuning experiment finished successfully, tuning output directory: {experiment_directory}"
+      "Tuning experiment finished successfully, tuning output "
+      f"directory: {experiment_directory}"
     )
 
   def tuning(self, tuner: Tuner) -> ResultGrid:
