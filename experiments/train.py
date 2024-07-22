@@ -71,9 +71,9 @@ class TrainingExperiment(BaseExperiment):
   def execute_before_training(self, algo: Algorithm):
     pass
 
-  def on_iteration_start(self):
+  def on_iteration_start(self, algo: Algorithm, it: int):
     pass
-  def on_iteration_end(self):
+  def on_iteration_end(self, algo: Algorithm, it: int):
     pass
 
   def training_loop(self, algo: Algorithm):
@@ -106,7 +106,7 @@ class TrainingExperiment(BaseExperiment):
           result["training_iteration"], 
           result["evaluation"]
         )
-      self.on_iteration_end()
+      self.on_iteration_end(algo, it)
       # move to the next iteration
       it += 1
     # save last checkpoint
