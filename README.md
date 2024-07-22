@@ -150,6 +150,15 @@ properly defined, as detailed in the corresponding
 
 If you want to automatically generate plots during the training, you can use the `TrainingExperimentWithPlots` class, which is a subclass of `TrainingExperiment`. This class will automatically generate plots the last iteration and a moving average of all the iterations. The plots will be saved in the `plots` directory in the `logdir` previously specified.
 In order to specify the plots to be generated, you can use the `RELEVANT_KEYS` of the callbacks: in particular, define a custom callback class (extending the `BaseCallbacksForPlots`class).
+As we use `custom_metrics` to save all metrics that we want to plot, you should set
+
+```
+"reporting": {
+  "keep_per_episode_custom_metrics": true
+}
+```
+
+in the `ray_config` configuration.
 
 ### Expected outputs
 
@@ -184,7 +193,7 @@ if nothing is provided). These include:
   specified interval, a checkpoint is always saved at the end of the training
   process.
 
-- `evaluations.txt`: each row of this file is a dictionary with values collected
+- `evaluations.json`: a json file containing key "evaluations", which is an array of dictionaries with values collected
   during the evaluation phase, which runs according to the frequency specified
   in the [`exp_config` config](config_files/README.md#experiment-configuration).
   The dictionary structure follows the one described for the progress.csv file,
