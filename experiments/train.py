@@ -131,7 +131,7 @@ class TrainingExperiment(BaseExperiment):
     self.logger.log(f"training loop took: {experiment_duration}", 1)
     self.logger.log(f"average time per iteration: {avg_time_per_iter}", 1)
 
-  def execute_after_training(self):
+  def execute_after_training(self, algo: Algorithm):
     pass
   
   def define_stopping_criteria(self):

@@ -21,8 +21,9 @@ import pandas as pd
 from datetime import datetime
 import matplotlib.pyplot as plt
 
-from utilities.logger import Logger
+from algorithms.algorithm import Algorithm
 
+from utilities.logger import Logger
 from RL4CC.experiments.train import TrainingExperiment
 
 class TrainingExperimentWithPlots(TrainingExperiment):
@@ -40,7 +41,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
         return algorithm
     
     
-    def execute_after_training(self):
+    def execute_after_training(self, algo: Algorithm):
         if not os.path.exists(self.plots_folder):
             os.makedirs(self.plots_folder)
         self.manage_evaluation_files()
