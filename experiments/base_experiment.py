@@ -196,10 +196,18 @@ class BaseExperiment(ABC):
       "after_training_iteration": last_iter,
       **self.serialize_evaluation_metrics(evaluation_metrics)
     }
-    # write
-    evaluation_file = os.path.join(self.logdir, "evaluations.txt")
-    with open(evaluation_file, "a") as ostream:
-      ostream.write(f"{evaluation}\n")
+    # write the evaluation results in the evaluations file (json format)
+    evaluations_dict = {'evaluations': []}
+
+    evaluations_file_path = os.path.join(self.logdir, 'evaluations.json')
+    if os.path.exists(evaluations_file_path):
+      with open(evaluations_file_path, 'r') as f:
+        evaluations_dict = json.load(f)
+
+    evaluations_dict['evaluations'].append(evaluation)
+
+    with open(evaluations_file_path, 'w+') as f:
+        json.dump(evaluations_dict, f, indent=4)
   
   def plot_results(self, result: dict) -> str:
     pass
