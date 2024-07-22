@@ -15,6 +15,7 @@ limitations under the License.
 """
 from utilities.common import not_defined, load_config_file, write_config_file, defined
 from experiments.base_experiment import BaseExperiment
+from utilities.common import not_defined, defined
 from utilities.logger import Logger
 from algorithms.tuner import Tuner
 
@@ -55,8 +56,8 @@ class TuningExperiment(BaseExperiment):
 
     if defined("tune_config_file", self.exp_config):
       self.tune_config = load_config_file(self.exp_config["env_config_file"])
-    else:
-        self.tune_config = self.exp_config["tune_config"]
+    elif defined("tune_config", self.exp_config):
+      self.tune_config = self.exp_config["tune_config"]
 
   def define_checkpoint_config(self):
     """
@@ -90,7 +91,8 @@ class TuningExperiment(BaseExperiment):
     self.write_best_trial(tune_results, tuner)
     experiment_directory = tune_results.experiment_path
     self.logger.log(
-      f"Tuning experiment finished successfully, tuning output directory: {experiment_directory}"
+      "Tuning experiment finished successfully, tuning output "
+      f"directory: {experiment_directory}"
     )
 
   def tuning(self, tuner: Tuner) -> ResultGrid:
@@ -108,6 +110,12 @@ class TuningExperiment(BaseExperiment):
       "experiment_duration_s", experiment_duration.total_seconds()
     )
     self.logger.log(f"experiment took: {experiment_duration}")
+    # save the tuning results as a dataframe
+    results_df = results.get_dataframe()
+    results_df.to_csv(
+      os.path.join(results.experiment_path, "tuning_results_df.csv"),
+      index = False
+    )
     return results
 
   def write_best_trial(self, results: ResultGrid, tuner: Tuner):
