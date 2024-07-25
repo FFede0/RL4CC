@@ -145,13 +145,14 @@ class TuningExperiment(BaseExperiment):
     self.update_progress_file(
       "best_tune_trial_dir", best_results.path
     )
-    # save evaluation results related to the best checkpoint(s)
+    # save evaluation results related to the best checkpoint(s) (if any)
     for checkpoint_path, result in best_results.best_checkpoints:
-      evaluation_metrics = result["evaluation"]
-      evaluation_metrics["corresponding_checkpoint"] = checkpoint_path
-      self.update_evaluation_metrics_file(
-        result["training_iteration"], evaluation_metrics
-      )
+      if "evaluation" in result:
+        evaluation_metrics = result["evaluation"]
+        evaluation_metrics["corresponding_checkpoint"] = checkpoint_path
+        self.update_evaluation_metrics_file(
+          result["training_iteration"], evaluation_metrics
+        )
 
   def define_stopping_criteria(self):
     """
