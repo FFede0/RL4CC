@@ -37,7 +37,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
       self.logger.warn("logdir is not defined. Using default logdir.")
     self.plots_folder = os.path.join(self.logdir, "plots")
   
-  def execute_after_training(self):
+  def execute_after_training(self, algo):
     if not os.path.exists(self.plots_folder):
       os.makedirs(self.plots_folder)
     self.manage_evaluation_files()
