@@ -15,6 +15,7 @@ limitations under the License.
 """
 from utilities.common import load_config_file, write_config_file
 from utilities.common import not_defined, defined
+from utilities.common import NumpyEncoder
 from utilities.logger import Logger
 
 from abc import ABC, abstractmethod
@@ -66,7 +67,7 @@ class BaseExperiment(ABC):
     )
     # stopping criteria
     self.define_stopping_criteria()
-  
+
   def validate_experiment_configuration(self):
     # the algorithm name must be provided
     if not_defined("algorithm", self.exp_config):
@@ -151,10 +152,10 @@ class BaseExperiment(ABC):
       os.path.abspath(base_logdir), f"{algo}_{env_name}_{now}"
     )
     os.makedirs(self.logdir, exist_ok=True)
-  
+
   def define_checkpoint_config(self):
     """
-    Initialize the dictionary storing all configuration parameters related 
+    Initialize the dictionary storing all configuration parameters related
     to checkpointing
     """
     self.checkpoint_config = {
@@ -162,26 +163,26 @@ class BaseExperiment(ABC):
         "checkpoint_interval", np.inf
       )
     }
-  
+
   def write_config_files(self):
     """
-    Write the environment and experiment configuration files into the 
+    Write the environment and experiment configuration files into the
     experiment logdir
     """
     # write environment configuration file
     if self.env_config is not None:
       write_config_file(
-        json.dumps(self.env_config, indent = 2), 
-        os.path.join(self.logdir, "complete_config"), 
+        json.dumps(self.env_config, indent = 2),
+        os.path.join(self.logdir, "complete_config"),
         "env_config.json"
       )
     # write experiment configuration file
     write_config_file(
-      json.dumps(self.exp_config, indent = 2), 
-      os.path.join(self.logdir, "complete_config"), 
+      json.dumps(self.exp_config, indent = 2),
+      os.path.join(self.logdir, "complete_config"),
       "exp_config.json"
     )
-  
+
   def update_progress_file(self, key: str, value):
     """
     Update the information written in the experiment progress file
@@ -197,7 +198,7 @@ class BaseExperiment(ABC):
     # write updated file
     with open(exp_progress_file, "w") as ostream:
       ostream.write(json.dumps(exp_progress, indent = 2))
-  
+
   def update_evaluation_metrics_file(
       self, last_iter: int, evaluation_metrics: dict
     ):
@@ -220,15 +221,19 @@ class BaseExperiment(ABC):
     evaluations_dict['evaluations'].append(evaluation)
 
     with open(evaluations_file_path, 'w+') as f:
-        json.dump(evaluations_dict, f, indent=4)
-  
+      # We need to use a custom JSON encoder because the user can be added some
+      # custom properties as NumPy arrays. NumPy types need to be converted to
+      # Python types before doing the JSON dump because the default encoder
+      # doesn't support NumPy types.
+      json.dump(evaluations_dict, f, indent=4, cls=NumpyEncoder)
+
   def plot_results(self, result: dict) -> str:
     pass
 
   @abstractmethod
   def define_stopping_criteria(self, exp_config: dict):
     pass
-  
+
   @abstractmethod
   def run(self):
     pass
@@ -243,13 +248,13 @@ class BaseExperiment(ABC):
     em = {}
     items_for_loop = {}
     if (
-      "env_runners" in evaluation_metrics.keys() and 
+      "env_runners" in evaluation_metrics.keys() and
         "hist_stats" in evaluation_metrics["env_runners"].keys()
     ):
       items_for_loop = evaluation_metrics["env_runners"]["hist_stats"].items()
       em = {**evaluation_metrics["env_runners"]}
     elif (
-      "hist_stats" in evaluation_metrics.keys() and 
+      "hist_stats" in evaluation_metrics.keys() and
         len(evaluation_metrics["hist_stats"].keys()) > 0
     ):
       items_for_loop = evaluation_metrics["hist_stats"].items()
