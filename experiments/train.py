@@ -93,27 +93,30 @@ class TrainingExperiment(BaseExperiment):
       if it == 1 or it % self.checkpoint_config["checkpoint_frequency"] == 0:
         last_chpt_dir = algo.save_checkpoint()
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
-      # plot results at the beginning and every `plot_interval` iterations
-      if it == 1 or it % self.plot_interval == 0:
-        self.plot_results(result)
       # save evaluation results every `evaluation_interval` iterations
       if it % self.evaluation_interval == 0:
         self.update_evaluation_metrics_file(
           result["training_iteration"], 
           result["evaluation"]
         )
+      # plot results at the beginning and every `plot_interval` iterations
+      if it == 1 or it % self.plot_interval == 0:
+        self.plot_results(result)
       self.on_iteration_end(algo, it)
       # move to the next iteration
       it += 1
     # save last checkpoint
     last_chpt_dir = algo.save_checkpoint()
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
-    # perform final evaluation
-    self.logger.log(f"starting final evaluation", 2)
-    self.update_evaluation_metrics_file(
-      result["training_iteration"], algo.evaluate()
-    )
-    self.logger.log(f"final evaluation performed", 2)
+    # perform final evaluation (if it has not just be performed)
+    if (it - 1) % self.evaluation_interval != 0:
+      self.logger.log(f"starting final evaluation", 2)
+      self.update_evaluation_metrics_file(
+        result["training_iteration"], algo.evaluate()
+      )
+      self.logger.log(f"final evaluation performed", 2)
+    else:
+      self.logger.log(f"final evaluation already performed during training", 2)
     # stop
     algo.stop()
     end = datetime.now()
