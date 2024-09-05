@@ -20,10 +20,10 @@ from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.policy import Policy
 from ray.rllib.env import BaseEnv
 
-from typing import Dict, Tuple
-import numpy as np
-import json
 import os
+import json
+import numpy as np
+from typing import Dict, Tuple
 
 class BaseCallbacksForPlots(BaseCallbacks):
   def __init__(self, *args, **kwargs):
