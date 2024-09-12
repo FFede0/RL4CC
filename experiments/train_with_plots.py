@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from experiments.train import TrainingExperiment
+from algorithms.algorithm import Algorithm
 from utilities.logger import Logger
 
 import matplotlib.pyplot as plt
@@ -37,7 +38,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
       self.logger.warn("logdir is not defined. Using default logdir.")
     self.plots_folder = os.path.join(self.logdir, "plots")
   
-  def execute_after_training(self):
+  def execute_after_training(self, algo: Algorithm):
     if not os.path.exists(self.plots_folder):
       os.makedirs(self.plots_folder)
     self.manage_evaluation_files()
