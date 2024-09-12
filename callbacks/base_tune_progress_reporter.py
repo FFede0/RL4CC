@@ -15,18 +15,20 @@ limitations under the License.
 """
 from utilities.common import update_json_file
 
-from ray.tune.progress_reporter import CLIReporter
+from ray.tune.progress_reporter import TuneReporterBase
+from ray.tune.progress_reporter import _get_time_str, _get_trials_by_state
 from ray.tune.utils import unflattened_lookup
 from ray.tune.experiment.trial import Trial
 
 from typing import Dict, List, Optional, Union
+import time
 try:
   from collections.abc import Mapping
 except ImportError:
   from collections import Mapping
 
 
-class BaseProgressReporter(CLIReporter):
+class BaseProgressReporter(TuneReporterBase):
 
   def __init__(
       self,
@@ -62,8 +64,22 @@ class BaseProgressReporter(CLIReporter):
     self.progress_file = progress_file
 
   def report(self, trials: List[Trial], done: bool, *sys_info: Dict):
-    super().report(trials, done, *sys_info)
-    # add information on the current best trial to the proper file
+    #super().report(trials, done, *sys_info)
+    # get info on running time
+    current_time_str, running_for_str = _get_time_str(self._start_time, time.time())
+    update_json_file(self.progress_file, "current_time", current_time_str)
+    update_json_file(self.progress_file, "tune_running_for", running_for_str)
+    # system information (scheduling algorithm and resource usage)
+    update_json_file(self.progress_file, "sys_info", sys_info)
+    # get trials in different states
+    num_trials = len(trials)
+    trials_by_state = _get_trials_by_state(trials)
+    num_trials_strs = [
+        "{} {}".format(len(trials_by_state[state]), state)
+        for state in sorted(trials_by_state)
+    ]
+    update_json_file(self.progress_file, "trials_state", num_trials_strs)
+    # get information on the current best trial
     trial, metric = self._current_best_trial(trials)
     if trial is not None and self.progress_file is not None:
       # get metric value and trial parameters
@@ -78,3 +94,4 @@ class BaseProgressReporter(CLIReporter):
       update_json_file(self.progress_file, "best_trial_metric", metric)
       update_json_file(self.progress_file, "best_trial_value", metric_val)
       # update_json_file(self.progress_file, "best_trial_config", params)
+
