@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
+from callbacks.base_tune_progress_reporter import BaseProgressReporter
 from utilities.logger import Logger
 
 from ray.tune.search.hyperopt import HyperOptSearch
@@ -22,6 +22,7 @@ from ray.tune.schedulers import ASHAScheduler
 from ray.tune import TuneConfig
 from datetime import datetime
 from typing import Tuple
+import os
 
 
 class TuneConfigGenerator:
@@ -108,9 +109,11 @@ class TuneConfigGenerator:
     parameters
     """
     name = None
+    progress_file = None
     if storage_path is not None:
       now = datetime.now().strftime('%H-%M-%S.%f')
       name = f"tuning_experiment_output_{now}"
+      progress_file = os.path.join(storage_path, "exp_progress.json")
     # generate RunConfig
     run_config = RunConfig(
       name = name,
@@ -118,7 +121,10 @@ class TuneConfigGenerator:
       stop = stopping_criterion,
       storage_path = storage_path,
       callbacks = callbacks,
-      checkpoint_config = checkpoint_config
+      checkpoint_config = checkpoint_config,
+      progress_reporter = BaseProgressReporter(
+        progress_file = progress_file
+      )
     )
     return run_config
   
