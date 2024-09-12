@@ -111,3 +111,18 @@ class NumpyEncoder(json.JSONEncoder):
 
     # Use the default JSON encoder for other types.
     return json.JSONEncoder.default(self, obj)
+
+def update_json_file(filename: str, key: str, value):
+  """
+  Update the information written in the experiment progress file
+  """
+  json_obj = {}
+  # load existing content (if any)
+  if os.path.exists(filename):
+    with open(filename, "r") as istream:
+      json_obj = json.load(istream)
+  # update
+  json_obj[key] = value
+  # write updated file
+  with open(filename, "w") as ostream:
+    ostream.write(json.dumps(json_obj, indent = 2))
