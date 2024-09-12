@@ -58,7 +58,7 @@ class TuningExperiment(BaseExperiment):
     # tune_config_file parameter or directly via the tune_config parameter
     self.tune_config = None
     if defined("tune_config_file", self.exp_config):
-      self.tune_config = load_config_file(self.exp_config["env_config_file"])
+      self.tune_config = load_config_file(self.exp_config["tune_config_file"])
     elif defined("tune_config", self.exp_config):
       self.tune_config = self.exp_config["tune_config"]
 
