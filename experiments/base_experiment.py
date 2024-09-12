@@ -76,7 +76,9 @@ class BaseExperiment(ABC):
       )
     # if a previous checkpoint path is provided...
     if "from_checkpoint" in self.exp_config:
-      self.checkpoint_path = self.exp_config["from_checkpoint"]
+      self.checkpoint_path = os.path.abspath(
+        self.exp_config["from_checkpoint"]
+      )
       self.env_config = None
       self.ray_config = None
       self.logdir = None
