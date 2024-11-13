@@ -297,21 +297,6 @@ where:
 ## How to add new RL methods
 
 To expand the module with generators for new algorithms:
-<<<<<<< HEAD
-
-1. implement a suitable subclass of the base
-   [`AlgoConfigGenerator`](algorithms/generators/algo_config_generator.py)
-   (see, as an example, what is provided for the
-   [PPO algorithm](algorithms/generators/ppo_config_generator.py))
-2. add the new generator to the
-   [generators factory](algorithms/generators_factory.py)
-
-## How to contribute
-
-### Regression tests
-
-WIP (do not touch yet)
-=======
 1. implement a suitable subclass of the base 
 [`AlgoConfigGenerator`](algorithms/generators/algo_config_generator.py) 
 (see, as an example, what is provided for the 
@@ -333,4 +318,3 @@ developers. From here we move on to `develop`.
 Each developer can create their own branch named `test-[your-initials]`, 
 from which you can merge to `test`. No direct PR will be accepted on any 
 branch that is not `test`.
->>>>>>> main
