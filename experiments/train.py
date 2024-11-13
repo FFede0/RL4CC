@@ -18,6 +18,7 @@ from algorithms.algorithm import Algorithm
 from utilities.common import not_defined
 from utilities.logger import Logger
 
+from ray.rllib.policy.policy import Policy
 from datetime import datetime
 
 
@@ -38,7 +39,7 @@ class TrainingExperiment(BaseExperiment):
         "`stopping_criteria` must be provided in `exp_config.json`"
       )
   
-  def run(self):
+  def run(self) -> Policy:
     # define algorithm
     algo = Algorithm(
       algo_name = self.exp_config["algorithm"], 
@@ -61,7 +62,9 @@ class TrainingExperiment(BaseExperiment):
     self.execute_before_training(algo)
     self.training_loop(algo)
     self.execute_after_training(algo)
-    return algo
+    
+    # return the trained policy
+    return algo.get_policy()
 
   def execute_before_training(self, algo: Algorithm):
     pass
@@ -71,7 +74,7 @@ class TrainingExperiment(BaseExperiment):
 
   def on_iteration_end(self, algo: Algorithm, it: int):
     pass
-
+  
   def training_loop(self, algo: Algorithm):
     """
     `Algorithm` training loop

@@ -17,6 +17,7 @@ from utilities.common import load_config_file, write_config_file
 from utilities.common import not_defined, defined
 from utilities.logger import Logger
 
+from ray.rllib.policy.policy import Policy
 from abc import ABC, abstractmethod
 from datetime import datetime
 import numpy as np
@@ -230,7 +231,7 @@ class BaseExperiment(ABC):
     pass
   
   @abstractmethod
-  def run(self):
+  def run(self) -> Policy:
     pass
 
   @staticmethod
