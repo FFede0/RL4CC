@@ -684,7 +684,7 @@ class AlgoConfigGenerator(ABC):
         )
       elif obj_type == "qrandint":
         return self.ParameterDomain(
-          tune.qrandint(lower, upper, obj.q), lower, upper
+          tune.qrandint(lower, upper, obj.sampler.q), lower, upper
         )
       else:
         raise ValueError(f"Unsupported Ray Tune object: {obj}")
@@ -738,6 +738,8 @@ class AlgoConfigGenerator(ABC):
       if isinstance(sampler.sampler, tune.search.sample.Uniform):
         return "randint"
       elif isinstance(sampler.sampler, tune.search.sample.LogUniform):
+        return "lograndint"
+      elif isinstance(sampler.sampler, tune.search.sample.Quantized):
         return "qrandint"
     elif isinstance(sampler, tune.search.sample.Categorical):
       return "choice"

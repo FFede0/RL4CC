@@ -171,15 +171,15 @@ if nothing is provided). These include:
   `env_config` and `ray_config`) used to define the experiment, saved as JSON
   files.
 
-  > [!NOTE]
-  > Two important notes:
-  >
-  > - JSON files are saved here, regardless the fact that the user passed the
-  >   configuration(s) as file(s) or as `dict` object(s).
-  > - While `env_config.json` and `exp_config.json` are simply copied from the
-  >   user-defined configurations, the `ray_config.json` file reported here
-  >   includes also the default values assigned to keys that were not included
-  >   in the user-defined configuration.
+> [!NOTE]
+> Two important notes:
+>
+> - JSON files are saved here, regardless the fact that the user passed the
+>   configuration(s) as file(s) or as `dict` object(s).
+> - While `env_config.json` and `exp_config.json` are simply copied from the
+>   user-defined configurations, the `ray_config.json` file reported here
+>   includes also the default values assigned to keys that were not included
+>   in the user-defined configuration.
 
 - `exp_progress.json`: a file that, during the training, is progressively
   updated with information related to the last executed iteration, the last
@@ -241,10 +241,11 @@ algorithms:
    configuration, as a dictionary or as a path to an `exp_config.json` file.
 
 3. call the `TrainingExperiment.run()` method.
-   > [!NOTE]
-   > Note that, since Air's RunConfig is used on top of the algorithm object, the
-   > user can provide a list of callbacks (classes) as parameters to the run
-   > method, overwriting any previous callbacks indicated.
+
+> [!NOTE]
+> Note that, since Air's RunConfig is used on top of the algorithm object, the
+> user can provide a list of callbacks (classes) as parameters to the run
+> method, overwriting any previous callbacks indicated.
 
 Example when using the predefined `BaseEnvironment`, a `exp_config` given as
 file and, possibly, custom callbacks classes:
