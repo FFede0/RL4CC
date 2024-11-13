@@ -36,14 +36,14 @@ class TrainingExperimentWithPlots(TrainingExperiment):
     if self.logdir is None:
       self.logger.warn("logdir is not defined. Using default logdir.")
     self.plots_folder = os.path.join(self.logdir, "plots")
-  
+
   def execute_after_training(self, algo):
     if not os.path.exists(self.plots_folder):
       os.makedirs(self.plots_folder)
     self.manage_evaluation_files()
     self.manage_custom_metrics_keys()
     self.plot()
-  
+
   def manage_evaluation_files(self):
     evaluations_dict = {"evaluations": []}
     # if evaluations are saved in a json file, load it to dictionary
@@ -61,7 +61,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
           line = line.replace("None", "null")
           line_json = json.loads(line)
           self.evaluations.append(line_json)
-      # remove the last evaluation (as an extra one is always saved) 
+      # remove the last evaluation (as an extra one is always saved)
       # TODO: fix this at some point
       if (len(self.evaluations) > 1):
           self.evaluations.pop(-1)
@@ -84,37 +84,56 @@ class TrainingExperimentWithPlots(TrainingExperiment):
             self.merged_evaluations[key].extend(evaluation_custom_metrics[key])
       with open(os.path.join(self.logdir,"merged_evaluations.json"), "w") as f:
         json.dump(self.merged_evaluations, f, indent=4)
-  
+
   def manage_custom_metrics_keys(self):
       pass
-  
+
   def plot(self):
     if len(self.evaluations) == 0:
       self.logger.warn("No evaluations found.")
     else:
-      for key in self.custom_metrics_keys:
-        last_evaluation_values = self.evaluations[-1]["custom_metrics"][key]
-        if isinstance(last_evaluation_values, list):
-          if (
-              isinstance(last_evaluation_values[0], list) or 
-                isinstance(last_evaluation_values[0], np.ndarray) or 
-                  isinstance(last_evaluation_values[0], int) or 
-                    isinstance(last_evaluation_values[0], float)
-          ):
-            last_evaluation_values = np.array(last_evaluation_values).flatten()
+      for eval_idx in range(len(self.evaluations)):
+        plots_eval_folder = os.path.join(self.plots_folder, "evaluation"+str(eval_idx+1))
+        if not os.path.exists(plots_eval_folder):
+          os.makedirs(plots_eval_folder)
+        for key in self.custom_metrics_keys:
+          last_evaluation_values = self.evaluations[eval_idx]["custom_metrics"][key]
+          last_evaluation_multiple_values = False
+          if isinstance(last_evaluation_values, list) and isinstance(last_evaluation_values[0], list):
+            if (
+                (isinstance(last_evaluation_values[0][0], list) and len(last_evaluation_values[0][0]) == 1) or
+                  (isinstance(last_evaluation_values[0][0], np.ndarray) and len(last_evaluation_values[0][0])) == 1 or
+                    isinstance(last_evaluation_values[0][0], int) or
+                      isinstance(last_evaluation_values[0][0], float)
+            ):
+              last_evaluation_values = np.array(last_evaluation_values).flatten()
+            elif (
+                  (isinstance(last_evaluation_values[0][0], list) and len(last_evaluation_values[0][0]) > 1) or
+                    (isinstance(last_evaluation_values[0][0], np.ndarray) and len(last_evaluation_values[0][0]) > 1)
+            ):
+              last_evaluation_multiple_values = True
+            else:
+              self.logger.err("Error: unknown type")
           else:
-            self.logger.err("Error: unknown type")
-        else:
-          self.logger.err(
-            f"Error: custom metric {key} is not a list of lists"
+            self.logger.err(
+              f"Error: custom metric {key} is not a list of lists"
+            )
+
+          plt.figure(key, figsize = (10, 10))
+          if last_evaluation_multiple_values:
+            # plot the different values in the same plot, so that if the array is [[1,2,3],[4,5,6],[7,8,9]] we have 3 lines with points (1,4,7), (2,5,8), (3,6,9)
+            for i in range(len(last_evaluation_values[0][0])):
+              values = [value[i] for value in last_evaluation_values[0]]
+              # print('PLOTTING:', values)
+              plt.plot(values, label=f"{key}_{i}")
+          else:
+            plt.plot(last_evaluation_values, label=key)
+
+          plt.xlabel("time")
+          plt.ylabel(key)
+          plt.legend()
+          plt.title(key)
+          plt.savefig(
+            os.path.join(plots_eval_folder, f"{key}_last_evaluation.png")
           )
-        plt.figure(key, figsize = (10, 10))
-        plt.plot(last_evaluation_values, label=key)
-        plt.xlabel("time")
-        plt.ylabel(key)
-        plt.legend()
-        plt.title(key)
-        plt.savefig(
-          os.path.join(self.plots_folder, f"{key}_last_evaluation.png")
-        )
-        plt.close()
+          plt.close()

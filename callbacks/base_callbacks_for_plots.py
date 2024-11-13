@@ -32,7 +32,6 @@ class BaseCallbacksForPlots(BaseCallbacks):
       "current_time"
     ]
     self.iteration_id = 0
-    self.step_id = 0
 
   def on_episode_start(
       self,
@@ -62,6 +61,7 @@ class BaseCallbacksForPlots(BaseCallbacks):
       env_index: int,
       **kwargs,
     ):
+
     # make sure this episode is ongoing
     assert episode.length > 0, (
       "ERROR: `on_episode_step()` callback should not be called right "
@@ -81,9 +81,28 @@ class BaseCallbacksForPlots(BaseCallbacks):
       # add to user_data
       episode.user_data[key].append(val)
       # add worker index
-    episode.user_data["worker_index"].append(worker.worker_index) 
-    self.step_id += 1 
-  
+    episode.user_data["worker_index"].append(worker.worker_index)
+
+    for key in self.RELEVANT_KEYS:
+      if key in episode.user_data:
+        episode.hist_data[key] = episode.user_data[key]
+        episode.custom_metrics[key] = episode.user_data[key]
+
+    if not (("env_context" in worker.__dict__.keys()) and ("is_evaluation" in worker.env_context)):
+      first_key = list(episode.custom_metrics.keys())[0]
+      random_index = np.random.randint(0, len(episode.custom_metrics[first_key]))
+      random_custom_metrics = {}
+      for key in self.RELEVANT_KEYS:
+        if key in episode.custom_metrics:
+          random_custom_metrics[key] = episode.custom_metrics[key][random_index]
+      simulation_folder = worker.config["logger_config"]["logdir"]
+      it_id = self.iteration_id
+      os.makedirs(f"{simulation_folder}/custom_metrics", exist_ok = True)
+      filename = f"{simulation_folder}/custom_metrics/iteration_{it_id}.json"
+      with open(filename, "w+") as f:
+        f.write(json.dumps(random_custom_metrics, indent=2))
+      self.iteration_id += 1
+
   def on_episode_end(
       self,
       *,
@@ -94,6 +113,7 @@ class BaseCallbacksForPlots(BaseCallbacks):
       env_index: int,
       **kwargs,
     ):
+    print("Episode end")
     # check if there are multiple episodes in a batch, i.e.
     # "batch_mode": "truncate_episodes".
     if worker.config.batch_mode == "truncate_episodes":
@@ -105,58 +125,60 @@ class BaseCallbacksForPlots(BaseCallbacks):
           "ERROR: `on_episode_end()` should only be called "
           "after episode is done!"
         )
+
     # # add averages to custom metrics
     # response_time = np.mean(episode.user_data["response_times"])
     # episode.custom_metrics["response_times_avg"] = response_time
     # add to hist data
-    for key in self.RELEVANT_KEYS:
-      if key in episode.user_data:
-        episode.hist_data[key] = episode.user_data[key]
-        episode.custom_metrics[key] = episode.user_data[key]  
+    # for key in self.RELEVANT_KEYS:
+    #   if key in episode.user_data:
+    #     episode.hist_data[key] = episode.user_data[key]
+    #     episode.custom_metrics[key] = episode.user_data[key]
     # add worker index
-    episode.hist_data["worker_index"] = episode.user_data["worker_index"] 
-  
+    episode.hist_data["worker_index"] = episode.user_data["worker_index"]
+
   def on_sample_end(
-      self, 
-      *, 
-      worker: RolloutWorker, 
-      samples: SampleBatch, 
+      self,
+      *,
+      worker: RolloutWorker,
+      samples: SampleBatch,
       **kwargs
     ):
     # TODO: any sanity check to perform?
     pass
 
   def on_train_result(self, *, algorithm, result: dict, **kwargs):
+    print("Train result")
     custom_metrics = []
     if (
-      "env_runners" in result.keys() and 
+      "env_runners" in result.keys() and
         "custom_metrics" in result["env_runners"].keys()
     ):
       custom_metrics = result["env_runners"]["custom_metrics"]
     elif (
-        "custom_metrics" in result.keys() and 
+        "custom_metrics" in result.keys() and
           len(result["custom_metrics"].keys()) > 0
     ):
       custom_metrics = result["custom_metrics"]
     else:
       result["callback_ok"] = False
-      return    
-    first_key = list(custom_metrics.keys())[0]
-    random_index = np.random.randint(0, len(custom_metrics[first_key]))   
-    random_custom_metrics = {}
-    for key in self.RELEVANT_KEYS:
-      if key in custom_metrics:
-        random_custom_metrics[key] = custom_metrics[key][random_index]  
-    simulation_folder = algorithm.config["logger_config"]["logdir"] 
-    it_id = self.iteration_id 
-    os.makedirs(f"{simulation_folder}/custom_metrics", exist_ok = True)
-    filename = f"{simulation_folder}/custom_metrics/iteration_{it_id}.json" 
-    with open(filename, "w+") as f:
-      f.write(json.dumps(random_custom_metrics, indent=2))    
-    self.iteration_id += 1  
+      return
+    # first_key = list(custom_metrics.keys())[0]
+    # random_index = np.random.randint(0, len(custom_metrics[first_key]))
+    # random_custom_metrics = {}
+    # for key in self.RELEVANT_KEYS:
+    #   if key in custom_metrics:
+    #     random_custom_metrics[key] = custom_metrics[key][random_index]
+    # simulation_folder = algorithm.config["logger_config"]["logdir"]
+    # it_id = self.iteration_id
+    # os.makedirs(f"{simulation_folder}/custom_metrics", exist_ok = True)
+    # filename = f"{simulation_folder}/custom_metrics/iteration_{it_id}.json"
+    # with open(filename, "w+") as f:
+    #   f.write(json.dumps(random_custom_metrics, indent=2))
+    # self.iteration_id += 1
     # you can mutate the result dict to add new fields to return
-    result["callback_ok"] = True  
-  
+    result["callback_ok"] = True
+
   def on_learn_on_batch(
       self, *, policy: Policy, train_batch: SampleBatch, result: dict, **kwargs
     ) -> None:
@@ -166,8 +188,8 @@ class BaseCallbacksForPlots(BaseCallbacks):
     #     "policy.learn_on_batch() result: {} -> sum actions: {}".format(
     #         policy, result["sum_actions_in_train_batch"]
     #     )
-    # ) 
-  
+    # )
+
   def on_postprocess_trajectory(
       self,
       *,
