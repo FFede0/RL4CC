@@ -159,17 +159,32 @@ class TuningExperiment(BaseExperiment):
     terminated, according to the stopping criteria specified in the experiment
     configuration file
     """
-    # list possible stopping criteria
-    stop_on_max_iter = lambda : None
-    if "stopping_criteria" in self.exp_config:
-      for key, value in self.exp_config["stopping_criteria"].items():
-        if key == "max_iterations":
-          stop_on_max_iter = lambda : {"training_iteration": value}
-        else:
-          raise NotImplementedError(
-            f"Stopping criterion `{key}` is not supported"
-          )
-    self.stop = stop_on_max_iter
+    # # list possible stopping criteria
+    # stop_on_max_iter = lambda : None
+    # if "stopping_criteria" in self.exp_config:
+    #   for key, value in self.exp_config["stopping_criteria"].items():
+    #     if key == "max_iterations":
+    #       stop_on_max_iter = lambda : {"training_iteration": value}
+    #     else:
+    #       raise NotImplementedError(
+    #         f"Stopping criterion `{key}` is not supported"
+    #       )
+    # self.stop = stop_on_max_iter
+     # list possible stopping criteria
+    stop_on_max_iter = None
+    episode_reward_mean = None
+    s4air_difference_threshold = None
+    for key, value in self.exp_config["stopping_criteria"].items():
+      if key == "max_iterations":
+        self.stop = lambda: {"training_iteration": value}
+      elif  key == "episode_reward_mean":
+        self.stop = lambda: {"episode_reward_mean": value} 
+      elif key == "s4air_difference":
+        self.stop = lambda: {"s4air_difference": value}
+      else:
+        raise NotImplementedError(
+          f"Stopping criterion `{key}` is not supported"
+        )
 
   def write_config_files(self):
     """
