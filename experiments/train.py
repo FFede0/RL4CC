@@ -18,9 +18,9 @@ from algorithms.algorithm import Algorithm
 from utilities.common import not_defined
 from utilities.logger import Logger
 
-from ray.rllib.policy.policy import Policy
 from datetime import datetime
-
+import os
+import json
 
 class TrainingExperiment(BaseExperiment):
   def __init__(
@@ -30,7 +30,7 @@ class TrainingExperiment(BaseExperiment):
       logger: Logger = Logger(name = "RL4CC")
     ):
     super().__init__(exp_config_file, exp_config, logger)
-  
+
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
     # check that stopping criteria are provided
@@ -38,11 +38,11 @@ class TrainingExperiment(BaseExperiment):
       raise KeyError(
         "`stopping_criteria` must be provided in `exp_config.json`"
       )
-  
-  def run(self) -> Policy:
+
+  def run(self):
     # define algorithm
     algo = Algorithm(
-      algo_name = self.exp_config["algorithm"], 
+      algo_name = self.exp_config["algorithm"],
       checkpoint_path = self.checkpoint_path,
       env_config = self.env_config,
       ray_config = self.ray_config,
@@ -53,15 +53,15 @@ class TrainingExperiment(BaseExperiment):
     # build (if the algorithm is not loaded from an existing checkpoint)
     if self.checkpoint_path is None:
       algo.build()
-    # save logdir
-    self.logdir = algo.logdir
-    # save experiment configuration files
+
     self.write_config_files()
     algo.print_algo_config()
-    # training loop
-    self.execute_before_training(algo)
+    self.logdir = algo.logdir
+    
+    self.execute_before_training()
     self.training_loop(algo)
     self.execute_after_training(algo)
+    
     return algo
 
   def execute_before_training(self, algo: Algorithm):
@@ -71,8 +71,15 @@ class TrainingExperiment(BaseExperiment):
     pass
 
   def on_iteration_end(self, algo: Algorithm, it: int):
-    pass
-  
+    with open(f"{algo.logdir}/exp_progress.json", "r") as f:
+      exp_progress = json.load(f)
+      if not "custom_metrics" in exp_progress.keys():
+        s4air_differences = []
+      else:
+        s4air_differences = exp_progress["custom_metrics"]["average_vm_difference"]
+    print(f"Average VM difference: {s4air_differences}")
+    return s4air_differences
+
   def training_loop(self, algo: Algorithm):
     """
     `Algorithm` training loop
@@ -81,43 +88,43 @@ class TrainingExperiment(BaseExperiment):
     self.logger.log(f"training loop --> START", 1)
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
     it = 1
-    while not self.stop(it):
+    episode_reward_mean = 0
+    s4air_differences = []
+    while not self.stop(it, episode_reward_mean, s4air_differences):
       self.on_iteration_start(algo, it)
       # train
       true_it = algo.last_iteration() + 1
       self.logger.log(f"starting iteration {it} ({true_it})", 3)
       result = algo.train()
+      episode_reward_mean = result["episode_reward_mean"]
       self.logger.log("iteration completed", 3)
       self.update_progress_file("last_iteration", algo.last_iteration())
-      # save checkpoint at the beginning and every `checkpoint_frequency` 
+      # save checkpoint at the beginning and every `checkpoint_frequency`
       # iterations
       if it == 1 or it % self.checkpoint_config["checkpoint_frequency"] == 0:
         last_chpt_dir = algo.save_checkpoint()
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
-      # save evaluation results every `evaluation_interval` iterations
-      if it % self.evaluation_interval == 0:
-        self.update_evaluation_metrics_file(
-          result["training_iteration"], 
-          result["evaluation"]
-        )
       # plot results at the beginning and every `plot_interval` iterations
       if it == 1 or it % self.plot_interval == 0:
         self.plot_results(result)
-      self.on_iteration_end(algo, it)
+      # save evaluation results every `evaluation_interval` iterations
+      if it % self.evaluation_interval == 0:
+        self.update_evaluation_metrics_file(
+          result["training_iteration"],
+          result["evaluation"]
+        )
+      s4air_differences = self.on_iteration_end(algo, it)
       # move to the next iteration
       it += 1
     # save last checkpoint
     last_chpt_dir = algo.save_checkpoint()
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
-    # perform final evaluation (if it has not just be performed)
-    if (it - 1) % self.evaluation_interval != 0:
-      self.logger.log(f"starting final evaluation", 2)
-      self.update_evaluation_metrics_file(
-        result["training_iteration"], algo.evaluate()
-      )
-      self.logger.log(f"final evaluation performed", 2)
-    else:
-      self.logger.log(f"final evaluation already performed during training", 2)
+    # perform final evaluation
+    self.logger.log(f"starting final evaluation", 2)
+    self.update_evaluation_metrics_file(
+      result["training_iteration"], algo.evaluate()
+    )
+    self.logger.log(f"final evaluation performed", 2)
     # stop
     algo.stop()
     end = datetime.now()
@@ -137,20 +144,28 @@ class TrainingExperiment(BaseExperiment):
 
   def execute_after_training(self, algo: Algorithm):
     pass
-  
+
+
   def define_stopping_criteria(self):
     """
-    Define a `stop()` function to check whether the training loop should be 
-    terminated, according to the stopping criteria specified in the experiment 
+    Define a `stop()` function to check whether the training loop should be
+    terminated, according to the stopping criteria specified in the experiment
     configuration file
     """
     # list possible stopping criteria
     stop_on_max_iter = None
+    episode_reward_mean = None
+    s4air_difference_threshold = None
     for key, value in self.exp_config["stopping_criteria"].items():
       if key == "max_iterations":
-        stop_on_max_iter = lambda it : it > value
+        max_iterations = value
+      elif  key == "episode_reward_mean":
+        episode_reward_mean = value
+      elif key == "s4air_difference":
+        s4air_difference_threshold = value
       else:
         raise NotImplementedError(
           f"Stopping criterion `{key}` is not supported"
         )
-    self.stop = stop_on_max_iter
+    stop_criterion = lambda it, reward, s4air_differences: it > max_iterations or reward > episode_reward_mean or (s4air_differences is not None and len(s4air_differences) >= 5 and all([diff <= s4air_difference_threshold for diff in s4air_differences]))
+    self.stop = stop_criterion
