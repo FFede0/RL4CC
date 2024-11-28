@@ -43,7 +43,7 @@ It includes the following components:
   [expected outputs](#expected-outputs)), instead of writing them on the 
   console. To use the provided reporter (or a similar user-defined one), 
   configure it through the `tune_config` dictionary or JSON file as explained 
-  in the [README](config_files#tune-configuration).
+  in the [README](config_files/README.md#tune-configuration).
 
 - a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages
   in a standard format.
