@@ -239,7 +239,8 @@ Additional (optional) parameters are:
 > Currently, only the `HyperOpt` search algorithm and the `ASHAScheduler` are
 > implemented.
 
-> [!WARNING] > **Note:** experiments left in the `TERMINATED`
+> [!WARNING]
+> Experiments left in the `TERMINATED`
 > state cannot be resumed: you have to start a new experiment from scratch if you
 > want to test new parameters or change other configuration terms as the metric,
 > mode or number of tune trials.
