@@ -148,8 +148,14 @@ properly defined, as detailed in the corresponding
 
 ### Training experiments with plots
 
-If you want to automatically generate plots during the training, you can use the `TrainingExperimentWithPlots` class, which is a subclass of `TrainingExperiment`. This class will automatically generate plots the last iteration and a moving average of all the iterations. The plots will be saved in the `plots` directory in the `logdir` previously specified.
-In order to specify the plots to be generated, you can use the `RELEVANT_KEYS` of the callbacks: in particular, define a custom callback class (extending the `BaseCallbacksForPlots`class).
+If you want to automatically generate plots during the training, you can use the 
+`TrainingExperimentWithPlots` class, which is a subclass of `TrainingExperiment`. 
+This class will automatically generate plots the last iteration and a moving 
+average of all the iterations. The plots will be saved in the `plots` directory 
+in the `logdir` previously specified.
+In order to specify the plots to be generated, you can use the `RELEVANT_KEYS` of 
+the callbacks: in particular, define a custom callback class (extending the 
+`BaseCallbacksForPlots`class).
 As we use `custom_metrics` to save all metrics that we want to plot, you should set
 
 ```
@@ -193,7 +199,8 @@ if nothing is provided). These include:
   specified interval, a checkpoint is always saved at the end of the training
   process.
 
-- `evaluations.json`: a json file containing key "evaluations", which is an array of dictionaries with values collected
+- `evaluations.json`: a json file containing key "evaluations", which is an
+  array of dictionaries with values collected
   during the evaluation phase, which runs according to the frequency specified
   in the [`exp_config` config](config_files/README.md#experiment-configuration).
   The dictionary structure follows the one described for the progress.csv file,
@@ -247,8 +254,8 @@ algorithms:
 > user can provide a list of callbacks (classes) as parameters to the run
 > method, overwriting any previous callbacks indicated.
 
-Example when using the predefined `BaseEnvironment`, a `exp_config` given as
-file and, possibly, custom callbacks classes:
+Example when using the predefined `BaseEnvironment` and a `exp_config` given as
+file:
 
 ```
 from RL4CC.experiments.tune import TuningExperiment
@@ -256,12 +263,6 @@ from RL4CC.experiments.tune import TuningExperiment
 # Basic usage:
 exp = TuningExperiment(exp_config_file="config_files/exp_config.json")
 exp.run()
-
-# Optional callbacks:
-from Mycallbacks import Mycallbacks1, Mycallbacks2 #(It is recommended to extend the BaseCallbacks class of RL4CC)
-exp = TuningExperiment(exp_config_file="config_files/exp_config.json")
-callbacks = [Mycallbacks, Mycallbacks2]
-exp.run(callbacks=callbacks)
 ```
 
 ## The RL4CC Logger
