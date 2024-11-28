@@ -257,7 +257,7 @@ Additional (optional) parameters are:
 > mode or number of tune trials.
 
 The provided `BaseProgressReporter` extends the 
-`TuneReporterBase`(https://github.com/ray-project/ray/blob/master/python/ray/tune/progress_reporter.py) 
+[`TuneReporterBase`](https://github.com/ray-project/ray/blob/master/python/ray/tune/progress_reporter.py) 
 class, which accepts the following parameters:
 - `metric_columns`: Names of metrics to include in progress table. If this is 
   a dict, the keys should be metric names and the values should be the 
