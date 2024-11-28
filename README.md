@@ -36,6 +36,15 @@ It includes the following components:
   to define automatic hyperparameter tuning, as explained in
   the following [section](#how-to-start-hyperparameter-tuning).
 
+- a simple [`ProgressReporter`](callbacks/base_tune_progress_reporter.py) for 
+  Ray Tune, which periodically logs information related to the number of 
+  executed trials, the hardware resources usage and the optimization process 
+  on the `exp_progress.json` file (see the section on 
+  [expected outputs](#expected-outputs)), instead of writing them on the 
+  console. To use the provided reporter (or a similar user-defined one), 
+  configure it through the `tune_config` dictionary or JSON file as explained 
+  in the [README](config_files/README.md).
+
 - a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages
   in a standard format.
 
