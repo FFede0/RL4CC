@@ -13,15 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
 from utilities.logger import Logger
 
+from ray.rllib.utils.serialization import deserialize_type
 from ray.tune.search.hyperopt import HyperOptSearch
 from ray.air import RunConfig, CheckpointConfig
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune import TuneConfig
 from datetime import datetime
 from typing import Tuple
+import os
 
 
 class TuneConfigGenerator:
@@ -101,16 +102,36 @@ class TuneConfigGenerator:
       stopping_criterion: dict,
       storage_path: str = None,
       callbacks: list = None,
-      checkpoint_config: CheckpointConfig = None
+      checkpoint_config: CheckpointConfig = None,
+      progress_reporter: dict = None
     ) -> RunConfig:
     """
     Generates a `RunConfig` object based on the provided configuration 
     parameters
     """
     name = None
+    progress_file = None
     if storage_path is not None:
       now = datetime.now().strftime('%H-%M-%S.%f')
       name = f"tuning_experiment_output_{now}"
+      progress_file = os.path.join(storage_path, "exp_progress.json")
+    # define progress reporter
+    progress_reporter_param = {}
+    if progress_reporter is not None:
+      progress_reporter_obj = deserialize_type(
+        progress_reporter["progress_reporter_class"]
+      )
+      progress_reporter_config = progress_reporter.get(
+        "progress_reporter_config", {}
+      )
+      # add progress file path if required but defined as None
+      if "progress_file" in progress_reporter_config:
+        if progress_reporter_config["progress_file"] is None:
+          progress_reporter_config["progress_file"] = progress_file
+      # update parameter
+      progress_reporter_param = {
+        "progress_reporter": progress_reporter_obj(**progress_reporter_config)
+      }
     # generate RunConfig
     run_config = RunConfig(
       name = name,
@@ -118,7 +139,8 @@ class TuneConfigGenerator:
       stop = stopping_criterion,
       storage_path = storage_path,
       callbacks = callbacks,
-      checkpoint_config = checkpoint_config
+      checkpoint_config = checkpoint_config,
+      **progress_reporter_param
     )
     return run_config
   
@@ -134,6 +156,9 @@ class TuneConfigGenerator:
     Generates the `TuneConfig` and `RunConfig` objects based on the provided 
     configuration parameters
     """
+    # extract the progress reporter configuration from tune_config (if 
+    # provided)
+    progress_reporter = tune_config.pop("progress_reporter", None)
     # generate `TuneConfig`
     tune = self.generate_tune_config(tune_config)
     # generate `CheckpointConfig`
@@ -144,7 +169,8 @@ class TuneConfigGenerator:
       stopping_criterion = stopping_criterion,
       storage_path = storage_path,
       callbacks = callbacks,
-      checkpoint_config = checkpoint
+      checkpoint_config = checkpoint,
+      progress_reporter = progress_reporter
     )
     return tune, run
 

@@ -15,6 +15,7 @@ limitations under the License.
 """
 from utilities.common import load_config_file, write_config_file
 from utilities.common import not_defined, defined
+from utilities.common import update_json_file
 from utilities.common import NumpyEncoder
 from utilities.logger import Logger
 
@@ -189,17 +190,9 @@ class BaseExperiment(ABC):
     """
     Update the information written in the experiment progress file
     """
-    exp_progress = {}
-    exp_progress_file = os.path.join(self.logdir, "exp_progress.json")
-    # load existing content (if any)
-    if os.path.exists(exp_progress_file):
-      with open(exp_progress_file, "r") as istream:
-        exp_progress = json.load(istream)
-    # update
-    exp_progress[key] = value
-    # write updated file
-    with open(exp_progress_file, "w") as ostream:
-      ostream.write(json.dumps(exp_progress, indent = 2))
+    update_json_file(
+      os.path.join(self.logdir, "exp_progress.json"), key, value
+    )
 
   def update_evaluation_metrics_file(
       self, last_iter: int, evaluation_metrics: dict

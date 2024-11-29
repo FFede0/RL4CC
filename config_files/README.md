@@ -234,17 +234,67 @@ Additional (optional) parameters are:
     `ERRORED` state, respectively. By default, both are `False`.
   - the `resume_unfinished` field, related to the possibilty of resuming an
     experiment left in the `RUNNING` state. By default, it is `True`.
+- `progress_reporter`: the configuration of a custom `ProgressReporter`, 
+  including:
+  - `progress_reporter_class`: as for the callbacks, it should correspond
+  to the path to the progress reporter class as it would be reported while 
+  importing the module (e.g., 
+  `"callbacks.base_tune_progress_reporter.BaseProgressReporter"`).
+  - `progress_reporter_config`: a dictionary of parameters to be passed 
+  as keyword arguments to the `ProgressReporter` constructor. Note that, since 
+  the default progress reporters are not designed to ignore unwanted 
+  keyword arguments, an error will be thrown if the provided parameter is 
+  not an expected one.
 
 > [!NOTE]
 > Currently, only the `HyperOpt` search algorithm and the `ASHAScheduler` are
 > implemented.
 
-> [!WARNING] > **Note:** experiments left in the `TERMINATED`
+> [!WARNING]
+> Experiments left in the `TERMINATED`
 > state cannot be resumed: you have to start a new experiment from scratch if you
 > want to test new parameters or change other configuration terms as the metric,
 > mode or number of tune trials.
 
-Sample configuration:
+The provided `BaseProgressReporter` extends the 
+[`TuneReporterBase`](https://github.com/ray-project/ray/blob/master/python/ray/tune/progress_reporter.py) 
+class, which accepts the following parameters:
+- `metric_columns`: Names of metrics to include in progress table. If this is 
+  a dict, the keys should be metric names and the values should be the 
+  displayed names. If this is a list, the metric name is used directly.
+- `parameter_columns`: Names of parameters to include in progress table. If 
+  this is a dict, the keys should be parameter names and the values should be 
+  the displayed names. If this is a list, the parameter name is used directly. 
+  If empty, defaults to all available parameters.
+- `max_progress_rows`: Maximum number of rows to print in the progress table. 
+  The progress table describes the progress of each trial. Defaults to 20.
+- `max_error_rows`: Maximum number of rows to print in the error table. The 
+  error table lists the error file, if any, corresponding to each trial. 
+  Defaults to 20.
+- `max_column_length`: Maximum column length (in characters). Column headers 
+  and values longer than this will be abbreviated.
+- `max_report_frequency`: Maximum report frequency in seconds. Defaults to 5s.
+- `infer_limit`: Maximum number of metrics to automatically infer from 
+  tune results.
+- `print_intermediate_tables`: Print intermediate result tables. If `None` 
+  (default), will be set to `True` for verbosity levels above 3, otherwise 
+  `False`. If `True`, intermediate tables will be printed with experiment 
+  progress. If `False`, tables will only be printed at then end of the tuning 
+  run for verbosity levels greater than 2.
+- `metric`: Metric used to determine best current trial.
+- `mode`: One of `[min, max]`. Determines whether objective is minimizing or 
+  maximizing the metric attribute.
+- `sort_by_metric`: Sort terminated trials by metric in the intermediate 
+  table. Defaults to `False`.
+
+Moreover, it accepts an additional parameter, named `progress_file`, denoting 
+the path to the file where the experiment progress should be periodically 
+logged. You can provide either the complete path to a file of your choice or 
+`None`; in the second case, the progress file will default to 
+`exp_progress.json` (see the example below).
+
+Sample configuration (with a custom `ProgressReporter` logging on 
+`exp_progress.json`):
 
 ```
 {
@@ -263,9 +313,25 @@ Sample configuration:
       "reduction_factor": 3,
       "brackets": 1
     }
+  },
+  "progress_reporter": {
+    "progress_reporter_class": "callbacks.base_tune_progress_reporter.BaseProgressReporter",
+    "progress_reporter_config": {
+      "progress_file": null
+    }
   }
 }
 ```
+
+> [!WARNING]
+> Due to an ongoing [issue](https://github.com/ray-project/ray/issues/38202) 
+> with recent Ray versions, you must set the environment variable 
+> `RAY_AIR_NEW_OUTPUT=0` to be able to use custom `ProgressReporter`s.
+
+> [!NOTE]
+> Choose a large-enough verbosity level (i.e., greater than 0) in the 
+> experiment configuration to ensure that the `ProgressReporter` works as 
+> expected.
 
 #### Configuring the `search space` for parameters
 
@@ -338,7 +404,13 @@ Additional parameters are:
   directory if no value is provided here is `~/ray_results`.
 - `from_checkpoint`: path to the directory where the checkpoint to be
   restored is saved. If this is provided, further information related to the
-  Environment or the Ray Algorithm configuration files are neglected. > [!WARNING] > In the case of `TuningExperiment`s, the path is the path to the general > tuning experiment outputs folder within `logdir`, not the path to a > specific checkpoint directory.
+  Environment or the Ray Algorithm configuration files are neglected. 
+
+> [!WARNING] 
+> In the case of `TuningExperiment`s, the path is the path to the general 
+> tuning experiment outputs folder within `logdir`, not the path to a 
+> specific checkpoint directory.
+
 - `env_config_file`: path to the `env_config.json` file described
   [above](#environment-configuration).
 - `env_config`: dictionary containing the environment configuration described
