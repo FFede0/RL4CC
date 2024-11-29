@@ -26,13 +26,9 @@ class BaseEnvironment(gym.Env):
   def __init__(self, env_config: EnvContext):
     seed = self.load_configuration(env_config)
     # observation space
-    self.observation_space = Box(
-      low = self.min_time, 
-      high = self.max_time, 
-      shape = (1,)
-    )
-    # define action space {do nothing}
-    self.action_space = Discrete(1)
+    self.define_observation_space()
+    # define action space
+    self.define_action_space()
     # reset
     self.reset(seed=seed)
   
@@ -48,6 +44,23 @@ class BaseEnvironment(gym.Env):
     # seed for randomization (None)
     seed = None
     return seed
+  
+  def define_observation_space(self):
+    """
+    Define the environment observation space
+    """
+    self.observation_space = Box(
+      low = self.min_time, 
+      high = self.max_time, 
+      shape = (1,)
+    )
+  
+  def define_action_space(self):
+    """
+    Define the environment action space
+    """
+    # {do nothing}
+    self.action_space = Discrete(1)
   
   def observation(self):
     obs = np.array([self.current_time])

@@ -49,7 +49,6 @@ def test_algo_config_generator(
   algo_config = generator.generate_algo_config(
     env_config = env_config,
     ray_config = ray_config,
-    base_logdir = exp_config.get("logdir"),
     eval_interval = exp_config.get("evaluation_interval")
   )
   algo_config_dict = generator.to_dict(algo_config)

@@ -38,8 +38,16 @@
     "grad_clip": null,
     "grad_clip_by": "global_norm",
     "lr": 5e-5,
-    "_enable_learner_api": true,
+    "_enable_learner_api": false,
     "model": {
+      "custom_model": "custom_torch_model",
+      "custom_model_config": {
+        "seed": 123,
+        "fun_layers": ["ReLU", "ReLU", "ReLU"],
+        "dropout": true,
+        "dropout_list": [0.02, 0, 0],
+        "n_features": [128, 128, 64]
+      },
       "vf_share_layers": false,
       "_disable_preprocessor_api": false
     },
@@ -62,6 +70,6 @@
     "explore": true
   },
   "rl_module": {
-    "_enable_rl_module_api": true
+    "_enable_rl_module_api": false
   }
 }

@@ -30,14 +30,16 @@ class Algorithm:
       checkpoint_path: str = None,
       env_config: dict = None,
       ray_config: dict = None,
-      base_logdir: str = None,
-      eval_interval: int = None, 
+      logdir: str = None,
+      eval_interval: int = None,
+      use_tune: bool = False,
       logger: Logger = Logger(name="RL4CC-Algorithm")
     ):
     self.logger = logger
     self.algo_config_generator = ACGfactory.create(
       algo_name, logger = self.logger
     )
+    self.use_tune = use_tune
     # load the Ray `Algorithm` from a checkpoint (if provided)
     if checkpoint_path is not None:
       self.load_checkpoint(checkpoint_path)
@@ -48,22 +50,32 @@ class Algorithm:
           "ERROR: no environment configuration provided"
         )
       # ...generate `AlgorithmConfig`
-      algo_config = self.algo_config_generator.generate_algo_config(
-        env_config, ray_config, base_logdir, eval_interval
+      self.algo_config = self.algo_config_generator.generate_algo_config(
+        ray_config = ray_config,
+        env_config = env_config,
+        eval_interval = eval_interval,
+        exp_logdir = logdir,
+        use_tune = use_tune
       )
-      # ...build and save the Ray `Algorithm`
-      self.build(algo_config)
 
-  def build(self, algo_config: AlgorithmConfig):
+  def build(self, algo_config: AlgorithmConfig = None):
     """
     Build the `Algorithm` according to the provided checkpoint path or 
     configuration dictionaries
     """
-    self.algo = algo_config.build()
+    if algo_config is not None:
+      self.algo_config = algo_config
+    self.algo = self.algo_config.build()
     self.logdir = self.algo.logdir
     self.logger.warn(
-      f"Algorithm created; output directory: {self.logdir}"
+      f"`Algorithm` created; output directory: {self.logdir}"
     )
+
+  def get_policy(self):
+    """
+    Get the policy of the `Algorithm`
+    """
+    return self.algo.get_policy()
   
   def load_checkpoint(self, path: str):
     """
@@ -74,6 +86,7 @@ class Algorithm:
         f"ERROR: checkpoint path {path} does not exist or is invalid"
       )
     self.algo = RayAlgorithm.from_checkpoint(path)
+    self.algo_config = self.algo.config
     self.logdir = self.algo.logdir
     self.logger.warn(
       f"Algorithm restored from checkpoint; output directory: {self.logdir}"
@@ -122,11 +135,11 @@ class Algorithm:
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
     """
-    jj = self.algo_config_generator.to_json(self.algo.config)
+    jj = self.algo_config_generator.to_json(self.algo_config)
     if to_file:
       write_config_file(
-        jj, 
-        os.path.join(self.algo.logdir, "complete_config"), 
+        jj,
+        os.path.join(self.logdir, "complete_config"),
         "ray_config.json"
       )
     else:
