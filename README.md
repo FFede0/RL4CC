@@ -329,3 +329,7 @@ developers. From here we move on to `develop`.
 Each developer can create their own branch named `test-[your-initials]`, 
 from which you can merge to `test`. No direct PR will be accepted on any 
 branch that is not `test`.
+
+### Regression tests
+
+WIP (do not touch yet)
