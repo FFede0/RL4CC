@@ -79,6 +79,7 @@ class TuningExperiment(BaseExperiment):
       ray_config = self.ray_config,
       env_config = self.env_config,
       checkpoint_config = self.checkpoint_config,
+      #TODO: how do i pass the stopping criteria like self.stop(it, episode_reward_mean, s4air_differences) ?
       stopping_criterion = self.stop(),
       eval_interval = self.evaluation_interval,
       storage_path = self.logdir,
@@ -88,8 +89,10 @@ class TuningExperiment(BaseExperiment):
     self.logdir = tuner.storage_path
     # save experiment configuration files
     self.write_config_files()
+    self.execute_before_tuning()
     # tune
     tune_results = self.tuning(tuner)
+    self.execute_after_tuning(tuner, tune_results)
     # write the configuration and result(s) of the best trial
     self.write_best_trial(tune_results, tuner)
     experiment_directory = tune_results.experiment_path
@@ -97,6 +100,9 @@ class TuningExperiment(BaseExperiment):
       "Tuning experiment finished successfully, tuning output "
       f"directory: {experiment_directory}"
     )
+
+  def execute_before_tuning(self):
+    pass
 
   def tuning(self, tuner: Tuner) -> ResultGrid:
     # logging & updating progress
@@ -120,10 +126,17 @@ class TuningExperiment(BaseExperiment):
       index = False
     )
     return results
+  
+  def execute_after_tuning(self, tuner: Tuner, results: ResultGrid):
+    pass
 
   def write_best_trial(self, results: ResultGrid, tuner: Tuner):
     # get best hyperparameters
-    best_results = results.get_best_result()
+    best_results = results.get_best_result(
+      scope="last-10-avg",
+      metric="reward",
+      mode="max"
+    )
     # convert the config to the desired format
     best_results_config = tuner.algo_config_generator.to_json(
       best_results.config
@@ -160,32 +173,17 @@ class TuningExperiment(BaseExperiment):
     terminated, according to the stopping criteria specified in the experiment
     configuration file
     """
-    # # list possible stopping criteria
-    # stop_on_max_iter = lambda : None
-    # if "stopping_criteria" in self.exp_config:
-    #   for key, value in self.exp_config["stopping_criteria"].items():
-    #     if key == "max_iterations":
-    #       stop_on_max_iter = lambda : {"training_iteration": value}
-    #     else:
-    #       raise NotImplementedError(
-    #         f"Stopping criterion `{key}` is not supported"
-    #       )
-    # self.stop = stop_on_max_iter
-     # list possible stopping criteria
-    stop_on_max_iter = None
-    episode_reward_mean = None
-    s4air_difference_threshold = None
-    for key, value in self.exp_config["stopping_criteria"].items():
-      if key == "max_iterations":
-        self.stop = lambda: {"training_iteration": value}
-      elif  key == "episode_reward_mean":
-        self.stop = lambda: {"episode_reward_mean": value} 
-      elif key == "s4air_difference":
-        self.stop = lambda: {"s4air_difference": value}
-      else:
-        raise NotImplementedError(
-          f"Stopping criterion `{key}` is not supported"
-        )
+    # list possible stopping criteria
+    timesteps_total = lambda : None
+    if "stopping_criteria" in self.exp_config:
+      for key, value in self.exp_config["stopping_criteria"].items():
+        if key == "timesteps_total":
+          timesteps_total = lambda : {"timesteps_total": value}
+        else:
+          raise NotImplementedError(
+            f"Stopping criterion `{key}` is not supported"
+          )
+    self.stop = timesteps_total
 
   def write_config_files(self):
     """

@@ -167,5 +167,5 @@ class TrainingExperiment(BaseExperiment):
         raise NotImplementedError(
           f"Stopping criterion `{key}` is not supported"
         )
-    stop_criterion = lambda it, reward, s4air_differences: it > max_iterations or reward > episode_reward_mean or (s4air_differences is not None and len(s4air_differences) >= 5 and all([diff <= s4air_difference_threshold for diff in s4air_differences]))
+    stop_criterion = lambda it, reward, s4air_differences: it > max_iterations or reward > episode_reward_mean or (s4air_differences is not None and len(s4air_differences) >= 5 and all(s4air_differences))
     self.stop = stop_criterion
