@@ -34,9 +34,13 @@ class TrainingExperimentWithPlots(TrainingExperiment):
     self.evaluations = []
     self.merged_evaluations = {}
     self.custom_metrics_keys = []
+
+  def execute_before_training(self, algo: Algorithm):
+    super().execute_before_training(algo)
     if self.logdir is None:
       self.logger.warn("logdir is not defined. Using default logdir.")
-    self.plots_folder = os.path.join(self.logdir, "plots")
+    else: 
+      self.plots_folder = os.path.join(self.logdir, "plots")
   
   def execute_after_training(self, algo: Algorithm):
     if not os.path.exists(self.plots_folder):
