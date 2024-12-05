@@ -405,6 +405,7 @@ Additional parameters are:
 - `from_checkpoint`: path to the directory where the checkpoint to be
   restored is saved. If this is provided, further information related to the
   Environment or the Ray Algorithm configuration files are neglected. 
+- `load_policy_weights`: path to the directory of the checkpoint from which you wish to reload the policy weights. If this is provided, `from_checkpoint` should not be provided. This is a way to load the policy weights from a checkpoint without loading everything else (e.g., config files).
 
 > [!WARNING] 
 > In the case of `TuningExperiment`s, the path is the path to the general 

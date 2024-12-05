@@ -54,11 +54,15 @@ class TrainingExperiment(BaseExperiment):
     if self.checkpoint_path is None:
       algo.build()
 
+    if "load_policy_weights" in self.exp_config and self.exp_config["load_policy_weights"]:
+      self.logger.log("Loading policy weights", 1)
+      algo = self.load_policy_weights(algo)
+
     self.write_config_files()
     algo.print_algo_config()
     self.logdir = algo.logdir
-    
-    self.execute_before_training()
+  
+    self.execute_before_training(algo)
     self.training_loop(algo)
     self.execute_after_training(algo)
     
@@ -169,3 +173,26 @@ class TrainingExperiment(BaseExperiment):
         )
     stop_criterion = lambda it, reward, s4air_differences: it > max_iterations or reward > episode_reward_mean or (s4air_differences is not None and len(s4air_differences) >= 5 and all(s4air_differences))
     self.stop = stop_criterion
+
+  def load_policy_weights(self, algo: Algorithm):
+    """
+    Load policy from given checkpoint
+    """
+
+    self.logger.log("Loading policy from checkpoint: {}".format(self.exp_config["load_policy_weights"]), 1)
+                    
+    old_algo = Algorithm(
+      algo_name = self.exp_config["algorithm"],
+      checkpoint_path = self.exp_config["load_policy_weights"],
+      env_config = self.env_config,
+      ray_config = self.ray_config,
+      logdir = self.logdir,
+      eval_interval = self.evaluation_interval,
+      logger = self.logger
+    )
+    old_algo.build()
+
+    policy_weights = old_algo.get_policy().get_weights()
+    algo.get_policy().set_weights(policy_weights)
+
+    return algo

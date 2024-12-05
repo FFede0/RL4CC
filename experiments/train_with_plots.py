@@ -43,6 +43,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
       self.plots_folder = os.path.join(self.logdir, "plots")
   
   def execute_after_training(self, algo: Algorithm):
+    super().execute_after_training(algo)
     if not os.path.exists(self.plots_folder):
       os.makedirs(self.plots_folder)
     self.manage_evaluation_files()
