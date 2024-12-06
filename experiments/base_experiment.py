@@ -67,6 +67,9 @@ class BaseExperiment(ABC):
     self.evaluation_interval = self.exp_config.get(
       "evaluation_interval", np.inf
     )
+    self.plot_evaluation_interval = self.exp_config.get(
+      "plot_evaluation_interval", np.inf
+    )
     # stopping criteria
     self.define_stopping_criteria()
 

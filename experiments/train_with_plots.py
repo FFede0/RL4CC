@@ -41,14 +41,17 @@ class TrainingExperimentWithPlots(TrainingExperiment):
       self.logger.warn("logdir is not defined. Using default logdir.")
     else: 
       self.plots_folder = os.path.join(self.logdir, "plots")
+      os.makedirs(self.plots_folder, exist_ok=True)
   
   def execute_after_training(self, algo: Algorithm):
     super().execute_after_training(algo)
-    if not os.path.exists(self.plots_folder):
-      os.makedirs(self.plots_folder)
+
     self.manage_evaluation_files()
     self.manage_custom_metrics_keys()
-    self.plot()
+    if self.plot_interval == np.inf:
+      self.plot_all_evaluations()
+    else:
+      self.logger.log("Plot interval was fixed.\nNot plotting all the evaluations at the end of the experiment.", 1)
 
   def manage_evaluation_files(self):
     evaluations_dict = {"evaluations": []}
@@ -93,8 +96,65 @@ class TrainingExperimentWithPlots(TrainingExperiment):
 
   def manage_custom_metrics_keys(self):
       pass
+  
+  def plot_results(self, result):
+    super().plot_results(result)
+    self.logger.log("Plotting evaluation results", 1)
+    if not self.custom_metrics_keys:
+      if 'evaluation' in result.keys() and 'custom_metrics' in result['evaluation'].keys():
+        self.custom_metrics_keys = list(result["evaluation"]["custom_metrics"].keys())
+    current_folder = os.path.join(self.plots_folder, "evaluation"+str(result["training_iteration"]))
+    os.makedirs(current_folder, exist_ok=True)
+    for key in self.custom_metrics_keys:
+      evaluation_values = result["evaluation"]["custom_metrics"]
+      if key in evaluation_values.keys():
+        evaluation_values = evaluation_values[key]
+        evaluation_multiple_values = False
+        if isinstance(evaluation_values, list) and isinstance(evaluation_values[0], list):
+          if (
+              (isinstance(evaluation_values[0][0], list) and len(evaluation_values[0][0]) == 1) or
+                (isinstance(evaluation_values[0][0], np.ndarray) and len(evaluation_values[0][0])) == 1 or
+                  isinstance(evaluation_values[0][0], int) or
+                    isinstance(evaluation_values[0][0], float)
+          ):
+            evaluation_values = np.array(evaluation_values).flatten()
+          elif (
+                (isinstance(evaluation_values[0][0], list) and len(evaluation_values[0][0]) > 1) or
+                  (isinstance(evaluation_values[0][0], np.ndarray) and len(evaluation_values[0][0]) > 1)
+          ):
+            evaluation_multiple_values = True
+          else:
+            self.logger.err("Error: unknown type")
+        else:
+          self.logger.err(
+            f"Error: custom metric {key} is not a list of lists"
+          )
+        plt.figure(key, figsize = (10, 10))
+        plt.plot(evaluation_values, label=key)
+        plt.xlabel("time")
+        plt.ylabel(key)
+        plt.legend()
+        plt.title(key)
+        plt.savefig(
+          os.path.join(current_folder, f"{key}.png")
+        )
 
-  def plot(self):
+        if evaluation_multiple_values:
+          for i in range(len(evaluation_values[0])):
+            values = [value[i] for value in evaluation_values]
+            plt.plot(values, label=f"{key}_{i}")
+            plt.xlabel("time")
+            plt.ylabel(key)
+            plt.legend()
+            plt.title(key)
+            plt.savefig(
+              os.path.join(current_folder, f"{key}_{i}.png")
+            )
+
+        # calculate space4air differences and plot them
+
+
+  def plot_all_evaluations(self):
     if len(self.evaluations) == 0:
       self.logger.warn("No evaluations found.")
     else:
