@@ -152,27 +152,20 @@ class TrainingExperiment(BaseExperiment):
 
   def define_stopping_criteria(self):
     """
-    Define a `stop()` function to check whether the training loop should be
-    terminated, according to the stopping criteria specified in the experiment
+    Define a `stop()` function to check whether the training loop should be 
+    terminated, according to the stopping criteria specified in the experiment 
     configuration file
     """
     # list possible stopping criteria
     stop_on_max_iter = None
-    episode_reward_mean = None
-    s4air_difference_threshold = None
     for key, value in self.exp_config["stopping_criteria"].items():
       if key == "max_iterations":
-        max_iterations = value
-      elif  key == "episode_reward_mean":
-        episode_reward_mean = value
-      elif key == "s4air_difference":
-        s4air_difference_threshold = value
+        stop_on_max_iter = lambda it : it > value
       else:
         raise NotImplementedError(
           f"Stopping criterion `{key}` is not supported"
         )
-    stop_criterion = lambda it, reward, s4air_differences: it > max_iterations or reward > episode_reward_mean or (s4air_differences is not None and len(s4air_differences) >= 5 and all(s4air_differences))
-    self.stop = stop_criterion
+    self.stop = stop_on_max_iter
 
   def load_policy_weights(self, algo: Algorithm):
     """
