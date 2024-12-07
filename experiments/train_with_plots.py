@@ -51,7 +51,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
     if self.plot_interval == np.inf:
       self.plot_all_evaluations()
     else:
-      self.logger.log("Plot interval was fixed.\nNot plotting all the evaluations at the end of the experiment.", 1)
+      self.logger.log("Plot interval was fixed - not plotting all the evaluations at the end of the experiment.", 1)
 
   def manage_evaluation_files(self):
     evaluations_dict = {"evaluations": []}
@@ -151,7 +151,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
               os.path.join(current_folder, f"{key}_{i}.png")
             )
 
-        # calculate space4air differences and plot them
+        plt.close()
 
 
   def plot_all_evaluations(self):
