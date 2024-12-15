@@ -330,6 +330,24 @@ Each developer can create their own branch named `test-[your-initials]`,
 from which you can merge to `test`. No direct PR will be accepted on any 
 branch that is not `test`.
 
+### test-mdm new feature: build as a package
+The idea is to install the RL4CC module as a package (like "real" Python libraries),
+so that every time the RL4CC is needed we can import with a `from RL4CC.x.y import z`,
+without worrying too much about relative imports and paths.  
+To do this, I have grouped all the code in a `RL4CC` folder, inside the main folder of the 
+repository - this folder contains all the code that will be installed as the RL4CC package.  
+Then we use a `setup.py` file that we use to report (implicitly, with the find_packages function)
+where the code of the package is.  
+To install RL4CC as a package, place yourself in the repo main directory (at the same level as the
+`setup.py`), with the virtual environment that contains the RL4CC dependencies activated.  
+Then use:  
+```
+pip3 install .
+```
+to install RL4CC as a package.  
+
+LEFT TODO: instructions for installing the dependencies, a `requirements.txt` is missing.
+
 ### Regression tests
 
 WIP (do not touch yet)
