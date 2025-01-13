@@ -81,7 +81,6 @@ class TrainingExperiment(BaseExperiment):
         s4air_differences = []
       else:
         s4air_differences = exp_progress["custom_metrics"]["average_vm_difference"]
-    print(f"Average VM difference: {s4air_differences}")
     return s4air_differences
 
   def training_loop(self, algo: Algorithm):

@@ -76,8 +76,8 @@ class BaseCallbacksForPlots(BaseCallbacks):
           val = int(val)
         elif isinstance(val, np.float32) or isinstance(val, np.float64):
           val = float(val)
-        elif np.isnan(val):
-          val = None
+        elif val == np.inf:
+          val = np.nan
       # add to user_data
       episode.user_data[key].append(val)
       # add worker index
@@ -148,7 +148,6 @@ class BaseCallbacksForPlots(BaseCallbacks):
     pass
 
   def on_train_result(self, *, algorithm, result: dict, **kwargs):
-    print("Train result")
     custom_metrics = []
     if (
       "env_runners" in result.keys() and

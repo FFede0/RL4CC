@@ -52,6 +52,51 @@ class TrainingExperimentWithPlots(TrainingExperiment):
       self.plot_all_evaluations()
     else:
       self.logger.log("Plot interval was fixed - not plotting all the evaluations at the end of the experiment.", 1)
+    
+    #plot custom metrics
+    custom_metrics_folder = os.path.join(self.logdir, "custom_metrics")
+    if os.path.exists(custom_metrics_folder):
+        custom_metrics_files = os.listdir(custom_metrics_folder)
+        custom_metrics_files = [int(f.replace('iteration_', '').replace('.json', '')) for f in custom_metrics_files]
+        custom_metrics_files.sort()
+        if len(custom_metrics_files) > 0:
+            # Loop through the keys of the first file, then create a plot for each key after putting together the data from all the files
+            first_iteration = json.load(open(os.path.join(custom_metrics_folder, 'iteration_'+str(custom_metrics_files[0])+'.json')))
+            all_iterations = {}
+            os.makedirs(os.path.join(self.plots_folder, 'training'), exist_ok=True)
+            for key in first_iteration.keys():
+                all_iterations[key] = []
+            for custom_metrics_file in custom_metrics_files:
+                iteration = json.load(open(os.path.join(custom_metrics_folder, 'iteration_'+str(custom_metrics_file)+'.json')))
+                for key in iteration.keys():
+                    if key in all_iterations.keys():
+                        if isinstance(iteration[key], list):
+                            all_iterations[key] += iteration[key]
+                        else:
+                            all_iterations[key].append(iteration[key])
+
+            for key in all_iterations.keys():
+                data = all_iterations[key]
+                plt.title(f'training: {key}')
+                plt.plot(data)
+                plt.savefig(os.path.join(self.plots_folder, 'training', f'{key}.png'), bbox_inches='tight', dpi=100)
+                plt.close()
+                plt.title(f'MOVING AVERAGE training: {key}')
+                if (len(data) > 100):
+                  window_size = len(data) // 100
+                else:
+                  window_size = 1
+                window = np.ones(window_size) / window_size
+                smoothed_data = np.convolve(data, window, mode='valid')
+                plt.plot(smoothed_data)
+                plt.savefig(os.path.join(self.plots_folder, 'training', f'{key}_moving_average.png'), bbox_inches='tight', dpi=100)
+                plt.close()
+
+        else:
+            print('CUSTOM TRAIN: No custom metrics files found')
+    else:
+        print('CUSTOM TRAIN: No custom metrics folder found')
+
 
   def manage_evaluation_files(self):
     evaluations_dict = {"evaluations": []}
@@ -110,7 +155,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
       if key in evaluation_values.keys():
         evaluation_values = evaluation_values[key]
         evaluation_multiple_values = False
-        if isinstance(evaluation_values, list) and isinstance(evaluation_values[0], list):
+        if isinstance(evaluation_values, list) and (len(evaluation_values) >= 1) and isinstance(evaluation_values[0], list):
           if (
               (isinstance(evaluation_values[0][0], list) and len(evaluation_values[0][0]) == 1) or
                 (isinstance(evaluation_values[0][0], np.ndarray) and len(evaluation_values[0][0])) == 1 or
@@ -124,24 +169,26 @@ class TrainingExperimentWithPlots(TrainingExperiment):
           ):
             evaluation_multiple_values = True
           else:
+            print('Error: unknown type')
             self.logger.err("Error: unknown type")
         else:
           self.logger.err(
             f"Error: custom metric {key} is not a list of lists"
           )
-        plt.figure(key, figsize = (10, 10))
-        plt.plot(evaluation_values, label=key)
-        plt.xlabel("time")
-        plt.ylabel(key)
-        plt.legend()
-        plt.title(key)
-        plt.savefig(
-          os.path.join(current_folder, f"{key}.png")
-        )
-
-        if evaluation_multiple_values:
-          for i in range(len(evaluation_values[0])):
-            values = [value[i] for value in evaluation_values]
+        if not evaluation_multiple_values:
+          plt.figure(key, figsize = (10, 10))
+          plt.plot(evaluation_values, label=key)
+          plt.xlabel("time")
+          plt.ylabel(key)
+          plt.legend()
+          plt.title(key)
+          plt.savefig(
+            os.path.join(current_folder, f"{key}.png")
+          )
+          plt.close()
+        else:
+          for i in range(len(evaluation_values[0][0])):
+            values = [value[i] for value in evaluation_values[0]]
             plt.plot(values, label=f"{key}_{i}")
             plt.xlabel("time")
             plt.ylabel(key)
@@ -150,8 +197,7 @@ class TrainingExperimentWithPlots(TrainingExperiment):
             plt.savefig(
               os.path.join(current_folder, f"{key}_{i}.png")
             )
-
-        plt.close()
+            plt.close()
 
 
   def plot_all_evaluations(self):
