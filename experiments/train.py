@@ -41,6 +41,7 @@ class TrainingExperiment(BaseExperiment):
 
   def run(self):
     # define algorithm
+    self.env_config["logdir"] = self.logdir
     algo = Algorithm(
       algo_name = self.exp_config["algorithm"],
       checkpoint_path = self.checkpoint_path,
