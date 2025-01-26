@@ -80,9 +80,19 @@ class TrainingExperiment(BaseExperiment):
       exp_progress = json.load(f)
       if not "custom_metrics" in exp_progress.keys():
         s4air_differences = []
+        valid_violations = False
       else:
-        s4air_differences = exp_progress["custom_metrics"]["average_vm_difference"]
-    return s4air_differences
+        if not "average_vm_difference" in exp_progress["custom_metrics"].keys():
+          s4air_differences = []
+        else:
+          s4air_differences = exp_progress["custom_metrics"]["average_vm_difference"]
+          
+        if not "valid_violations" in exp_progress["custom_metrics"].keys():
+          valid_violations = False
+        else:
+          valid_violations = exp_progress["custom_metrics"]["valid_violations"]
+          
+    return s4air_differences, valid_violations
 
   def training_loop(self, algo: Algorithm):
     """
@@ -94,7 +104,8 @@ class TrainingExperiment(BaseExperiment):
     it = 1
     episode_reward_mean = 0
     s4air_differences = []
-    while not self.stop(it, episode_reward_mean, s4air_differences):
+    valid_violations = False
+    while not self.stop(it, episode_reward_mean, s4air_differences, valid_violations): #TODO: move to custom stopping criteria
       self.on_iteration_start(algo, it)
       # train
       true_it = algo.last_iteration() + 1
@@ -117,7 +128,7 @@ class TrainingExperiment(BaseExperiment):
           result["training_iteration"],
           result["evaluation"]
         )
-      s4air_differences = self.on_iteration_end(algo, it)
+      s4air_differences, valid_violations = self.on_iteration_end(algo, it)
       # move to the next iteration
       it += 1
     # save last checkpoint
