@@ -6,44 +6,44 @@ on the [Ray RLLib](https://docs.ray.io/en/latest/rllib/index.html) library.
 
 It includes the following components:
 
-- a simple [`Environment`](environment/base_environment.py) implementation, that
+- a simple [`Environment`](RL4CC/environment/base_environment.py) implementation, that
   should be used as a base class when defining more complex problems. It is
   created by loading the parameters included in the [`env_config`
-  configuration](config_files/README.md#environment-configuration).
+  configuration](RL4CC/config_files/README.md#environment-configuration).
 
-- an [`Algorithm`](algorithms/algorithm.py) class, used to define RL
+- an [`Algorithm`](RL4CC/algorithms/algorithm.py) class, used to define RL
   algorithms for training/hyperparameter tuning experiments, supported by a
   factory of Ray `AlgorithmConfig`
-  [generators](algorithms/generators_factory.py).
+  [generators](RL4CC/algorithms/generators_factory.py).
 
-- a simple [`Callbacks`](callbacks/base_callbacks.py) implementation,
+- a simple [`Callbacks`](RL4CC/callbacks/base_callbacks.py) implementation,
   that should be used as base class when defining more complex problems.
 
-- two simple [custom neural network models](models), based on PyTorch and
+- two simple [custom neural network models](RL4CC/models), based on PyTorch and
   TensorFlow, that can be used as starting points to implement more complex
   networks if needed.
 
-- a [`TrainingExperiment`](experiments/train.py) class, to be used as
+- a [`TrainingExperiment`](RL4CC/experiments/train.py) class, to be used as
   entrypoint to define training experiments, as explained in
   the following [section](#how-to-start-a-training-experiment).
 
-- an [`Tuner`](algorithms/tuner.py) class, used to define hyperparameter
+- an [`Tuner`](RL4CC/algorithms/tuner.py) class, used to define hyperparameter
   tuning experiments, supported by the `Algorithm` class that works as
   trainable and by a `TuneConfig` and `RunConfig`
-  [generator](algorithms/generators/tune_config_generator.py).
+  [generator](RL4CC/algorithms/generators/tune_config_generator.py).
 
-- a [`TuningExperiment`](experiments/tune.py) class, to be used as entrypoint
+- a [`TuningExperiment`](RL4CC/experiments/tune.py) class, to be used as entrypoint
   to define automatic hyperparameter tuning, as explained in
   the following [section](#how-to-start-hyperparameter-tuning).
 
-- a simple [`ProgressReporter`](callbacks/base_tune_progress_reporter.py) for 
+- a simple [`ProgressReporter`](RL4CC/callbacks/base_tune_progress_reporter.py) for 
   Ray Tune, which periodically logs information related to the number of 
   executed trials, the hardware resources usage and the optimization process 
   on the `exp_progress.json` file (see the section on 
   [expected outputs](#expected-outputs)), instead of writing them on the 
   console. To use the provided reporter (or a similar user-defined one), 
   configure it through the `tune_config` dictionary or JSON file as explained 
-  in the [README](config_files/README.md#tune-configuration).
+  in the [README](RL4CC/config_files/README.md#tune-configuration).
 
 - a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages
   in a standard format.
@@ -71,7 +71,7 @@ To define and start a training experiment exploiting one of the available algori
 
 1. define the `exp_config` configuration (and, if no previous checkpoint is
    provided, the `env_config` and `ray_config` configurations) as detailed [in
-   the README](config_files/README.md). These configurations can be defined in
+   the README](RL4CC/config_files/README.md). These configurations can be defined in
    Python as dictionaries or using JSON files.
 
 2. initialize a `TrainingExperiment` object by passing the `env_config`
@@ -167,7 +167,7 @@ i.e., you must ensure that `src/__init__.py` is actually executed.
 
 Moreover, the `custom_model` section of the `ray_config` configuration must be
 properly defined, as detailed in the corresponding
-[README](config_files/README.md#how-to-use-custom-policy-models).
+[README](RL4CC/config_files/README.md#how-to-use-custom-policy-models).
 
 ### Training experiments with plots
 
@@ -193,7 +193,7 @@ in the `ray_config` configuration.
 
 The outputs produced during the training experiment are saved in a suitable
 sub-directory of the `logdir` specified in the [`exp_config`
-config](config_files/README.md#experiment-configuration) (or in `~/ray_results`
+config](RL4CC/config_files/README.md#experiment-configuration) (or in `~/ray_results`
 if nothing is provided). These include:
 
 - `complete_config`: a directory containing the configuration (`exp_config`,
@@ -218,25 +218,25 @@ if nothing is provided). These include:
 
 - `checkpoints`: a directory with checkpoints saved according to the frequency
   specified in the [`exp_config`
-  config](config_files/README.md#experiment-configuration). Regardless the
+  config](RL4CC/config_files/README.md#experiment-configuration). Regardless the
   specified interval, a checkpoint is always saved at the end of the training
   process.
 
 - `evaluations.json`: a json file containing key "evaluations", which is an
   array of dictionaries with values collected
   during the evaluation phase, which runs according to the frequency specified
-  in the [`exp_config` config](config_files/README.md#experiment-configuration).
+  in the [`exp_config` config](RL4CC/config_files/README.md#experiment-configuration).
   The dictionary structure follows the one described for the progress.csv file,
   with an additional field specifying after how many training iterations it has
   been run.
 
 - `figures`: a directory with plots generated during the training, according to
   the frequency specified in the [`exp_config`
-  config](config_files/README.md#experiment-configuration).
+  config](RL4CC/config_files/README.md#experiment-configuration).
 
 - `progress.csv` and/or `result.json`, according to the logging configuration
   specified in the [`ray_config`
-  config](config_files/README.md#ray-algorithm-configuration). Each row of these
+  config](RL4CC/config_files/README.md#ray-algorithm-configuration). Each row of these
   files includes values collected during one training iteration. By default,
   this will store:
 
@@ -250,7 +250,7 @@ if nothing is provided). These include:
 
   - custom values specified by properly implementing the training callbacks
     (see, e.g., the provided [`BaseCallbacks`
-    class](callbacks/base_callbacks.py)).
+    class](RL4CC/callbacks/base_callbacks.py)).
 
 ## How to start hyperparameter tuning
 
@@ -260,7 +260,7 @@ To define and start a tuning experiment exploiting one of the available
 algorithms:
 
 1. define the `tune_config` configuration in the `exp_config` configuration as
-   indicated [in the README](config_files/README.md); note that, since the
+   indicated [in the README](RL4CC/config_files/README.md); note that, since the
    tuning experiment will run multiple training experiments, also the
    `env_config` and `ray_config` configurations need to be defined as described
    in the [previous section](#how-to-start-a-training-experiment). You can
@@ -293,7 +293,7 @@ exp.run()
 The RL4CC `Logger` can be configured to print messages with different verbosity
 levels, using either the `sys.stdout`/`err` streams or suitably-defined file
 streams according to the information specified in the [`exp_config`
-config](config_files/README.md#configure-experiment-logging).
+config](RL4CC/config_files/README.md#configure-experiment-logging).
 
 The format of logged messages is:
 
@@ -310,7 +310,7 @@ where:
   regardless the verbosity level specified by the user), while it is specified
   as parameter when calling the `Logger.log()` method for generic messages. As
   mentioned in the [`exp_config`
-  config](config_files/README.md#configure-experiment-logging), generic messages
+  config](RL4CC/config_files/README.md#configure-experiment-logging), generic messages
   are printed only if the corresponding `LEVEL` is lower than the verbosity
   imposed by the user.
 - The `MESSAGE_TYPE` is `INFO` when calling `Logger.log()`, `WARNING` when
@@ -323,11 +323,11 @@ where:
 
 To expand the module with generators for new algorithms:
 1. implement a suitable subclass of the base 
-[`AlgoConfigGenerator`](algorithms/generators/algo_config_generator.py) 
+[`AlgoConfigGenerator`](RL4CC/algorithms/generators/algo_config_generator.py) 
 (see, as an example, what is provided for the 
-[PPO algorithm](algorithms/generators/ppo_config_generator.py))
+[PPO algorithm](RL4CC/algorithms/generators/ppo_config_generator.py))
 2. add the new generator to the 
-[generators factory](algorithms/generators_factory.py)
+[generators factory](RL4CC/algorithms/generators_factory.py)
 
 ## How to contribute to RL4CC
 
