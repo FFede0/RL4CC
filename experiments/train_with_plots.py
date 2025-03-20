@@ -148,57 +148,39 @@ class TrainingExperimentWithPlots(TrainingExperiment):
     if not self.custom_metrics_keys:
       if 'evaluation' in result.keys() and 'custom_metrics' in result['evaluation'].keys():
         self.custom_metrics_keys = list(result["evaluation"]["custom_metrics"].keys())
-    current_folder = os.path.join(self.plots_folder, "evaluation"+str(result["training_iteration"]))
-    os.makedirs(current_folder, exist_ok=True)
+    evaluation_folder = os.path.join(self.plots_folder, "evaluation"+str(result["training_iteration"]))
+    os.makedirs(evaluation_folder, exist_ok=True)
     for key in self.custom_metrics_keys:
       evaluation_values = result["evaluation"]["custom_metrics"]
       if key in evaluation_values.keys():
         evaluation_values = evaluation_values[key]
-        evaluation_multiple_values = False
-        if isinstance(evaluation_values, list) and (len(evaluation_values) >= 1) and isinstance(evaluation_values[0], list):
-          if (
-              (isinstance(evaluation_values[0][0], list) and len(evaluation_values[0][0]) == 1) or
-                (isinstance(evaluation_values[0][0], np.ndarray) and len(evaluation_values[0][0])) == 1 or
-                  isinstance(evaluation_values[0][0], int) or
-                    isinstance(evaluation_values[0][0], float)
-          ):
-            evaluation_values = np.array(evaluation_values).flatten()
-          elif (
-                (isinstance(evaluation_values[0][0], list) and len(evaluation_values[0][0]) > 1) or
-                  (isinstance(evaluation_values[0][0], np.ndarray) and len(evaluation_values[0][0]) > 1)
-          ):
-            evaluation_multiple_values = True
+        number_of_possible_configurations = len(evaluation_values)
+        for configuration_id in range(number_of_possible_configurations):
+          current_folder = evaluation_folder+'/'+str(configuration_id)
+          os.makedirs(current_folder, exist_ok=True)
+          if (isinstance(evaluation_values[configuration_id][0], list) or isinstance(evaluation_values[configuration_id][0], np.ndarray)) and not len(evaluation_values[configuration_id][0]) == 1:
+            for i in range(len(evaluation_values[configuration_id][0])):
+              values = [value[i] for value in evaluation_values[configuration_id]]
+              plt.plot(values, label=f"{key}_{i}")
+              plt.xlabel("time")
+              plt.ylabel(key)
+              plt.legend()
+              plt.title(key)
+              plt.savefig(
+                os.path.join(current_folder, f"{key}_{i}.png")
+              )
+              plt.close()
           else:
-            print('Error: unknown type')
-            self.logger.err("Error: unknown type")
-        else:
-          self.logger.err(
-            f"Error: custom metric {key} is not a list of lists"
-          )
-        if not evaluation_multiple_values:
-          plt.figure(key, figsize = (10, 10))
-          plt.plot(evaluation_values, label=key)
-          plt.xlabel("time")
-          plt.ylabel(key)
-          plt.legend()
-          plt.title(key)
-          plt.savefig(
-            os.path.join(current_folder, f"{key}.png")
-          )
-          plt.close()
-        else:
-          for i in range(len(evaluation_values[0][0])):
-            values = [value[i] for value in evaluation_values[0]]
-            plt.plot(values, label=f"{key}_{i}")
+            values = evaluation_values[configuration_id]
+            plt.plot(values, label=f"{key}")
             plt.xlabel("time")
             plt.ylabel(key)
             plt.legend()
             plt.title(key)
             plt.savefig(
-              os.path.join(current_folder, f"{key}_{i}.png")
+              os.path.join(current_folder, f"{key}.png")
             )
             plt.close()
-
 
   def plot_all_evaluations(self):
     if len(self.evaluations) == 0:

@@ -124,6 +124,7 @@ class TrainingExperiment(BaseExperiment):
         self.plot_results(result)
       # save evaluation results every `evaluation_interval` iterations
       if it % self.evaluation_interval == 0:
+        print("Evaluating at iteration", it, flush=True)
         self.update_evaluation_metrics_file(
           result["training_iteration"],
           result["evaluation"]
@@ -135,6 +136,7 @@ class TrainingExperiment(BaseExperiment):
     last_chpt_dir = algo.save_checkpoint()
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
     # perform final evaluation
+    print("Performing final evaluation", flush=True)
     self.logger.log(f"starting final evaluation", 2)
     self.update_evaluation_metrics_file(
       result["training_iteration"], algo.evaluate()
