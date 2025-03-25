@@ -113,7 +113,6 @@ class BaseCallbacksForPlots(BaseCallbacks):
       env_index: int,
       **kwargs,
     ):
-    print("Episode end")
     # check if there are multiple episodes in a batch, i.e.
     # "batch_mode": "truncate_episodes".
     if worker.config.batch_mode == "truncate_episodes":
@@ -182,12 +181,6 @@ class BaseCallbacksForPlots(BaseCallbacks):
       self, *, policy: Policy, train_batch: SampleBatch, result: dict, **kwargs
     ) -> None:
     result["sum_actions_in_train_batch"] = train_batch["actions"].sum()
-    # # Log the sum of actions in the train batch.
-    # print(
-    #     "policy.learn_on_batch() result: {} -> sum actions: {}".format(
-    #         policy, result["sum_actions_in_train_batch"]
-    #     )
-    # )
 
   def on_postprocess_trajectory(
       self,
