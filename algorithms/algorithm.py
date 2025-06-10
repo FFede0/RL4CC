@@ -22,6 +22,8 @@ from ray.rllib.algorithms import AlgorithmConfig
 from ray.rllib.policy.policy import Policy
 import os
 
+import cloudpickle
+
 
 class Algorithm:
   def __init__(
@@ -113,22 +115,54 @@ class Algorithm:
   def last_iteration(self) -> int:
     return self.algo.iteration
   
+  # def save_checkpoint(self) -> str:
+  #   """
+  #   Save an `Algorithm` checkpoint (the checkpoint directory name is given 
+  #   by the last iteration number)
+  #   """
+  #   save_result = self.algo.save(
+  #     checkpoint_dir = os.path.join(
+  #       self.algo.logdir, f"checkpoints/{self.last_iteration()}"
+  #     )
+  #   )
+  #   last_checkpoint_dir = save_result.checkpoint.path
+  #   self.logger.log(
+  #     "an Algorithm checkpoint has been created inside directory: "
+  #     f"'{last_checkpoint_dir}'", 1
+  #   )
+  #   return last_checkpoint_dir
   def save_checkpoint(self) -> str:
     """
-    Save an `Algorithm` checkpoint (the checkpoint directory name is given 
-    by the last iteration number)
+    Save the full Algorithm state, including class, config, and internal state.
+    This is portable across environments and avoids ray client compatibility issues.
     """
-    save_result = self.algo.save(
-      checkpoint_dir = os.path.join(
-        self.algo.logdir, f"checkpoints/{self.last_iteration()}"
-      )
-    )
-    last_checkpoint_dir = save_result.checkpoint.path
+    save_dir = os.path.join(self.algo.logdir, f"checkpoints/{self.last_iteration()}")
+    os.makedirs(save_dir, exist_ok=True)
+
+    state_path = os.path.join(save_dir, "algo_state.pkl")
+
+    algo_state = {
+        "algorithm_class": self.algo.__class__,
+        "config": self.algo.config.to_dict(),
+        "state": self.algo.get_state()
+    }
+    
+    try:
+        replay_buffer = self.algo.local_replay_buffer
+        if replay_buffer:
+            algo_state["replay_buffer_state"] = replay_buffer.get_state()
+            print("Replay buffer state extracted from Algorithm.")
+    except AttributeError:
+        print("Warning: No replay buffer found in the algorithm. Skipping.")
+
+    with open(state_path, "wb") as f:
+        cloudpickle.dump(algo_state, f)
+
     self.logger.log(
-      "an Algorithm checkpoint has been created inside directory: "
-      f"'{last_checkpoint_dir}'", 1
+        "Algorithm full state (with class + config) saved to: "
+        f"'{state_path}'", 1
     )
-    return last_checkpoint_dir
+    return state_path
   
   def print_algo_config(self, to_file: bool = True):
     """

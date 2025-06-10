@@ -13,9 +13,9 @@ try:
 except ModuleNotFoundError as error:
   logger.warn(f"Could not register CustomTorchModel: No module named {error.name!r}.")
 
-try:
-  from .base_tf_model import BaseTFModel
-  from .custom_tf_model import CustomTFModel
-  ModelCatalog.register_custom_model("custom_tf_model", CustomTFModel)
-except ModuleNotFoundError as error:
-  logger.warn(f"Could not register CustomTFModel: No module named {error.name!r}.")
+# try:
+#   from .base_tf_model import BaseTFModel
+#   from .custom_tf_model import CustomTFModel
+#   ModelCatalog.register_custom_model("custom_tf_model", CustomTFModel)
+# except ModuleNotFoundError as error:
+#   logger.warn(f"Could not register CustomTFModel: No module named {error.name!r}.")

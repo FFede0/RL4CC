@@ -105,6 +105,7 @@ class TrainingExperiment(BaseExperiment):
     episode_reward_mean = 0
     s4air_differences = []
     valid_violations = False
+    epsilon_reset = self.exp_config.get("epsilon_reset", 0)
     while not self.stop(it, episode_reward_mean, s4air_differences, valid_violations): #TODO: move to custom stopping criteria
       self.on_iteration_start(algo, it)
       # train
@@ -130,7 +131,23 @@ class TrainingExperiment(BaseExperiment):
           result["evaluation"]
         )
       s4air_differences, valid_violations = self.on_iteration_end(algo, it)
-      # move to the next iteration
+      
+      if epsilon_reset != 0 and it % epsilon_reset == 0:
+        policy = algo.get_policy()
+
+        policy.exploration.epsilon_schedule.schedule_timesteps = 10000
+        policy.exploration.epsilon_schedule.initial_p = 0.5
+
+        state = policy.get_state()
+
+        exploration_state = state.get("_exploration_state", {})
+        exploration_state["cur_epsilon"] = 0.5
+        exploration_state["last_timestep"] = 0
+
+        state["_exploration_state"] = exploration_state
+
+        policy.set_state(state)
+
       it += 1
     # save last checkpoint
     last_chpt_dir = algo.save_checkpoint()
