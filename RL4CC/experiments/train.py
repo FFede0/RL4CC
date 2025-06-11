@@ -135,13 +135,13 @@ class TrainingExperiment(BaseExperiment):
       if epsilon_reset != 0 and it % epsilon_reset == 0:
         policy = algo.get_policy()
 
-        policy.exploration.epsilon_schedule.schedule_timesteps = 10000
-        policy.exploration.epsilon_schedule.initial_p = 0.5
+        policy.exploration.epsilon_schedule.schedule_timesteps = self.ray_config["exploration"]["exploration_config"]["epsilon_schedule"]["schedule_timesteps"]
+        policy.exploration.epsilon_schedule.initial_p = self.ray_config["exploration"]["exploration_config"]["epsilon_schedule"]["initial_p"]
 
         state = policy.get_state()
 
         exploration_state = state.get("_exploration_state", {})
-        exploration_state["cur_epsilon"] = 0.5
+        exploration_state["cur_epsilon"] = self.ray_config["exploration"]["exploration_config"]["epsilon_schedule"]["initial_p"]
         exploration_state["last_timestep"] = 0
 
         state["_exploration_state"] = exploration_state
