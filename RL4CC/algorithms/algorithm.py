@@ -21,6 +21,7 @@ from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
 from ray.rllib.policy.policy import Policy
 import os
+import torch
 
 import cloudpickle
 
@@ -159,10 +160,20 @@ class Algorithm:
         cloudpickle.dump(algo_state, f)
 
     self.logger.log(
-        "Algorithm full state (with class + config) saved to: "
+        "Algorithm full state saved to: "
         f"'{state_path}'", 1
     )
-    return state_path
+
+    # Save PyTorch model weights separately
+    model_path = os.path.join(save_dir, "policy_model_weights.pt")
+    policy = self.algo.get_policy()
+    torch.save(policy.model.state_dict(), model_path)
+    self.logger.log(
+        "Policy model weights saved to: "
+        f"'{model_path}'", 1
+    )
+
+    return save_dir
   
   def print_algo_config(self, to_file: bool = True):
     """
