@@ -2,7 +2,7 @@
 
 The **R**einforcement **L**earning for the **C**omputing **C**ontinuum module
 provides a common interface to define environments and RL algorithms based
-on the [Ray RLLib](https://docs.ray.io/en/latest/rllib/index.html) library.
+on the [Ray RLLib](https://docs.ray.io/en/releases-2.20.0/rllib/index.html) library[^1].
 
 It includes the following components:
 
@@ -55,15 +55,17 @@ sections.
 
 To build the RL4CC library, the RL4CC module needs to be installed as a package,
 so that its classes and functions can imported with `from RL4CC.x.y import z`.
-To install RL4CC as a package, place yourself in the repo main directory (at the same level as the
-`setup.py`), with the virtual environment that contains the RL4CC dependencies activated.  
+To install RL4CC as a package, place yourself in the repo main directory (at the 
+same level as the `setup.py`), with the virtual environment that contains the RL4CC 
+dependencies activated.  
+
 Then use:  
 ```
 pip3 install .
 ```
 to install RL4CC as a package.  
-Now by checking the installed packages with `pip3 freeze`, you will notice that RL4CC is among the 
-dependencies. 
+Now by checking the installed packages with `pip3 freeze`, you will notice that 
+RL4CC is among the dependencies. 
 
 ## How to start a training experiment
 
@@ -347,3 +349,7 @@ branch that is not `test`.
 ### Regression tests
 
 WIP (do not touch yet)
+
+[^1] The RL4CC library has been developed and tested considering Ray RLLib 
+versions up to 2.20.0. Carefully select an appropriate version of the 
+official Ray documentation when looking for additional information.
