@@ -58,7 +58,7 @@ environment. Use `max_time` to represent the Environment horizon.
 ### Ray `Algorithm` configuration
 
 The `ray_config` file must include parameters related to the definition of a Ray
-[`AlgorithmConfig`](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms)
+[`AlgorithmConfig`](https://docs.ray.io/en/releases-2.20.0/rllib/rllib-training.html#configuring-rllib-algorithms)
 object.
 
 Parameters should be grouped in sub-dictionaries following the callbacks
@@ -74,7 +74,7 @@ structure of `AlgorithmConfig`. The most relevant families of parameters are:
   rate) and algorithm-specific properties.
 
 A more comprehensive list is provided in
-[the Ray documentation](https://docs.ray.io/en/latest/rllib/rllib-training.html#configuring-rllib-algorithms).
+[the Ray documentation](https://docs.ray.io/en/releases-2.20.0/rllib/rllib-training.html#configuring-rllib-algorithms).
 
 > [!WARNING]
 > To simplify the management of some parameters related to the experience
@@ -113,9 +113,9 @@ A more comprehensive list is provided in
 > **expert** user is free to set directly the Ray _protected_ keywords, but the
 > two approaches cannot be mixed.
 
-> [!WARNING]
+> [!CAUTION]
 > There are few elements that, differently from what is explained in the Ray
-> documentation **should not** be managed through `ray_config`. These are:
+> documentation **should NOT** be managed through `ray_config`. These are:
 >
 > - `env` and `env_config`, from the `environment` parameters group;
 >
@@ -225,8 +225,8 @@ These are:
 Additional (optional) parameters are:
 
 - `search_algorithm`: a search algorithm, as specified in the
-  [tune.search](https://docs.ray.io/en/latest/tune/api/suggestion.html#hyperopt-tune-search-hyperopt-hyperoptsearch) page
-- `scheduler`: a scheduler, as specified in [tune.schedulers](https://docs.ray.io/en/latest/tune/api/schedulers.html#tune-scheduler-hyperband) page
+  [tune.search](https://docs.ray.io/en/releases-2.20.0/tune/api/suggestion.html#tune-search-algorithms-tune-search) page
+- `scheduler`: a scheduler, as specified in [tune.schedulers](https://docs.ray.io/en/releases-2.20.0/tune/api/schedulers.html) page
 - instructions on how to proceed when restoring a `Tuner` from an existing
   checkpoint. These include:
   - the `resume_errored` and `restart_errored` fields, which are related to
@@ -365,7 +365,7 @@ following](#experiment-configuration)), considering a different `lr` value
 sampled from the `loguniform` distribution over the range of `(1e-4, 1e-1)`.
 
 For more about tune search spaces see
-[the relative documentation](https://docs.ray.io/en/latest/tune/api/search_space.html).
+[the relative documentation](https://docs.ray.io/en/releases-2.20.0/tune/api/search_space.html).
 
 > [!WARNING]
 > When the user tries to start a new tuning experiment without specifying the
