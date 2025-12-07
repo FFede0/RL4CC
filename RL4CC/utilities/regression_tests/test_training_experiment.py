@@ -1,7 +1,7 @@
 from RL4CC.experiments.train import TrainingExperiment
 from RL4CC.utilities.common import load_config_file, write_config_file
 from RL4CC.utilities.common import compute_deviation
-from RL4CC.utilities.logger import Logger
+from RL4CC.log_and_report.rl4cc_logger import Logger
 
 from typing import Tuple
 import pandas as pd

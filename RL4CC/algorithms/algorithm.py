@@ -15,7 +15,7 @@ limitations under the License.
 """
 from RL4CC.algorithms.generators_factory import ACGfactory
 from RL4CC.utilities.common import write_config_file
-from RL4CC.utilities.logger import Logger
+from RL4CC.log_and_report.rl4cc_logger import Logger
 
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig

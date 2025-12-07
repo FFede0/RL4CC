@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from RL4CC.experiments.base_experiment import BaseExperiment
+from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.algorithm import Algorithm
 from RL4CC.utilities.common import not_defined
-from RL4CC.utilities.logger import Logger
 
 from ray.rllib.policy.policy import Policy
 from datetime import datetime

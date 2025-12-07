@@ -1,6 +1,6 @@
 from ray.rllib.models import ModelCatalog
 
-from RL4CC.utilities.logger import Logger
+from RL4CC.log_and_report.rl4cc_logger import Logger
 
 logger = Logger(name="RL4CC-Models")
 

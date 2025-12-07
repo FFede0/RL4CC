@@ -36,7 +36,7 @@ It includes the following components:
   to define automatic hyperparameter tuning, as explained in
   the following [section](#how-to-start-hyperparameter-tuning).
 
-- a simple [`ProgressReporter`](RL4CC/callbacks/base_tune_progress_reporter.py) for 
+- a simple [`ProgressReporter`](RL4CC/log_and_report/base_tune_progress_reporter.py) for 
   Ray Tune, which periodically logs information related to the number of 
   executed trials, the hardware resources usage and the optimization process 
   on the `exp_progress.json` file (see the section on 
@@ -45,8 +45,8 @@ It includes the following components:
   configure it through the `tune_config` dictionary or JSON file as explained 
   in the [README](RL4CC/config_files/README.md#tune-configuration).
 
-- a `Logger`, that can be used to print `INFO`, `WARNING` and `ERROR` messages
-  in a standard format.
+- a [`Logger`](RL4CC/log_and_report/rl4cc_logger.py), that can be used to 
+  print `INFO`, `WARNING` and `ERROR` messages in a standard format.
 
 Detailed information about these components are provided in the following
 sections.
@@ -56,8 +56,8 @@ sections.
 To build the RL4CC library, the RL4CC module needs to be installed as a package,
 so that its classes and functions can imported with `from RL4CC.x.y import z`.
 To install RL4CC as a package, place yourself in the repo main directory (at the 
-same level as the `setup.py`), with the virtual environment that contains the RL4CC 
-dependencies activated.  
+same level as the `setup.py`), with the virtual environment that contains the 
+RL4CC dependencies activated.
 
 Then use:  
 ```
@@ -73,8 +73,8 @@ To define and start a training experiment exploiting one of the available algori
 
 1. define the `exp_config` configuration (and, if no previous checkpoint is
    provided, the `env_config` and `ray_config` configurations) as detailed [in
-   the README](RL4CC/config_files/README.md). These configurations can be defined in
-   Python as dictionaries or using JSON files.
+   the README](RL4CC/config_files/README.md). These configurations can be 
+   defined in Python as dictionaries or using JSON files.
 
 2. initialize a `TrainingExperiment` object by passing the `env_config`
    configuration or a path to the `exp_config.json` file.

@@ -16,7 +16,7 @@ limitations under the License.
 from RL4CC.utilities.common import load_config_file, write_config_file
 from RL4CC.experiments.base_experiment import BaseExperiment
 from RL4CC.utilities.common import not_defined, defined
-from RL4CC.utilities.logger import Logger
+from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.tuner import Tuner
 
 from ray.rllib.algorithms.callbacks import DefaultCallbacks

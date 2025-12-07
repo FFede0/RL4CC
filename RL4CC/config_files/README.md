@@ -239,7 +239,7 @@ Additional (optional) parameters are:
   - `progress_reporter_class`: as for the callbacks, it should correspond
   to the path to the progress reporter class as it would be reported while 
   importing the module (e.g., 
-  `"callbacks.base_tune_progress_reporter.BaseProgressReporter"`).
+  `"RL4CC.log_and_report.base_tune_progress_reporter.BaseProgressReporter"`).
   - `progress_reporter_config`: a dictionary of parameters to be passed 
   as keyword arguments to the `ProgressReporter` constructor. Note that, since 
   the default progress reporters are not designed to ignore unwanted 
@@ -315,7 +315,7 @@ Sample configuration (with a custom `ProgressReporter` logging on
     }
   },
   "progress_reporter": {
-    "progress_reporter_class": "callbacks.base_tune_progress_reporter.BaseProgressReporter",
+    "progress_reporter_class": "RL4CC.log_and_report.base_tune_progress_reporter.BaseProgressReporter",
     "progress_reporter_config": {
       "progress_file": null
     }

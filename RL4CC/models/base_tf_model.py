@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from RL4CC.utilities.logger import Logger
+from RL4CC.log_and_report.rl4cc_logger import Logger
 
 from ray.rllib.models.tf.tf_modelv2 import TFModelV2
 from ray.rllib.utils.typing import ModelConfigDict

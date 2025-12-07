@@ -1,6 +1,6 @@
 from RL4CC.utilities.common import load_config_file, write_config_file
 from RL4CC.utilities.common import compare_dictionaries
-from RL4CC.utilities.logger import Logger
+from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.generators_factory import ACGfactory
 
 from typing import Tuple
