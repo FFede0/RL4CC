@@ -69,9 +69,17 @@ def compare_dictionaries(d1: dict, d2: dict) -> Tuple[bool, list]:
           different_keys += d
           equal = False
       elif isinstance(val, list) or isinstance(val, tuple):
-        if any([v1 != v2 for v1, v2 in zip(val, d2[key])]):
-          different_keys.append(key)
-          equal = False
+        if len(val) > 0 and (
+            isinstance(val[0], list) or isinstance(val[0], tuple)
+          ):
+          for l1,l2 in zip(val, d2[key]):
+            if any([v1 != v2 for v1, v2 in zip(l1,l2)]):
+              different_keys.append(key)
+              equal = False
+        else:
+          if any([v1 != v2 for v1, v2 in zip(val, d2[key])]):
+            different_keys.append(key)
+            equal = False
       else:
         if key == "logdir":
           v1 = "/".join(val.split("/")[:-1])
