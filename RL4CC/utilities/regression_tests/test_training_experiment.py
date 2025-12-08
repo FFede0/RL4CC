@@ -3,6 +3,7 @@ from RL4CC.utilities.common import load_config_file, write_config_file
 from RL4CC.utilities.common import compute_deviation
 from RL4CC.log_and_report.rl4cc_logger import Logger
 
+from ray import __version__ as rayver
 from typing import Tuple
 import pandas as pd
 import json
@@ -154,7 +155,7 @@ def test_training_experiment(
 def main(criterion: str = "avg", tol: float = 1e-5) -> Tuple[int, int]:
   logger = Logger(name="RL4CC-RegressionTests-TrainingExperiment")
   base_config_folder = "config_files/regression_tests/"
-  base_output_folder = "utilities/regression_tests/expected_output/"
+  base_output_folder = f"utilities/regression_tests/expected_output/v{rayver}"
   # test the training experiment for each provided algorithm configuration
   num_passed_tests = 0
   total_num_tests = 0

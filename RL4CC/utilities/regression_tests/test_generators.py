@@ -3,6 +3,7 @@ from RL4CC.utilities.common import compare_dictionaries
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.generators_factory import ACGfactory
 
+from ray import __version__ as rayver
 from typing import Tuple
 import os
 
@@ -120,7 +121,7 @@ def test_algo_generators(
 def main() -> Tuple[int, int]:
   logger = Logger(name="RL4CC-RegressionTests-Generators")
   base_config_folder = "config_files/regression_tests/"
-  base_output_folder = "utilities/regression_tests/expected_output/"
+  base_output_folder = f"utilities/regression_tests/expected_output/v{rayver}"
   # test the registered generators
   num_passed_tests = 0
   total_num_tests = 0
