@@ -348,7 +348,9 @@ branch that is not `test`.
 
 ### Regression tests
 
-WIP (do not touch yet)
+Regression tests for algorithm generators and training experiments with Ray 
+versions 2.8.1, 2.10.0 and 2.20.0 are available among the 
+[utilities](RL4CC/utilities/regression_tests/README.md). 
 
 [^1] The RL4CC library has been developed and tested considering Ray RLLib 
 versions up to 2.20.0. Carefully select an appropriate version of the 
