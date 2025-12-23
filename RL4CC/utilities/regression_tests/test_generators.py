@@ -34,7 +34,10 @@ def test_default_generator(
 
 
 def test_algo_config_generator(
-    logger: Logger, exp_config_file: str, expected_out: str
+    logger: Logger, 
+    exp_config_file: str, 
+    expected_out: str, 
+    multiagent: bool = False
   ) -> bool:
   """
   Test the generation of an `AlgorithmConfig` object based on the given 
@@ -45,12 +48,17 @@ def test_algo_config_generator(
   env_config = load_config_file(exp_config["env_config_file"])
   ray_config = load_config_file(exp_config["ray_config_file"])
   algo = exp_config["algorithm"]
+  # -- add multiagent info (if required)
+  if multiagent:
+    env_config["env_name"] = "BaseMultiAgentEnvironment"
+    env_config["agents"] = [f"agent_{i}" for i in range(3)]
   # run
   generator = ACGfactory.create(algo, logger = logger)
   algo_config = generator.generate_algo_config(
     env_config = env_config,
     ray_config = ray_config,
-    eval_interval = exp_config.get("evaluation_interval")
+    eval_interval = exp_config.get("evaluation_interval"),
+    multiagent = multiagent
   )
   algo_config_dict = generator.to_dict(algo_config)
   # load expected output for comparison
@@ -58,7 +66,8 @@ def test_algo_config_generator(
   equal, different_keys = compare_dictionaries(algo_config_dict, expected_dict)
   if not equal:
     logger.err(
-      f"failed test_generator() on algo: {algo}; different keys: {different_keys}"
+      f"failed test_generator() on algo: {algo}; "
+      f"different keys: {different_keys}"
     )
     write_config_file(
       generator.to_json(algo_config),
@@ -96,6 +105,8 @@ def test_algo_generators(
   )
   logger.log(f"test generator for algo: {algo} using {exp_config_file}")
   if os.path.exists(exp_config_file):
+    # -- single agent
+    logger.log("--- single agent version")
     expected_output_file = os.path.join(
       base_output_folder, f"{algo}_config.json"
     )
@@ -110,11 +121,28 @@ def test_algo_generators(
       logger.err(
         f"the expected output file {expected_output_file} is not available"
       )
+    # -- multi-agent
+    logger.log("--- multi-agent version")
+    expected_output_file = os.path.join(
+      base_output_folder, f"{algo}_config_multiagent.json"
+    )
+    if os.path.exists(expected_output_file):
+      passed = test_algo_config_generator(
+        logger = logger, 
+        exp_config_file = exp_config_file, 
+        expected_out = expected_output_file,
+        multiagent = True
+      )
+      num_passed_tests += int(passed)
+    else:
+      logger.err(
+        f"the expected output file {expected_output_file} is not available"
+      )
   else:
     logger.err(
       f"the configuration file {exp_config_file} is not available"
     )
-  total_num_tests += 1
+  total_num_tests += 2
   return num_passed_tests, total_num_tests
 
 

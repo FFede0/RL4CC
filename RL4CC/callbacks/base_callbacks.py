@@ -41,16 +41,28 @@ class BaseCallbacks(DefaultCallbacks):
       env_index: int,
       **kwargs,
     ):
-    # # make sure this episode has just been started (only initial obs
-    # # logged so far).
-    # assert episode.length == 0, (
-    #   "ERROR: `on_episode_start()` callback should be called right "
-    #   "after env reset!"
-    # )
+    # make sure this episode has just been started (only initial obs
+    # logged so far).
+    assert episode.length <= 0, (
+      "ERROR: `on_episode_start()` callback should be called right "
+      f"after env reset! episode length = {episode.length}"
+    )
     # create lists to store info (in user_data and hist_data)
-    for key in self.RELEVANT_KEYS:
-      episode.user_data[key] = []
-      episode.hist_data[key] = []
+    try:
+      # for multi-agent environments, the wrapper env is MultiAgentEnvWrapper
+      env = base_env.envs[0]
+      for agent in env.agents:
+        for key in self.RELEVANT_KEYS:
+          episode.user_data[f"{key}_{agent}"] = []
+          episode.hist_data[f"{key}_{agent}"] = []
+    except AttributeError:
+      # with single-agent environments the wrapper env is an instance of
+      # VectorEnvWrapper and it doesn't have envs attribute. It should be 
+      # accessed via:
+      # env = base_env.get_sub_environments()[0]
+      for key in self.RELEVANT_KEYS:
+        episode.user_data[key] = []
+        episode.hist_data[key] = []
     # add worker index
     episode.user_data["worker_index"] = []
     episode.hist_data["worker_index"] = []
@@ -65,17 +77,32 @@ class BaseCallbacks(DefaultCallbacks):
       env_index: int,
       **kwargs,
     ):
-    # # make sure this episode is ongoing
-    # assert episode.length > 0, (
-    #   "ERROR: `on_episode_step()` callback should not be called right "
-    #   "after env reset!"
-    # )
-    for key in self.RELEVANT_KEYS:
-      val = episode.last_info_for()[key]
-      if isinstance(val, np.ndarray):
-        val = val.tolist()
-      # add to user_data
-      episode.user_data[key].append(val)
+    # make sure this episode is ongoing
+    assert episode.length > 0, (
+      "ERROR: `on_episode_step()` callback should not be called right "
+      f"after env reset! episode length = {episode.length}"
+    )
+    # add info
+    try:
+      env = base_env.envs[0]
+      for agent in env.agents:
+        for key in self.RELEVANT_KEYS:
+          val = None
+          if key in episode.last_info_for(agent):
+            val = episode.last_info_for(agent)[key]
+          elif key in episode.last_info_for("__common__"):
+            val = episode.last_info_for("__common__")[key]
+          if isinstance(val, np.ndarray):
+            val = val.tolist()
+          # add to user_data
+          episode.user_data[f"{key}_{agent}"].append(val)
+    except AttributeError:
+      for key in self.RELEVANT_KEYS:
+        val = episode.last_info_for()[key]
+        if isinstance(val, np.ndarray):
+          val = val.tolist()
+        # add to user_data
+        episode.user_data[key].append(val)
     # add worker index
     episode.user_data["worker_index"].append(worker.worker_index)
   
@@ -97,9 +124,20 @@ class BaseCallbacks(DefaultCallbacks):
     #   "after episode is done!"
     # )
     # add to hist data and add averages to custom metrics
-    for key in self.RELEVANT_KEYS:
-      episode.hist_data[key] = episode.user_data[key]
-      episode.custom_metrics[f"{key}_avg"] = np.mean(episode.user_data[key])
+    try:
+      env = base_env.envs[0]
+      for agent in env.agents:
+        for key in self.RELEVANT_KEYS:
+          episode.hist_data[f"{key}_{agent}"] = episode.user_data[
+            f"{key}_{agent}"
+          ]
+          episode.custom_metrics[
+            f"{key}_{agent}_avg"
+          ] = np.mean(episode.user_data[f"{key}_{agent}"])
+    except AttributeError:
+      for key in self.RELEVANT_KEYS:
+        episode.hist_data[key] = episode.user_data[key]
+        episode.custom_metrics[f"{key}_avg"] = np.mean(episode.user_data[key])
     # add worker index
     episode.hist_data["worker_index"] = episode.user_data["worker_index"]
   
