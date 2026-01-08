@@ -150,6 +150,16 @@ class AlgoConfigGenerator(ABC):
         agents = env_config["agents"],
         policy_config = None
       )
+      # -- add the number of agents to the custom model configuration
+      cm = all_params.get("model", {}).get("custom_model")
+      if cm == "centralizedcritic":
+        if "model" not in all_params:
+          all_params["model"] = {}
+        if "custom_model_config" not in all_params["model"]:
+          all_params["model"]["custom_model_config"] = {}
+        all_params["model"]["custom_model_config"]["n_agents"] = len(
+          env_config["agents"]
+        )
     # update the algorithm config
     if len(all_params) > 0:
       algo_config.update_from_dict(all_params)

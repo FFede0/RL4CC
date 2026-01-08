@@ -1,0 +1,13 @@
+{
+  "algorithm": "PPO",
+  "env_config_file": "config_files/regression_tests/PPOmultiagenttraining/env_config.json",
+  "ray_config_file": "config_files/regression_tests/PPOmultiagenttraining/ray_config.json",
+  "logdir": "utilities/regression_tests/LOGDIR/PPOmultiagenttraining",
+  "evaluation_interval": 1,
+  "logger": {
+    "verbosity": 1
+  },
+  "stopping_criteria": {
+    "max_iterations": 10
+  }
+}

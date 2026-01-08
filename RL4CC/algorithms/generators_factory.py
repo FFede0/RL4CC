@@ -17,6 +17,7 @@ from RL4CC.algorithms.generators.algo_config_generator import AlgoConfigGenerato
 from RL4CC.algorithms.generators.ppo_config_generator import PPOConfigGenerator
 from RL4CC.algorithms.generators.dqn_config_generator import DQNConfigGenerator
 from RL4CC.algorithms.generators.sac_config_generator import SACConfigGenerator
+from RL4CC.algorithms.generators.mappo_config_generator import MAPPOConfigGenerator
 
 
 
@@ -48,4 +49,4 @@ ACGfactory = AlgoConfigGeneratorsFactory()
 ACGfactory.register("PPO", PPOConfigGenerator)
 ACGfactory.register("DQN", DQNConfigGenerator)
 ACGfactory.register("SAC", SACConfigGenerator)
-
+ACGfactory.register("MAPPO", MAPPOConfigGenerator)

@@ -49,7 +49,7 @@ def test_algo_config_generator(
   ray_config = load_config_file(exp_config["ray_config_file"])
   algo = exp_config["algorithm"]
   # -- add multiagent info (if required)
-  if multiagent:
+  if multiagent and "agents" not in env_config:
     env_config["env_name"] = "BaseMultiAgentEnvironment"
     env_config["agents"] = [f"agent_{i}" for i in range(3)]
   # run
@@ -106,25 +106,28 @@ def test_algo_generators(
   logger.log(f"test generator for algo: {algo} using {exp_config_file}")
   if os.path.exists(exp_config_file):
     # -- single agent
-    logger.log("--- single agent version")
-    expected_output_file = os.path.join(
-      base_output_folder, f"{algo}_config.json"
-    )
-    if os.path.exists(expected_output_file):
-      passed = test_algo_config_generator(
-        logger = logger, 
-        exp_config_file = exp_config_file, 
-        expected_out = expected_output_file
+    if not algo.startswith("MA"):
+      logger.log("--- single agent version")
+      expected_output_file = os.path.join(
+        base_output_folder, f"{algo}_config.json"
       )
-      num_passed_tests += int(passed)
-    else:
-      logger.err(
-        f"the expected output file {expected_output_file} is not available"
-      )
+      if os.path.exists(expected_output_file):
+        passed = test_algo_config_generator(
+          logger = logger, 
+          exp_config_file = exp_config_file, 
+          expected_out = expected_output_file
+        )
+        num_passed_tests += int(passed)
+      else:
+        logger.err(
+          f"the expected output file {expected_output_file} is not available"
+        )
     # -- multi-agent
     logger.log("--- multi-agent version")
     expected_output_file = os.path.join(
       base_output_folder, f"{algo}_config_multiagent.json"
+    ) if not algo.startswith("MA") else os.path.join(
+      base_output_folder, f"{algo}_config.json"
     )
     if os.path.exists(expected_output_file):
       passed = test_algo_config_generator(
@@ -142,7 +145,9 @@ def test_algo_generators(
     logger.err(
       f"the configuration file {exp_config_file} is not available"
     )
-  total_num_tests += 2
+  total_num_tests = (
+    total_num_tests + 2 if not algo.startswith("MA") else total_num_tests + 1
+  )
   return num_passed_tests, total_num_tests
 
 
