@@ -146,10 +146,10 @@ class TuningExperiment(BaseExperiment):
       "best_tune_trial_dir", best_results.path
     )
     # save evaluation results related to the best checkpoint(s) (if any)
-    for checkpoint_path, result in best_results.best_checkpoints:
+    for checkpoint, result in best_results.best_checkpoints:
       if "evaluation" in result:
         evaluation_metrics = result["evaluation"]
-        evaluation_metrics["corresponding_checkpoint"] = checkpoint_path
+        evaluation_metrics["corresponding_checkpoint"] = checkpoint.path
         self.update_evaluation_metrics_file(
           result["training_iteration"], evaluation_metrics
         )
