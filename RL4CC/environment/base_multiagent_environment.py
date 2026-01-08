@@ -123,7 +123,7 @@ class BaseMultiAgentEnvironment(MultiAgentEnv):
     self.current_time += self.time_step
     # check if we are in the last step of the episod should be truncated
     done = {
-      agent: self.current_time >= self.max_time for agent in self.agents + [
+      agent: self.current_time >= self.max_time for agent in list(self.agents) + [
         "__all__"
       ]
     }
