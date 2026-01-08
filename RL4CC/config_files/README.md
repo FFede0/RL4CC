@@ -52,8 +52,25 @@ a sample configuration as:
 can be used to represent a scenario where episodes last 1 hour each and a
 new agent decision is taken every 10 seconds.
 
-**Important note:** these parameters should be set even in a non-episodic
-environment. Use `max_time` to represent the Environment horizon.
+> [!NOTE] 
+> These parameters should be set even in a non-episodic environment. Use 
+> `max_time` to represent the Environment horizon.
+
+#### Multi-agent environments
+
+To create multi-agent environments, an additional parameter must be set in 
+the environment configuration dictionary, namely `agents`, providing a list 
+of agents names or IDs. As an example:
+
+```
+{
+  "env_name": "BaseMultiAgentEnvironment",
+  "min_time": 0,
+  "max_time": 3600,
+  "time_step": 10,
+  "agents": ["agent_0", "agent_1", "agent_2"]
+}
+```
 
 ### Ray `Algorithm` configuration
 
@@ -189,8 +206,15 @@ Examples are reported for both the PPO and DQN algorithms in the the
 corresponding template files.
 
 > [!WARNING]
-> The framework the model is based on **must** match the framework passed in the
-> `ray_config`, otherwise this will result in runtime errors.
+> The framework the model is based on **must** match the framework passed in 
+> the `ray_config`, otherwise this will result in runtime errors.
+
+> [!NOTE] 
+> A notable example of custom policy is the 
+> [centralized critic model](../models/centralized_critic_model.py) 
+> implemented to support the MAPPO algorithm. This is registered in RL4CC as 
+> `centralizedcritic` and should be selected as shown in the sample 
+> [MAPPO configuration file](../config_files/ray_config_mappo.json.template).
 
 ### Configure hyperparameter tuning
 

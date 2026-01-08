@@ -6,10 +6,12 @@ on the [Ray RLLib](https://docs.ray.io/en/releases-2.20.0/rllib/index.html) libr
 
 It includes the following components:
 
-- a simple [`Environment`](RL4CC/environment/base_environment.py) implementation, that
-  should be used as a base class when defining more complex problems. It is
-  created by loading the parameters included in the [`env_config`
-  configuration](RL4CC/config_files/README.md#environment-configuration).
+- two simple environments, that should be used as base classes when defining 
+  more complex problems. They are created by loading the parameters included in 
+  the [`env_config` configuration](RL4CC/config_files/README.md#environment-configuration).
+  The two represent a [single-agent](RL4CC/environment/base_environment.py) 
+  and a [multi-agent](RL4CC/environment/base_multiagent_environment.py) 
+  environment, respectively.
 
 - an [`Algorithm`](RL4CC/algorithms/algorithm.py) class, used to define RL
   algorithms for training/hyperparameter tuning experiments, supported by a
@@ -330,6 +332,9 @@ To expand the module with generators for new algorithms:
 [PPO algorithm](RL4CC/algorithms/generators/ppo_config_generator.py))
 2. add the new generator to the 
 [generators factory](RL4CC/algorithms/generators_factory.py)
+
+The RL4CC library implements the MAPPO algorithm, i.e., a PPO version that 
+exploits a centralized critic model.
 
 ## How to contribute to RL4CC
 
