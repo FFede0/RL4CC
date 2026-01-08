@@ -16,6 +16,7 @@ limitations under the License.
 from RL4CC.algorithms.generators.tune_config_generator import TuneConfigGenerator
 from RL4CC.algorithms.generators_factory import ACGfactory
 from RL4CC.log_and_report.rl4cc_logger import Logger
+from RL4CC.utilities.common import defined
 
 from ray.tune.result_grid import ResultGrid
 from ray.tune import Tuner as RayTuner
@@ -52,12 +53,16 @@ class Tuner:
           "criterion (all mandatory parameters to create a new `Tuner` object)"
         )
       # ...generate AlgorithmConfig
+      multiagent = False
+      if defined("agents", env_config):
+        multiagent = True
       self.algo_config = self.algo_config_generator.generate_algo_config(
         ray_config = ray_config,
         env_config = env_config,
         eval_interval = eval_interval,
         exp_logdir = storage_path,
-        use_tune = True
+        use_tune = True,
+        multiagent = multiagent
       )
       # ...generate TunerConfig and RunConfig
       self.tuner_config, self.run_config = self.tune_config_generator.generate(
