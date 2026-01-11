@@ -1,6 +1,7 @@
 
 
-> [!NOTE] The RL4CC library currently supports the Ray implementation of the 
+> [!NOTE] 
+> The RL4CC library currently supports the Ray implementation of the 
 > PPO, SAC and DQN algorithms. Moreover, it implements the MAPPO algorithm, 
 > i.e., a PPO version that exploits a centralized critic model.
 
