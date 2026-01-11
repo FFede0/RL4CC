@@ -7,7 +7,7 @@
       "custom_model": "centralizedcritic",
       "custom_model_config": {
         "mode": "avg",
-        "central_vf_nneurons": 128
+        "central_vf_fcnet_hiddens": [128]
       }
     }
   },

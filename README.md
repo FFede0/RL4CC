@@ -334,7 +334,9 @@ To expand the module with generators for new algorithms:
 [generators factory](RL4CC/algorithms/generators_factory.py)
 
 The RL4CC library implements the MAPPO algorithm, i.e., a PPO version that 
-exploits a centralized critic model.
+exploits a centralized critic model. Details about the MAPPO algorithm 
+configuration parameters are provided in the 
+[algorithms/README](algorithms/README.md) file.
 
 ## How to contribute to RL4CC
 

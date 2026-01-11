@@ -7,7 +7,7 @@
       "custom_model": "centralizedcritic",
       "custom_model_config": {
         "mode": "concat",
-        "central_vf_nneurons": "tune.choice([32, 128, 256])"
+        "central_vf_fcnet_hiddens": "tune.choice([32,32], [64,64], [256,256])"
       }
     }
   },
