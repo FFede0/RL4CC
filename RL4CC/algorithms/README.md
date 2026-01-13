@@ -7,7 +7,7 @@
 
 General details about the algorithms configuration are provided in the 
 configurations [README](../config_files/README.md#ray-algorithm-configuration) 
-file. Specific parameters related to the MAPPO implementation are instead 
+file. Additional details on the MAPPO implementation are instead 
 reported below.
 
 ## MAPPO
