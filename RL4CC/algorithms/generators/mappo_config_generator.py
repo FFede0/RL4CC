@@ -43,7 +43,7 @@ class MAPPOConfigGenerator(PPOConfigGenerator):
     ---
     MAPPO is a multi-agent algorithm by definition
     """
-    super().generate_algo_config(
+    return super().generate_algo_config(
       env_config,
       ray_config = ray_config,
       exp_logdir = exp_logdir,

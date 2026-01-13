@@ -17,3 +17,4 @@ class MAPPO(PPO):
 class MAPPOConfig(PPOConfig):
   def __init__(self, algo_class = None):
     super().__init__(algo_class = algo_class or MAPPO)
+    self.model["custom_model"] = "centralizedcritic"
