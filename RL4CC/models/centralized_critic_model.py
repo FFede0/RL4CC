@@ -55,9 +55,13 @@ class CCPPOTorchPolicy(CentralizedValueMixin, PPOTorchPolicy):
         opponent_batches = [pair[-1] for pair in other_agent_batches.values()]
       # separate lists of observations and actions
       op_obs_list = [b[SampleBatch.CUR_OBS] for b in opponent_batches]
-      op_act_list = [
-        np.atleast_2d(b[SampleBatch.ACTIONS]).T for b in opponent_batches
-      ]
+      op_act_list = []
+      for b in opponent_batches:
+        original_shape = b[SampleBatch.ACTIONS].shape
+        arr2d = np.atleast_2d(b[SampleBatch.ACTIONS])
+        if original_shape != arr2d.shape:
+          arr2d = arr2d.T
+        op_act_list.append(arr2d)
       # -- define observations and actions
       opponent_obs, opponent_actions = None, None
       if mode == "avg":
@@ -98,12 +102,14 @@ class CCPPOTorchPolicy(CentralizedValueMixin, PPOTorchPolicy):
           axis = 1
         )
       )
+      original_shape = sample_batch[SampleBatch.ACTIONS].shape
+      sample_act = np.atleast_2d(sample_batch[SampleBatch.ACTIONS])
+      if original_shape != sample_act.shape:
+        sample_act = sample_act.T
       sample_batch[self.OPPONENT_ACTION] = np.zeros_like(
         np.concatenate(
           [
-            np.atleast_2d(
-              sample_batch[SampleBatch.ACTIONS]
-            ).T for _ in range(n_other_agents)
+            np.atleast_2d(sample_act) for _ in range(n_other_agents)
           ],
           axis = 1
         )
@@ -172,7 +178,11 @@ class CustomTorchCCModel(TorchCentralizedCriticModel):
       n_obs = 2             # obs + avg of opp_obs
       n_acts = 1            # avg of opp_act
     # central VF maps (obs, opp_obs, opp_act) -> vf_pred
-    input_size = flatdim(obs_space) * n_obs + flatdim(action_space) * n_acts
+    input_size = None
+    try:
+      input_size = flatdim(obs_space) * n_obs + flatdim(action_space) * n_acts
+    except Exception:
+      input_size = flatdim(obs_space) * n_obs + action_space.dim * n_acts
     if len(fcnet_hiddens) > 1:
       hiddens = []
       prev_size = input_size
