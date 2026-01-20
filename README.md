@@ -69,6 +69,10 @@ to install RL4CC as a package.
 Now by checking the installed packages with `pip3 freeze`, you will notice that 
 RL4CC is among the dependencies. 
 
+> [!NOTE]
+> To download and install the RL4CC library using `pip`, add to your 
+> requirements file `git+ssh://git@github.com/FFede0/RL4CC.git#egg=RL4CC`
+
 ## How to start a training experiment
 
 To define and start a training experiment exploiting one of the available algorithms:
