@@ -33,6 +33,7 @@ class Algorithm:
       logdir: str = None,
       eval_interval: int = None,
       use_tune: bool = False,
+      multiagent: bool = False,
       logger: Logger = Logger(name="RL4CC-Algorithm")
     ):
     self.logger = logger
@@ -55,7 +56,8 @@ class Algorithm:
         env_config = env_config,
         eval_interval = eval_interval,
         exp_logdir = logdir,
-        use_tune = use_tune
+        use_tune = use_tune,
+        multiagent = multiagent
       )
 
   def build(self, algo_config: AlgorithmConfig = None):

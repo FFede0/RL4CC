@@ -1,0 +1,7 @@
+{
+  "env_name": "BaseMultiAgentEnvironment",
+  "min_time": 0,
+  "max_time": 3600,
+  "time_step": 10,
+  "agents": ["node_0", "node_1", "node_2"]
+}

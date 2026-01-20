@@ -1,0 +1,25 @@
+{
+  "training": {
+    "batch_size": 128,
+    "num_train_batches": 2,
+    "lr": 0.01,
+    "model": {
+      "custom_model": "centralizedcritic",
+      "custom_model_config": {
+        "mode": "concat",
+        "central_vf_fcnet_hiddens": "tune.choice([[32,32], [64,64], [256,256]])"
+      }
+    }
+  },
+  "rollouts": {
+    "num_rollout_workers": 1,
+    "duration_per_worker": 360,
+    "duration_unit": "timesteps"
+  },
+  "callbacks": {
+    "callbacks_class": "callbacks.base_callbacks.BaseCallbacks"
+  },
+  "debugging": {
+    "log_level": "ERROR"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "algorithm": "MAPPO",
+  "env_config_file": "config_files/regression_tests/MAPPOtraining/env_config.json",
+  "ray_config_file": "config_files/regression_tests/MAPPOtraining/ray_config.json",
+  "logdir": "utilities/regression_tests/LOGDIR/MAPPOtraining",
+  "evaluation_interval": 5,
+  "stopping_criteria": {
+    "max_iterations": 10
+  }
+}
