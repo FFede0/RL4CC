@@ -134,3 +134,14 @@ def update_json_file(filename: str, key: str, value):
   # write updated file
   with open(filename, "w") as ostream:
     ostream.write(json.dumps(json_obj, indent = 2))
+
+def json_to_array_dict(filename: str) -> dict:
+  weights = {}
+  if os.path.exists(filename):
+    # load file content
+    with open(filename, "r") as istream:
+      weights = json.load(istream)
+    # convert data to array
+    for key in weights:
+      weights[key] = np.array(weights[key])
+  return weights
