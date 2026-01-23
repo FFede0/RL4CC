@@ -13,78 +13,165 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from RL4CC.utilities.common import NumpyEncoder,json_to_array_dict,not_defined
+from RL4CC.utilities.common import NumpyEncoder, json_to_array_dict
+from RL4CC.utilities.common import defined, not_defined
 from RL4CC.experiments.train import TrainingExperiment
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.algorithm import Algorithm
 
 from datetime import datetime
+import numpy as np
 import json
 import os
 
 
-class FederatedAgentTrain(TrainingExperiment):
-  def __init__(self, config, agent_id = "FederatedAgent"):
-    super().__init__(config)
+class FederatedTrainingExperiment(TrainingExperiment):
+  def __init__(
+      self,
+      exp_config_file: str = None,
+      exp_config: dict = None,
+      logger: Logger = Logger(name = "RL4CC")
+    ):
+    super().__init__(exp_config_file, exp_config, logger)
     self.iterations_result = []
     self.merged_results = {}
     # in case of first round some operation are not done
     self.first_round = True
     # to keep track of rounds duration
     self.rounds_duration = []
-    # set an identifier for the agent
-    self.agent_id = agent_id
-    # if logging on files, define the local agent logger to log local train 
-    # information separately 
-    verbose_ = self.logger.verbose
-    if self.exp_config["logger"].get("file_streams", False):
-      self.logfile = open(
-        os.path.join(self.logdir, f"{self.agent_id}.log"), "a"
-      )
-      self.logger = Logger(
-        name=self.agent_id, out_stream=self.logfile, verbose=verbose_
-      )
-    else:
-      # otherwise change the name only
-      self.logger = Logger(name=self.agent_id, verbose=verbose_)
+    # list of networks to aggregate and list of private layers
+    self.networks_to_aggregate = self.exp_config.get(
+      "networks_to_aggregate", ["all"]
+    )
+    self.private_layers = self.exp_config.get("private_layers", None)
 
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
-    # define the folder used for federation procedure
-    if not_defined("federation_folder", self.exp_config):
-      raise KeyError(
-        "ERROR: you must define the federation folder in exp_config"
-      )
-    else:
-      self.federation_folder = self.exp_config["federation_folder"]
+    # check that networks_to_aggregate and private_layers are consistent
+    if defined(
+        "networks_to_aggregate", self.exp_config
+      ) and defined("private_layers", self.exp_config):
+      nta = self.exp_config["networks_to_aggregate"]
+      pl = self.exp_config["private_layers"]
+      if any([l in pl for l in nta]):
+        raise KeyError(
+          "Overlapping elements in `networks_to_aggregate` "
+          "and `private_layers`"
+        )
   
   def on_iteration_start(self, algo: Algorithm, it: int):
     # load the global (aggregated) weights from the previous fed round into 
     # the algorithm model/policy
-    aggregated_weights = os.path.join(
-      self.federation_folder, f"round_{it-1}", self.agent_id
-    )
     if not self.first_round:
-      algo.get_policy().set_weights(
+      aggregated_weights = os.path.join(
+        self.federation_folder, f"round_{it-1}"
+      )
+      algo.set_weights(
         json_to_array_dict(
           os.path.join(aggregated_weights, "agg_weights.json")
         )
       )
       self.logger.log(f"Weights loaded from {aggregated_weights}", 2)
+    else:
+      # in the first federation round, define folder to save weights
+      self.federation_folder = os.path.join(self.logdir, "federation_folder")
     return algo
 
   def on_iteration_end(self, algo: Algorithm, it: int):
     # save the latest update (local) weights into the folder used by the 
     # global aggregator
-    weights_folder = os.path.join(
-      self.federation_folder, f"round_{it}", self.agent_id
-    )
+    weights_folder = os.path.join(self.federation_folder, f"round_{it}")
     os.makedirs(weights_folder, exist_ok=True)
-    weights = self.algo.get_policy().get_weights()
+    weights = algo.get_weights()
     with open(os.path.join(weights_folder, "weights.json"), 'w') as f:
       json.dump(weights, f, indent = 2, cls=NumpyEncoder)
     self.update_progress_file("last_weights_dir", weights_folder)
-    self.logger.log(f"Current weights saved into {weights_folder}", 2)
+    self.logger.log(
+      f"Current weights saved into {weights_folder}; start aggregation", 2
+    )
+    # aggregate weights
+    agg_weigths = self.aggregate(
+      weights, weights.keys(), self.networks_to_aggregate, self.private_layers
+    )
+  
+  def aggregate(
+      self, 
+      weights: dict, 
+      agents: list, 
+      networs_to_aggregate: list = ["all"],
+      private_layers: list = None
+    ):
+    # find all keys that appear in any model
+    network_layers = set().union(*[weights[ag].keys() for ag in agents])
+    local_network_layer = {ag: {} for ag in agents}
+    shared_network_layer = []
+    for layer_key in network_layers:
+      # extract values from agents that have this layer_key
+      layer_weights = [weights[ag].get(layer_key, None) for ag in agents]
+      # check networks to aggregate
+      if networs_to_aggregate != ["all"]:
+        if all(
+            not layer_key.startswith(prefix) for prefix in networs_to_aggregate
+          ):
+          for ag, v in zip(agents, layer_weights):
+            local_network_layer[ag][layer_key] = v
+          continue
+      # private layers are local only
+      if private_layers is not None:
+        if any(layer_key.startswith(prefix) for prefix in private_layers):
+          for ag, v in zip(agents, layer_weights):
+            local_network_layer[ag][layer_key] = v
+          continue
+      # check if layer_key is present for all agents
+      if any(v is None for v in layer_weights):
+        # -- not aggregatable; store individually
+        for ag, v in zip(agents, layer_weights):
+          if v is not None:
+            local_network_layer[ag][layer_key] = v
+        continue
+      # check if shapes are consistent
+      shapes = [v.shape for v in layer_weights]
+      if len(set(shapes)) != 1:
+        # -- inconsistent shapes; store individually
+        for ag, v in zip(agents, layer_weights):
+          local_network_layer[ag][layer_key] = v
+        continue
+      # aggregatable
+      shared_network_layer.append(layer_key)
+    # aggregate the weights of the shared part of the network
+    aggregated_shared = self.aggregate_shared_weights(
+      weights, agents, shared_network_layer
+    )
+    # save aggregated weights per agent
+    aggregated_weights = {}
+    for ag in agents:
+      aggregated_weights[ag] = {}
+      # -- add shared averaged parameters
+      aggregated_weights[ag].update(aggregated_shared)
+      # -- add agent-specific parameters
+      aggregated_weights[ag].update(local_network_layer[ag])
+    out_path = os.path.join(self.federation_folder, "agg_weights.json")
+    with open(out_path, "w") as f:
+      json.dump(
+        aggregated_weights, 
+        f, 
+        indent = 2, 
+        cls = NumpyEncoder, 
+        sort_keys = True
+      )
+    return aggregated_weights
+  
+  def aggregate_shared_weights(
+      self, weights: dict, agents: list, shared_network_layer: list
+    ):
+    """
+    Average shared weights; override this to implement other aggregation rules
+    """
+    aggregated_shared = {}
+    for layer_key in shared_network_layer:
+      stacked = np.stack([weights[ag][layer_key] for ag in agents], axis = 0)
+      aggregated_shared[layer_key] = np.mean(stacked, axis = 0)
+    return aggregated_shared
   
   def local_training_loop(self, algo: Algorithm):
     self.logger.log(f"local training loop --> START", 3)
@@ -140,7 +227,7 @@ class FederatedAgentTrain(TrainingExperiment):
     federation_round = 1
     while not self.stop({"federation_round": federation_round}):
       self.logger.log(f"starting federation round {federation_round}", 2)
-      # train
+      # train and aggregate
       start_round = datetime.now()
       algo = self.on_iteration_start(algo, federation_round)
       algo = self.local_training_loop(algo)
