@@ -73,11 +73,27 @@ class Algorithm:
       f"`Algorithm` created; output directory: {self.logdir}"
     )
 
-  def get_policy(self):
+  def get_policy(self, policy_id: str = None):
     """
     Get the policy of the `Algorithm`
     """
-    return self.algo.get_policy()
+    return self.algo.get_policy(policy_id)
+  
+  def get_weights(self, policy_ids: list = None):
+    """
+    Get a dictionary of weights for the given `Algorithm` policies (returns 
+    the weights for all policies if `policy_ids` is None)
+    ---
+    Note: for a single-agent scenario with the default policy, the key for 
+    the weights dictionary is `default_policy`
+    """
+    return self.algo.get_weights(policy_ids)
+  
+  def set_weights(self, weights: dict):
+    """
+    Set the weights of the `Algorithm` policies
+    """
+    return self.algo.set_weights(weights)
   
   def load_checkpoint(self, path: str):
     """
