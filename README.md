@@ -1,6 +1,8 @@
-# RL4CC
+<p align="center">
+<img width="224" height="183" alt="RL4CC1" src="https://github.com/user-attachments/assets/5b16dce5-da15-4cd7-a398-79026cff0c50" />
+</p>
 
-The **R**einforcement **L**earning for the **C**omputing **C**ontinuum module
+The **R**einforcement **L**earning for the **C**omputing **C**ontinuum library
 provides a common interface to define environments and RL algorithms based
 on the [Ray RLLib](https://docs.ray.io/en/releases-2.20.0/rllib/index.html) library[^1].
 
