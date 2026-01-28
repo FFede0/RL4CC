@@ -81,10 +81,10 @@ class FederatedTrainingExperiment(TrainingExperiment):
     # save the latest update (local) weights into the folder used by the 
     # global aggregator
     weights_folder = os.path.join(self.federation_folder, f"round_{it}")
-    os.makedirs(weights_folder, exist_ok=True)
+    os.makedirs(weights_folder, exist_ok = True)
     weights = algo.get_weights()
-    with open(os.path.join(weights_folder, "weights.json"), 'w') as f:
-      json.dump(weights, f, indent = 2, cls=NumpyEncoder)
+    with open(os.path.join(weights_folder, "weights.json"), "w") as ost:
+      json.dump(weights, ost, indent = 2, cls = NumpyEncoder, sort_keys = True)
     self.update_progress_file("last_weights_dir", weights_folder)
     self.logger.log(
       f"Current weights saved into {weights_folder}; start aggregation", 2
@@ -93,6 +93,11 @@ class FederatedTrainingExperiment(TrainingExperiment):
     agg_weigths = self.aggregate(
       weights, weights.keys(), self.networks_to_aggregate, self.private_layers
     )
+    # save the aggregated weights
+    with open(os.path.join(weights_folder, "agg_weights.json"), "w") as ost:
+      json.dump(
+        agg_weigths, ost, indent = 2, cls = NumpyEncoder, sort_keys = True
+      )
   
   def aggregate(
       self, 
@@ -150,15 +155,6 @@ class FederatedTrainingExperiment(TrainingExperiment):
       aggregated_weights[ag].update(aggregated_shared)
       # -- add agent-specific parameters
       aggregated_weights[ag].update(local_network_layer[ag])
-    out_path = os.path.join(self.federation_folder, "agg_weights.json")
-    with open(out_path, "w") as f:
-      json.dump(
-        aggregated_weights, 
-        f, 
-        indent = 2, 
-        cls = NumpyEncoder, 
-        sort_keys = True
-      )
     return aggregated_weights
   
   def aggregate_shared_weights(
