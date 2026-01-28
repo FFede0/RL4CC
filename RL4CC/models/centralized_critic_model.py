@@ -12,6 +12,7 @@ from ray.rllib.utils.torch_utils import convert_to_torch_tensor
 from ray.rllib.utils.framework import try_import_torch
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.models.torch.misc import SlimFC
+from gymnasium.spaces import Discrete
 
 from gymnasium.spaces.utils import flatdim
 
@@ -31,7 +32,7 @@ class CCPPOTorchPolicy(CentralizedValueMixin, PPOTorchPolicy):
     self.OPPONENT_ACTION = "opponent_action"
     PPOTorchPolicy.__init__(self, observation_space, action_space, config)
     CentralizedValueMixin.__init__(self)
-  
+
   def _centralized_critic_postprocessing(
       self, sample_batch, other_agent_batches = None, episode = None
     ):
@@ -98,7 +99,7 @@ class CCPPOTorchPolicy(CentralizedValueMixin, PPOTorchPolicy):
         np.concatenate(
           [
             sample_batch[SampleBatch.CUR_OBS] for _ in range(n_other_agents)
-          ], 
+          ],
           axis = 1
         )
       )
@@ -132,7 +133,7 @@ class CCPPOTorchPolicy(CentralizedValueMixin, PPOTorchPolicy):
       use_gae = self.config["use_gae"]
     )
     return train_batch
-  
+
   def _loss_with_central_critic(self, model, dist_class, train_batch):
     # save original value function
     vf_saved = model.value_function
@@ -180,7 +181,9 @@ class CustomTorchCCModel(TorchCentralizedCriticModel):
     # central VF maps (obs, opp_obs, opp_act) -> vf_pred
     input_size = None
     try:
-      input_size = flatdim(obs_space) * n_obs + flatdim(action_space) * n_acts
+      #input_size = flatdim(obs_space) * n_obs + flatdim(action_space) * n_act
+      act_dim = 1 if isinstance(action_space, Discrete) else flatdim(action_space)
+      input_size = flatdim(obs_space) * n_obs + act_dim * n_acts
     except Exception:
       input_size = flatdim(obs_space) * n_obs + action_space.dim * n_acts
     if len(fcnet_hiddens) > 1:
@@ -198,11 +201,11 @@ class CustomTorchCCModel(TorchCentralizedCriticModel):
         SlimFC(input_size, fcnet_hiddens[0], activation_fn=fcnet_act),
         SlimFC(fcnet_hiddens[-1], 1),
       )
-  
+
   def forward(self, input_dict, state, seq_lens):
     model_out, _ = self.model.forward(input_dict, state, seq_lens)
     return model_out, []
-  
+
   def central_value_function(self, obs, opponent_obs, opponent_actions):
     # obs:             [B, obs_dim]
     # opponent_obs:    [B, N*obs_dim] or [B, obs_dim] (if averaged)
