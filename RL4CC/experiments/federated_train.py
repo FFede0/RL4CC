@@ -44,6 +44,16 @@ class FederatedTrainingExperiment(TrainingExperiment):
       "networks_to_aggregate", ["all"]
     )
     self.private_layers = self.exp_config.get("private_layers", None)
+  
+  def generate_logdir(self, base_logdir: str, algo: str, env_name: str) -> str:
+    """
+    Generate the experiment `logdir` if an appropriate parameter is provided
+    """
+    now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')
+    self.logdir = os.path.join(
+      os.path.abspath(base_logdir), f"{algo}fed_{env_name}_{now}"
+    )
+    os.makedirs(self.logdir, exist_ok=True)
 
   def validate_experiment_configuration(self):
     super().validate_experiment_configuration()
