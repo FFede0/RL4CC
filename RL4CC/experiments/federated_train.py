@@ -64,7 +64,7 @@ class FederatedTrainingExperiment(TrainingExperiment):
       nta = self.exp_config["networks_to_aggregate"]
       pl = self.exp_config["private_layers"]
       if any([l in pl for l in nta]):
-        raise KeyError(
+        raise ValueError(
           "Overlapping elements in `networks_to_aggregate` "
           "and `private_layers`"
         )
@@ -100,13 +100,13 @@ class FederatedTrainingExperiment(TrainingExperiment):
       f"Current weights saved into {weights_folder}; start aggregation", 2
     )
     # aggregate weights
-    agg_weigths = self.aggregate(
+    agg_weights = self.aggregate(
       weights, weights.keys(), self.networks_to_aggregate, self.private_layers
     )
     # save the aggregated weights
     with open(os.path.join(weights_folder, "agg_weights.json"), "w") as ost:
       json.dump(
-        agg_weigths, ost, indent = 2, cls = NumpyEncoder, sort_keys = True
+        agg_weights, ost, indent = 2, cls = NumpyEncoder, sort_keys = True
       )
   
   def aggregate(
