@@ -143,5 +143,9 @@ def json_to_array_dict(filename: str) -> dict:
       weights = json.load(istream)
     # convert data to array
     for key in weights:
-      weights[key] = np.array(weights[key])
+      if isinstance(weights[key], dict):
+        for ik in weights[key]:
+          weights[key][ik] = np.array(weights[key][ik])
+      elif isinstance(weights[key], list):
+        weights[key] = np.array(weights[key])
   return weights
