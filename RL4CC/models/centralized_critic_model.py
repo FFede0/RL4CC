@@ -181,7 +181,6 @@ class CustomTorchCCModel(TorchCentralizedCriticModel):
     # central VF maps (obs, opp_obs, opp_act) -> vf_pred
     input_size = None
     try:
-      #input_size = flatdim(obs_space) * n_obs + flatdim(action_space) * n_act
       act_dim = 1 if isinstance(action_space, Discrete) else flatdim(action_space)
       input_size = flatdim(obs_space) * n_obs + act_dim * n_acts
     except Exception:
