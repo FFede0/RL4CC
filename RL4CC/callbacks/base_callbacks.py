@@ -94,7 +94,8 @@ class BaseCallbacks(DefaultCallbacks):
           if isinstance(val, np.ndarray):
             val = val.tolist()
           # add to user_data
-          episode.user_data[f"{key}_{agent}"].append(val)
+          if val is not None:
+            episode.user_data[f"{key}_{agent}"].append(val)
     except AttributeError:
       for key in self.RELEVANT_KEYS:
         val = episode.last_info_for()[key]
