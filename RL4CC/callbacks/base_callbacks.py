@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from ray.rllib.evaluation import Episode, RolloutWorker
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.policy import Policy
 from ray.rllib.env import BaseEnv
@@ -34,10 +33,10 @@ class BaseCallbacks(DefaultCallbacks):
   def on_episode_start(
       self,
       *,
-      worker: RolloutWorker,
+      worker,
       base_env: BaseEnv,
       policies: Dict[str, Policy],
-      episode: Episode,
+      episode,
       env_index: int,
       **kwargs,
     ):
@@ -70,10 +69,10 @@ class BaseCallbacks(DefaultCallbacks):
   def on_episode_step(
       self,
       *,
-      worker: RolloutWorker,
+      worker,
       base_env: BaseEnv,
       policies: Dict[str, Policy],
-      episode: Episode,
+      episode,
       env_index: int,
       **kwargs,
     ):
@@ -109,10 +108,10 @@ class BaseCallbacks(DefaultCallbacks):
   def on_episode_end(
       self,
       *,
-      worker: RolloutWorker,
+      worker,
       base_env: BaseEnv,
       policies: Dict[str, Policy],
-      episode: Episode,
+      episode,
       env_index: int,
       **kwargs,
     ):
@@ -144,7 +143,7 @@ class BaseCallbacks(DefaultCallbacks):
   def on_sample_end(
       self, 
       *, 
-      worker: RolloutWorker, 
+      worker, 
       samples: SampleBatch, 
       **kwargs
     ):
@@ -171,8 +170,8 @@ class BaseCallbacks(DefaultCallbacks):
   def on_postprocess_trajectory(
       self,
       *,
-      worker: RolloutWorker,
-      episode: Episode,
+      worker,
+      episode,
       agent_id: str,
       policy_id: str,
       policies: Dict[str, Policy],
