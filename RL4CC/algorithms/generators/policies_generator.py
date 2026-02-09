@@ -25,9 +25,14 @@ class PoliciesGenerator:
     ) -> dict:
     # each agent has its own policy (policy_node_X in policy -> node_X in the 
     # environment).
+    manual_policies_to_train = False
+    policies_to_train = []
+    if "policies_to_train" in policy_config:
+      manual_policies_to_train = True
+      policies_to_train = policy_config.pop("policies_to_train")
     multiagent_config = {
       "policies": {},
-      "policies_to_train": []
+      "policies_to_train": policies_to_train
     }
     for agent in agents:
       policy_name = agent
@@ -41,7 +46,8 @@ class PoliciesGenerator:
         config = agent_config,
       )
       # -- initially, all policies should be trained
-      multiagent_config["policies_to_train"].append(policy_name)
+      if not manual_policies_to_train:
+        multiagent_config["policies_to_train"].append(policy_name)
     # function mapping agent to policy
     multiagent_config["policy_mapping_fn"] = self.policy_mapping_fn
     return multiagent_config
