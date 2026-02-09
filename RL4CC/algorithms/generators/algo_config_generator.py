@@ -205,8 +205,11 @@ class AlgoConfigGenerator(ABC):
         # check the existence of Tuning Strings, convert them to tune objects 
         # wherever they exist
         value = self.interpret_tune_config(key, value)
-        if isinstance(value, dict):
-          all_params.update(value)
+        if key != "multiagent_policies_config":
+          if isinstance(value, dict):
+            all_params.update(value)
+          else:
+            all_params.update({key: value})
         else:
           all_params.update({key: value})
     # manage "special" keys
@@ -255,26 +258,12 @@ class AlgoConfigGenerator(ABC):
             all_params["multiagent_policies_config"][agent], 
             env_config
           )
-          all_params["multiagent_policies_config"][agent][
-            "rollouts"
-          ] = {
-            k: v for k,v in all_params["multiagent_policies_config"][
-              agent
-            ].items()
-          }
           self.convert_resources_parameters(
             all_params["multiagent_policies_config"][agent]
           )
           self.convert_training_parameters(
             all_params["multiagent_policies_config"][agent]
           )
-          all_params["multiagent_policies_config"][agent][
-            "training"
-          ] = {
-            k: v for k,v in all_params["multiagent_policies_config"][
-              agent
-            ].items() if k != "rollouts"
-          }
     # process the evaluation interval
     self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
