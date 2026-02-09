@@ -173,6 +173,3 @@ class Algorithm:
       )
     else:
       print(jj)
-  
-  def get_policy(self) -> Policy:
-    return self.algo.get_policy()
