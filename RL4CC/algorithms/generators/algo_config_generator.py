@@ -136,7 +136,11 @@ class AlgoConfigGenerator(ABC):
       .environment(
         env_config["env_name"],
         # pass-along config dictionary avoiding env_name
-        env_config = {k: v for k,v in env_config.items() if k != "env_name"}
+        env_config = {
+          k: self.interpret_tune_config(
+            k, v
+          ) for k,v in env_config.items() if k != "env_name"
+        }
       )
     )
     # process the configuration parameters
@@ -168,7 +172,9 @@ class AlgoConfigGenerator(ABC):
       if len(eval_config) > 0:
         algo_config.evaluation(
           evaluation_config = AlgorithmConfig.overrides(
-            env_config = eval_config
+            env_config = {
+              k: self.interpret_tune_config(k,v) for k,v in eval_config.items()
+            }
           )
         )
     # validate the number of collected and trained steps
