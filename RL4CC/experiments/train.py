@@ -102,7 +102,7 @@ class TrainingExperiment(BaseExperiment):
       if it % self.evaluation_interval == 0:
         self.update_evaluation_metrics_file(
           result["training_iteration"], 
-          result["evaluation"]
+          result.get("evaluation", algo.evaluate())
         )
       # plot results at the beginning and every `plot_interval` iterations
       if it == 1 or it % self.plot_interval == 0:
