@@ -31,11 +31,14 @@ class PoliciesGenerator:
     }
     for agent in agents:
       policy_name = agent
+      agent_config = None
+      if policy_config is not None:
+        agent_config = policy_config.get(agent, None)
       multiagent_config["policies"][policy_name] = PolicySpec(
         policy_class = None,  # inferred from Algorithm
         observation_space = None, # inferred from the environment
         action_space = None, # inferred from the environment
-        config = policy_config,
+        config = agent_config,
       )
       # -- initially, all policies should be trained
       multiagent_config["policies_to_train"].append(policy_name)

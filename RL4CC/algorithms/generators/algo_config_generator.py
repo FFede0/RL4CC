@@ -148,7 +148,7 @@ class AlgoConfigGenerator(ABC):
       policy_generator = PoliciesGenerator()
       all_params["multiagent"] = policy_generator.generate_multiagent_config(
         agents = env_config["agents"],
-        policy_config = None
+        policy_config = all_params.pop("multiagent_policies_config", None)
       )
       # -- add the number of agents to the custom model configuration
       cm = all_params.get("model", {}).get("custom_model")
@@ -248,6 +248,19 @@ class AlgoConfigGenerator(ABC):
       self.convert_rollout_parameters(all_params, env_config)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
+      # -- for multi-agent policies config
+      if "multiagent_policies_config" in all_params:
+        for agent in all_params["multiagent_policies_config"]:
+          self.convert_rollout_parameters(
+            all_params["multiagent_policies_config"][agent], 
+            env_config
+          )
+          self.convert_resources_parameters(
+            all_params["multiagent_policies_config"][agent]
+          )
+          self.convert_training_parameters(
+            all_params["multiagent_policies_config"][agent]
+          )
     # process the evaluation interval
     self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
