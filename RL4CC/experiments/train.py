@@ -72,10 +72,10 @@ class TrainingExperiment(BaseExperiment):
     pass
 
   def on_iteration_start(self, algo: Algorithm, it: int):
-    pass
+    return algo
 
   def on_iteration_end(self, algo: Algorithm, it: int):
-    pass
+    return algo
 
   def training_loop(self, algo: Algorithm):
     """
@@ -86,7 +86,7 @@ class TrainingExperiment(BaseExperiment):
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
     it = 1
     while not self.stop(it):
-      self.on_iteration_start(algo, it)
+      algo = self.on_iteration_start(algo, it)
       # train
       true_it = algo.last_iteration() + 1
       self.logger.log(f"starting iteration {it} ({true_it})", 3)
@@ -107,7 +107,7 @@ class TrainingExperiment(BaseExperiment):
       # plot results at the beginning and every `plot_interval` iterations
       if it == 1 or it % self.plot_interval == 0:
         self.plot_results(result)
-      self.on_iteration_end(algo, it)
+      algo = self.on_iteration_end(algo, it)
       # move to the next iteration
       it += 1
     # save last checkpoint
