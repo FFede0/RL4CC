@@ -258,26 +258,12 @@ class AlgoConfigGenerator(ABC):
             all_params["multiagent_policies_config"][agent], 
             env_config
           )
-          all_params["multiagent_policies_config"][agent][
-            "rollouts"
-          ] = {
-            k: v for k,v in all_params["multiagent_policies_config"][
-              agent
-            ].items()
-          }
           self.convert_resources_parameters(
             all_params["multiagent_policies_config"][agent]
           )
           self.convert_training_parameters(
             all_params["multiagent_policies_config"][agent]
           )
-          all_params["multiagent_policies_config"][agent][
-            "training"
-          ] = {
-            k: v for k,v in all_params["multiagent_policies_config"][
-              agent
-            ].items() if k != "rollouts"
-          }
     # process the evaluation interval
     self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
