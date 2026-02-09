@@ -95,7 +95,13 @@ class Algorithm:
     """
     return self.algo.set_weights(weights)
   
-  def load_checkpoint(self, path: str):
+  def load_checkpoint(
+      self, 
+      path: str, 
+      policy_ids: list = None,
+      policy_mapping_fn = None,
+      policies_to_train: list = None
+    ):
     """
     Load the provided `Algorithm` checkpoint
     """
@@ -103,7 +109,12 @@ class Algorithm:
       raise FileNotFoundError(
         f"ERROR: checkpoint path {path} does not exist or is invalid"
       )
-    self.algo = RayAlgorithm.from_checkpoint(path)
+    self.algo = RayAlgorithm.from_checkpoint(
+      path,
+      policy_ids = policy_ids,
+      policy_mapping_fn = policy_mapping_fn,
+      policies_to_train = policies_to_train
+    )
     self.algo_config = self.algo.config
     self.logdir = self.algo.logdir
     self.logger.warn(
