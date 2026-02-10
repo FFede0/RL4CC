@@ -27,7 +27,7 @@ class PoliciesGenerator:
     # environment).
     manual_policies_to_train = False
     policies_to_train = []
-    if "policies_to_train" in policy_config:
+    if policy_config is not None and "policies_to_train" in policy_config:
       manual_policies_to_train = True
       policies_to_train = policy_config.pop("policies_to_train")
     multiagent_config = {
