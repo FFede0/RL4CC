@@ -79,6 +79,21 @@ class Algorithm:
     self.logger.warn(
       f"`Algorithm` created; output directory: {self.logdir}"
     )
+  
+  def compute_single_action(self, obs, explore: bool = False):
+    """
+    Compute a single action from agent(s) that received an observation
+    """
+    action = None
+    if isinstance(obs, dict):
+      action = {}
+      for agent in obs:
+        action[agent] = self.get_policy(agent).compute_single_action(
+          obs[agent], explore = explore
+        )
+    else:
+      action = self.get_policy().compute_single_action(obs, explore = explore)
+    return action
 
   def get_policy(self, policy_id: str = None):
     """
