@@ -195,7 +195,7 @@ class FederatedTrainingExperiment(TrainingExperiment):
           true_it == 1 or 
             true_it % self.checkpoint_config["checkpoint_frequency"] == 0
         ):
-        last_chpt_dir = algo.save_checkpoint()
+        last_chpt_dir = self.save_checkpoint(algo)
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
       # save evaluation results every `evaluation_interval` iterations
       if true_it % self.evaluation_interval == 0:
@@ -209,7 +209,7 @@ class FederatedTrainingExperiment(TrainingExperiment):
       # move to the next iteration
       it += 1
     # save last checkpoint
-    last_chpt_dir = algo.save_checkpoint()
+    last_chpt_dir = self.save_checkpoint(algo)
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
     # perform final evaluation (if it has not just be performed)
     if true_it % self.evaluation_interval != 0:

@@ -96,7 +96,7 @@ class TrainingExperiment(BaseExperiment):
       # save checkpoint at the beginning and every `checkpoint_frequency` 
       # iterations
       if it == 1 or it % self.checkpoint_config["checkpoint_frequency"] == 0:
-        last_chpt_dir = algo.save_checkpoint()
+        last_chpt_dir = self.save_checkpoint(algo)
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
       # save evaluation results every `evaluation_interval` iterations
       if it % self.evaluation_interval == 0:
@@ -111,7 +111,7 @@ class TrainingExperiment(BaseExperiment):
       # move to the next iteration
       it += 1
     # save last checkpoint
-    last_chpt_dir = algo.save_checkpoint()
+    last_chpt_dir = self.save_checkpoint(algo)
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
     # perform final evaluation (if it has not just be performed)
     if (it - 1) % self.evaluation_interval != 0:
@@ -158,3 +158,12 @@ class TrainingExperiment(BaseExperiment):
           f"Stopping criterion `{key}` is not supported"
         )
     self.stop = stop_on_max_iter
+  
+  def save_checkpoint(self, algo: Algorithm) -> str:
+    """
+    Save an algorithm checkpoint
+    """
+    save_manual_checkpoints = self.exp_config.get(
+      "save_manual_checkpoints", False
+    )
+    return algo.save_checkpoint(manual = save_manual_checkpoints)
