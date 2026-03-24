@@ -212,6 +212,9 @@ class Algorithm:
       print(jj)
   
   def _load_manual_checkpoint(self, path: str):
+    """
+    Load a manually-saved checkpoint (algo state, weights, replay buffer)
+    """
     # load algorithm state
     checkpoint_file = os.path.join(path, "algo_state.pkl")
     with open(checkpoint_file, "rb") as f:
@@ -231,8 +234,7 @@ class Algorithm:
     # -- state
     self.algo.__setstate__(state)
     # -- policy target (if any)
-    agents = self.get_weights().keys()
-    for agent in agents:
+    for agent in self.algo.config.policies:
       try:
         self.get_policy(agent).update_target()
       except Exception as e:
