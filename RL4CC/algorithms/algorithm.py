@@ -13,13 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from RL4CC.utilities.common import NumpyEncoder, json_to_array_dict
 from RL4CC.algorithms.generators_factory import ACGfactory
 from RL4CC.utilities.common import write_config_file
 from RL4CC.log_and_report.rl4cc_logger import Logger
 
+from ray.rllib.policy.sample_batch import SampleBatch, MultiAgentBatch
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
-from ray.rllib.policy.policy import Policy
+import cloudpickle
+import json
 import os
 
 
@@ -109,12 +112,16 @@ class Algorithm:
       raise FileNotFoundError(
         f"ERROR: checkpoint path {path} does not exist or is invalid"
       )
-    self.algo = RayAlgorithm.from_checkpoint(
-      path,
-      policy_ids = policy_ids,
-      policy_mapping_fn = policy_mapping_fn,
-      policies_to_train = policies_to_train
-    )
+    # check if the checkpoint is a manual or automatic checkpoint
+    if os.path.exists(os.path.join(path, "MANUAL_CHECKPOINT")):
+      self._load_manual_checkpoint(path)
+    else:
+      self.algo = RayAlgorithm.from_checkpoint(
+        path,
+        policy_ids = policy_ids,
+        policy_mapping_fn = policy_mapping_fn,
+        policies_to_train = policies_to_train
+      )
     self.algo_config = self.algo.config
     self.logdir = self.algo.logdir
     self.logger.warn(
@@ -142,17 +149,47 @@ class Algorithm:
   def last_iteration(self) -> int:
     return self.algo.iteration
   
-  def save_checkpoint(self) -> str:
+  def save_checkpoint(self, manual: bool = False, path: str = None) -> str:
     """
     Save an `Algorithm` checkpoint (the checkpoint directory name is given 
-    by the last iteration number)
+    by the last iteration number); provide the parameter `manual = True` if 
+    the checkpoint should be manually generated instead of relying on the 
+    Ray RLLib implementation of `algo.save()`
     """
-    save_result = self.algo.save(
-      checkpoint_dir = os.path.join(
-        self.algo.logdir, f"checkpoints/{self.last_iteration()}"
-      )
+    checkpoint_dir = path if path is not None else os.path.join(
+      self.algo.logdir, f"checkpoints/{self.last_iteration()}"
     )
-    last_checkpoint_dir = save_result.checkpoint.path
+    last_checkpoint_dir = None
+    # automatic checkpoint
+    if not manual:
+      save_result = self.algo.save(checkpoint_dir = checkpoint_dir)
+      last_checkpoint_dir = save_result.checkpoint.path
+    else:
+      # manual checkpoint
+      os.makedirs(checkpoint_dir, exist_ok = True)
+      # -- algorithm state
+      algo_state = {
+        "algorithm_class": self.algo.__class__,
+        "config": self.algo.config.to_dict(),
+        "state": self.algo.get_state()
+      }
+      # -- replay buffer
+      replay_buffer = getattr(self.algo, "local_replay_buffer", None)
+      if replay_buffer:
+        algo_state["replay_buffer_state"] = replay_buffer.get_state()
+      # -- save
+      with open(os.path.join(checkpoint_dir, "algo_state.pkl"), "wb") as f:
+        cloudpickle.dump(algo_state, f)
+      # -- weights
+      weights = self.get_weights()
+      with open(os.path.join(checkpoint_dir, "weights.json"), "w") as ost:
+        json.dump(
+          weights, ost, indent = 2, cls = NumpyEncoder, sort_keys = True
+        )
+      # -- "manual checkpoint" indicator (for loading)
+      with open(os.path.join(checkpoint_dir, "MANUAL_CHECKPOINT"), "wb") as f:
+        pass
+      last_checkpoint_dir = checkpoint_dir
     self.logger.log(
       "an Algorithm checkpoint has been created inside directory: "
       f"'{last_checkpoint_dir}'", 1
@@ -173,3 +210,60 @@ class Algorithm:
       )
     else:
       print(jj)
+  
+  def _load_manual_checkpoint(self, path: str):
+    # load algorithm state
+    checkpoint_file = os.path.join(path, "algo_state.pkl")
+    with open(checkpoint_file, "rb") as f:
+      self.logger.log(f"Loading algorithm state from: {checkpoint_file}", 1)
+      algo_state = cloudpickle.load(f)
+    algo_cls = algo_state["algorithm_class"]
+    state = algo_state["state"]
+    # -- get configuration
+    config = algo_state["config"]
+    config["create_env_on_driver"] = False
+    config["disable_env_checking"] = True
+    config["callbacks"] = None
+    # create algorithm
+    self.algo = algo_cls(config = config)
+    # setup all algorithm components (including replay buffer)
+    self.algo.setup(config = config)
+    # -- state
+    self.algo.__setstate__(state)
+    # -- policy target (if any)
+    agents = self.get_weights().keys()
+    for agent in agents:
+      try:
+        self.get_policy(agent).update_target()
+      except Exception as e:
+        self.logger.warn(f"update_target not available for {agent} policy")
+    # -- model weights
+    self.set_weights(
+      json_to_array_dict(os.path.join(path, "weights.json"))
+    )
+    self.logger.log(
+      "Algorithm state and policy weights loaded successfully.", 2
+    )
+    # -- replay buffer (if any)
+    if "replay_buffer_state" in algo_state:
+      try:
+        old_state = algo_state["replay_buffer_state"]
+        if self.algo.local_replay_buffer is not None:
+          # wrap SampleBatches as MultiAgentBatches
+          if "_storage" in old_state and isinstance(old_state["_storage"],list):
+            wrapped = []
+            for sample in old_state["_storage"]:
+              if isinstance(sample, SampleBatch):
+                wrapped.append(MultiAgentBatch(
+                  {"default_policy": sample}, sample.count)
+                )
+              elif isinstance(sample, MultiAgentBatch):
+                wrapped.append(sample)
+              else:
+                raise ValueError(f"Unexpected batch type: {type(sample)}")
+            old_state["_storage"] = wrapped
+          self.algo.local_replay_buffer.set_state(old_state)
+      except Exception as e:
+        raise RuntimeError(
+          f"Warning: Replay buffer could not be restored: {e}"
+        )
