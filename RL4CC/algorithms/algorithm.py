@@ -18,7 +18,11 @@ from RL4CC.algorithms.generators_factory import ACGfactory
 from RL4CC.utilities.common import write_config_file
 from RL4CC.log_and_report.rl4cc_logger import Logger
 
-from ray.rllib.policy.sample_batch import SampleBatch, MultiAgentBatch
+from ray.rllib.policy.sample_batch import (
+  DEFAULT_POLICY_ID,
+  SampleBatch, 
+  MultiAgentBatch
+)
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
 import cloudpickle
@@ -80,7 +84,8 @@ class Algorithm:
     """
     Get the policy of the `Algorithm`
     """
-    return self.algo.get_policy(policy_id)
+    pid = policy_id if policy_id is not None else DEFAULT_POLICY_ID
+    return self.algo.get_policy(pid)
   
   def get_weights(self, policy_ids: list = None):
     """
