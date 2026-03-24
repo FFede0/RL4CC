@@ -193,7 +193,7 @@ class Algorithm:
       algo_state = {
         "algorithm_class": self.algo.__class__,
         "config": self.algo.config.to_dict(),
-        "state": self.algo.get_state()
+        "state": self.algo.__getstate__()
       }
       # -- replay buffer
       replay_buffer = getattr(self.algo, "local_replay_buffer", None)
