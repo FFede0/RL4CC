@@ -90,9 +90,11 @@ class Algorithm:
       for agent in obs:
         action[agent] = self.get_policy(agent).compute_single_action(
           obs[agent], explore = explore
-        )
+        )[0]
     else:
-      action = self.get_policy().compute_single_action(obs, explore = explore)
+      action = self.get_policy().compute_single_action(
+        obs, explore = explore
+      )[0]
     return action
 
   def get_policy(self, policy_id: str = None):
