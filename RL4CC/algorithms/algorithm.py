@@ -249,6 +249,7 @@ class Algorithm:
     config["create_env_on_driver"] = False
     config["disable_env_checking"] = True
     config["callbacks"] = None
+    config.pop("framework")
     # create algorithm
     self.algo = algo_cls(config = config)
     # setup all algorithm components (including replay buffer)
