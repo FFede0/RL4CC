@@ -169,7 +169,7 @@ algo = Algorithm(
 def is_alive():
   return {
     "message": "The agent is up & running!",
-    "endpoints": ["/action", "/train"],
+    "endpoints": ["/action"],
   }
 
 
