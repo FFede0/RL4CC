@@ -7,7 +7,7 @@ if [ -n "$APP_BOOTSTRAP_MODULES" ]; then
   echo "Running bootstrap modules: $APP_BOOTSTRAP_MODULES"
 
   # Split comma-separated list
-  IFS=',' read -ra MODULES <<< "$APP_BOOTSTRAP_MODULES"
+  IFS=',' read -ra MODULES << "$APP_BOOTSTRAP_MODULES"
 
   for module in "${MODULES[@]}"; do
     module_trimmed=$(echo "$module" | xargs)  # trim spaces
