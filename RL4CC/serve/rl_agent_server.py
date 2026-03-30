@@ -27,6 +27,7 @@ import numpy as np
 import datetime
 import json
 import os
+import traceback
 
 APP_BOOTSTRAP_MODULES = os.environ.get("APP_BOOTSTRAP_MODULES", "")
 if APP_BOOTSTRAP_MODULES:
@@ -101,7 +102,7 @@ def check_create_dirs(file: str, create: bool = True) -> None:
     # create the directories
     if create: os.makedirs(directory)
     # else raise an error
-    else: 
+    else:
       raise NotADirectoryError(
         f"The directory {directory}, where the file {file} should"
         " be created. does not exist."
@@ -191,7 +192,7 @@ def is_alive():
 @app.post("/action")
 def post_action_request(body: ActionRequest):
   """
-  Function getting a json with the current environment state and returning 
+  Function getting a json with the current environment state and returning
   the next agent(s) action(s).
   """
   # create a logger
@@ -221,6 +222,8 @@ def post_action_request(body: ActionRequest):
     )
     return dec_action
   except Exception as e:
+      logger.err(f"Exception: {e}")
+      logger.err(traceback.format_exc())
       raise HTTPException(status_code = 500, detail = str(e))
   finally:
     close_logger(logger)
