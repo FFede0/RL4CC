@@ -477,12 +477,13 @@ This lists the available endpoints. In particular,
 The `/action` endpoint allows to ask the agent(s) the next action to take, 
 given the current observation. 
 
-It expects a body including an `observation` dictionary with the current 
-observation the agent(s) should consider, and an `agent_parameters` including 
-additional configuration information. The currently available configuration 
-parameter is `explore`, to be set to `True` if the agent(s) is free to select 
-a random action (with some probability that depends on the loaded 
-algorithm), `False` if the agent(s) should fully exploit the loaded policy.
+It expects a body including an `observation` dictionary with the current
+observation the agent(s) should consider, and an `agent_parameters` including
+additional configuration information. The currently available configuration
+parameter is `explore` (default to `False`), to be set to `True` if the agent(s)
+is free to select a random action (with some probability that depends on the
+loaded algorithm), `False` if the agent(s) should fully exploit the loaded
+policy.
 
 The `observation` format must match the observation space used during 
 training. It supports both single and multi-agent setups (examples are 
