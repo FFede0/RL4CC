@@ -67,7 +67,7 @@ RUN mkdir -p /app/checkpoints /app/config /app/logs
 # ------------------------------------------------------------------
 # Copy additional files from context (and install modules if required)
 # ------------------------------------------------------------------
-COPY *.* /app
+COPY . /app
 RUN if [ -f /app/requirements.txt ]; then \
     echo "Installing additional Python dependencies from requirements.txt"; \
     pip install -r /app/requirements.txt; \
