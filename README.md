@@ -388,22 +388,22 @@ docker run \
   --name agentserver \
   --rm \
   -p 8000:8000 \
-  -v ${CHECKPOINT_DIR}:/models/checkpoint \
-  -v ${CONFIGURATION_FILE}:/config/config.json \
+  -v ${CHECKPOINT_DIR}:/app/models/checkpoint \
+  -v ${CONFIGURATION_FILE}:/app/config/config.json \
   --shm-size=1g \
   rl4cc/serve:26.03.27
 ```
 
 The service requires the following environment variables:
 - `CHECKPOINT_DIR`: path to the trained model checkpoint; by default, it is 
-set to `/models/checkpoint`, but it can be overwritten by adding 
+set to `/app/models/checkpoint`, but it can be overwritten by adding 
 `-e CHECKPOINT_DIR=some_other_path` to the `docker run` command (**note:** 
 in this case, the destination folder when mounting the volume should be 
 updated accordingly)
 - `CONFIGURATION_FILE`: experiment configuration file (ideally in the same 
 format discussed in the 
 [README](RL4CC/config_files/README.md#experiment-configuration)); by default, 
-it is set to `/config/config.json`, but it can be overwritten by adding 
+it is set to `/app/config/config.json`, but it can be overwritten by adding 
 `-e CONFIGURATION_FILE=some_other_path` to the `docker run` command (**note:** 
 in this case, the destination folder when mounting the volume should be 
 updated accordingly).
@@ -477,12 +477,13 @@ This lists the available endpoints. In particular,
 The `/action` endpoint allows to ask the agent(s) the next action to take, 
 given the current observation. 
 
-It expects a body including an `observation` dictionary with the current 
-observation the agent(s) should consider, and an `agent_parameters` including 
-additional configuration information. The currently available configuration 
-parameter is `explore`, to be set to `True` if the agent(s) is free to select 
-a random action (with some probability that depends on the loaded 
-algorithm), `False` if the agent(s) should fully exploit the loaded policy.
+It expects a body including an `observation` dictionary with the current
+observation the agent(s) should consider, and an `agent_parameters` including
+additional configuration information. The currently available configuration
+parameter is `explore` (default to `False`), to be set to `True` if the agent(s)
+is free to select a random action (with some probability that depends on the
+loaded algorithm), `False` if the agent(s) should fully exploit the loaded
+policy.
 
 The `observation` format must match the observation space used during 
 training. It supports both single and multi-agent setups (examples are 

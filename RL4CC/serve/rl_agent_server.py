@@ -17,6 +17,8 @@ from RL4CC.utilities.common import load_config_file, NumpyEncoder
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.algorithm import Algorithm
 
+from ray.rllib.connectors.agent.obs_preproc import ObsPreprocessorConnector
+from ray.rllib.utils.typing import AgentConnectorDataType
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from gymnasium.spaces import Dict as gdict
 from fastapi.responses import JSONResponse
@@ -27,6 +29,7 @@ import numpy as np
 import datetime
 import json
 import os
+import traceback
 
 APP_BOOTSTRAP_MODULES = os.environ.get("APP_BOOTSTRAP_MODULES", "")
 if APP_BOOTSTRAP_MODULES:
@@ -101,7 +104,7 @@ def check_create_dirs(file: str, create: bool = True) -> None:
     # create the directories
     if create: os.makedirs(directory)
     # else raise an error
-    else: 
+    else:
       raise NotADirectoryError(
         f"The directory {directory}, where the file {file} should"
         " be created. does not exist."
@@ -124,16 +127,39 @@ def date_to_string() -> str:
   datetimeStr = x.strftime("%Y-%m-%d_%H-%M-%S.%f")
   return datetimeStr
 
+def preprocess(obs, policy):
+  """Return the given observation preprocessed using the policy's preprocessing pipeline.
+
+  The main use case of this function is to convert a dict observation space to a
+  flatten 1D array. The output can be passed directly to the model.
+  """
+  # How the preprocessing is done here is the result of hours of reverse-engineering
+  # Ray RLlib code...
+  pp = policy.agent_connectors[ObsPreprocessorConnector]
+  pp = pp[0]
+
+  _input_dict = {"obs": obs}
+
+  acd = AgentConnectorDataType("0", "0", _input_dict)
+  pp.reset(env_id="0")
+  ac_o = pp([acd])[0]
+  obs_pp = ac_o.data["obs"]
+
+  return obs_pp
 
 def format_observation(unformatted_obs: dict) -> dict:
   # format observation as required by the algorithm
   observation = {}
   for agent in algo.algo_config.policies:
     agent_policy = algo.get_policy(agent)
-    obs_space = agent_policy.observation_space
+    obs_space = algo.algo.env_runner.spaces[agent][0] # [1] is action space, [0] is obs space.
     # -- multi-agent setting
     if agent != DEFAULT_POLICY_ID:
       # ---- dict-like spaces
+      if unformatted_obs.get(agent) is None:
+          # Skip agents with missing observation.
+          continue
+
       if isinstance(obs_space, dict) or isinstance(obs_space, gdict):
         for obs_key, obs_val in unformatted_obs[agent].items():
           if agent not in observation:
@@ -141,11 +167,14 @@ def format_observation(unformatted_obs: dict) -> dict:
           observation[agent][obs_key] = np.array(obs_val).reshape(
             obs_space[obs_key].shape
           )
+
+        # The obs dict must be converted to 1D array.
+        observation[agent] = preprocess(observation[agent], agent_policy)
       # ----
-      else:
-        if len(unformatted_obs[agent]) == 1:
-          obs_val = list(unformatted_obs[agent].values())[0]
-          observation[agent] = np.array(obs_val).reshape(obs_space.shape)
+      elif len(unformatted_obs[agent]) == 1:
+        obs_val = list(unformatted_obs[agent].values())[0]
+        observation[agent] = np.array(obs_val).reshape(obs_space.shape)
+
     else:
       # ---- dict-like spaces
       if isinstance(obs_space, dict) or isinstance(obs_space, Dict):
@@ -191,7 +220,7 @@ def is_alive():
 @app.post("/action")
 def post_action_request(body: ActionRequest):
   """
-  Function getting a json with the current environment state and returning 
+  Function getting a json with the current environment state and returning
   the next agent(s) action(s).
   """
   # create a logger
@@ -209,6 +238,7 @@ def post_action_request(body: ActionRequest):
     logger.log("Formatting observation...", 0)
     observation = format_observation(unformatted_obs)
     logger.log("Observation formatted.", 1)
+    logger.log(f"  Formatted observation: {observation}", 2)
     # require action
     logger.log("Interrogating the agent...", 0)
     action = algo.compute_single_action(
@@ -221,6 +251,8 @@ def post_action_request(body: ActionRequest):
     )
     return dec_action
   except Exception as e:
+      logger.err(f"Exception: {e}")
+      logger.err(traceback.format_exc())
       raise HTTPException(status_code = 500, detail = str(e))
   finally:
     close_logger(logger)
@@ -248,3 +280,4 @@ def post_action_request(body: ActionRequest):
 #     raise HTTPException(status_code=500, detail=str(e))
 #   finally:
 #     close_logger(logger)
+
