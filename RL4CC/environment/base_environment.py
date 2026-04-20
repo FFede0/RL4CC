@@ -43,6 +43,8 @@ class BaseEnvironment(gym.Env):
     self.current_time = self.min_time
     # seed for randomization (None)
     seed = None
+    # experiment `logdir`
+    self.exp_logdir = env_config["exp_logdir"]
     return seed
   
   def define_observation_space(self):

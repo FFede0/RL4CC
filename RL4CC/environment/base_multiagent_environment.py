@@ -48,6 +48,8 @@ class BaseMultiAgentEnvironment(MultiAgentEnv):
     seed = None
     # list of agent names (example: agent_0,...,agent_A)
     self.agents = env_config["agents"]
+    # experiment `logdir`
+    self.exp_logdir = env_config["exp_logdir"]
     return seed
   
   def define_observation_spaces(self):

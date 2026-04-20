@@ -137,9 +137,12 @@ class AlgoConfigGenerator(ABC):
         env_config["env_name"],
         # pass-along config dictionary avoiding env_name
         env_config = {
-          k: self.interpret_tune_config(
-            k, v
-          ) for k,v in env_config.items() if k != "env_name"
+          **{
+            k: self.interpret_tune_config(
+              k, v
+            ) for k,v in env_config.items() if k != "env_name"
+          },
+          "exp_logdir": exp_logdir
         }
       )
     )
