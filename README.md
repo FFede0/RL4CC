@@ -38,6 +38,11 @@ It includes the following components:
   to define automatic hyperparameter tuning, as explained in
   the following [section](#how-to-start-hyperparameter-tuning).
 
+- a [`FederatedTrainingExperiment`](RL4CC/experiments/federated_train.py) 
+  and a [`GossipTrainingExperiment`](RL4CC/experiments/gossip_train.py) class, 
+  to be used as entrypoint to run experiments with federated and gossip RL, as 
+  explained in the following [section](#federated-and-gossip-rl).
+
 - a simple [`ProgressReporter`](RL4CC/log_and_report/base_tune_progress_reporter.py) for 
   Ray Tune, which periodically logs information related to the number of 
   executed trials, the hardware resources usage and the optimization process 
@@ -51,7 +56,19 @@ It includes the following components:
   print `INFO`, `WARNING` and `ERROR` messages in a standard format.
 
 Detailed information about these components are provided in the following
-sections.
+sections:
+- [Install and build RL4CC](#build-the-rl4cc-library)
+- [How to start a training experiment](#how-to-start-a-training-experiment)
+  - [Training experiments with a custom Environment](#training-experiments-with-a-custom-environment)
+  - [Training experiments with a custom model](#training-experiments-with-a-custom-model)
+  - [Training experiments with plots](#training-experiments-with-plots)
+  - [Structure of the expected outputs](#expected-outputs)
+- [How to start federated/gossip RL experiments](#federated-and-gossip-rl)
+- [How to start hyperparameter tuning](#how-to-start-hyperparameter-tuning)
+- [The RL4CC Logger](#the-rl4cc-logger)
+- [How to add new RL methods](#how-to-add-new-rl-methods)
+- [How to contribute to RL4CC](#how-to-contribute-to-rl4cc)
+  - [Regression tests](#regression-tests)
 
 ## Build the RL4CC library
 
@@ -259,6 +276,46 @@ if nothing is provided). These include:
   - custom values specified by properly implementing the training callbacks
     (see, e.g., the provided [`BaseCallbacks`
     class](RL4CC/callbacks/base_callbacks.py)).
+
+## Federated and Gossip RL
+
+Federated training is implemented by the `FederatedTrainingExperiment` class, 
+which extends `TrainingExperiment` and introduces a two-level loop composed 
+of federation rounds and local training iterations. At the beginning of 
+round 1, the class creates a dedicated `federation_folder` inside the 
+experiment log directory. From round 2 onward, the algorithm loads 
+`agg_weights.json` from the previous round before starting local training.
+
+The (automatically generated) log directory name for federated experiments 
+uses the pattern `{algo}fed_{env_name}_{timestamp}`. During each round, the 
+class stores the local weights in `federation_folder/round_<k>/weights.json` 
+and the aggregated weights in `federation_folder/round_<k>/agg_weights.json`. 
+It also records the last federation round, round durations, experiment start 
+and end timestamps, total duration, and average time per round in the 
+progress file.
+
+The federated aggregation logic inspects the model parameters layer by 
+layer across all agents and averages only the layers that are shared by all 
+agents, not marked as private, selected for aggregation, and shape-compatible.
+
+If a layer is missing for some agent, has inconsistent shapes across agents, 
+or belongs to a private or excluded subnetwork, that layer remains local and 
+is copied back only to the corresponding agent-specific model. The actual 
+aggregation rule used by default is the arithmetic mean computed over 
+the stacked parameter tensors.
+
+Gossip training is implemented by `GossipTrainingExperiment`, which extends 
+the federated experiment and reuses the same local-training and aggregation 
+helper functions. The key difference is that aggregation is no longer global 
+across all agents at each round. Instead, each agent samples a subset of 
+neighbors from a user-provided neighborhood graph and only those sampled 
+models participate in the aggregation for that agent in that round.
+
+The (automatically generated) log directory name for gossip experiments uses 
+the pattern `{algo}gossip_{env_name}_{timestamp}`. As in federated training, 
+each round saves `weights.json` and `agg_weights.json` inside the round 
+folder. In addition, gossip training stores `who_receives_from_whom.json`, 
+which records the random communication pattern used in that round.
 
 ## How to start hyperparameter tuning
 

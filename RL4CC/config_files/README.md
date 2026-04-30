@@ -5,7 +5,9 @@ Each experiment is controlled by a base configuration, a dictionary, called
 name of the algorithm to use, whether to start from an existing checkpoint,
 etc.).
 
-RL4CC experiment classes (`BaseExperiment`, `TrainingExperiment` and
+RL4CC experiment classes (`BaseExperiment`, `TrainingExperiment` -- with 
+its two variants for [Federated RL](../experiments/federated_train.py) and 
+[Gossip RL](../experiments/gossip_train.py) -- and
 `TuningExperiment`) can read the `exp_config` in two ways:
 
 1. From a JSON file (like `exp_config.json`) using the `exp_config_file`
@@ -21,7 +23,20 @@ are available), the configuration is completed by two (or three) additional
 files, which provide information about the `Environment`, the Ray `Algorithm`
 and, possibly, the `Tuner` configuration.
 
-The corresponding structure is detailed in the following.
+The corresponding structure is detailed in the following sections:
+- [How to configure the environment](#environment-configuration)
+  - [Multi-agent environments](#multi-agent-environments)
+  - [Environments for gossip RL](#gossip-rl)
+- [How to configure the RL algorithm](#ray-algorithm-configuration)
+  - [Custom policy models](#how-to-use-custom-policy-models)
+- [How to configure hyperparameter tuning](#configure-hyperparameter-tuning)
+  - [The tuner](#tuner-configuration)
+  - [The search space](#configuring-the-search-space-for-parameters)
+- [How to configure the experiment](#experiment-configuration)
+  - [Federated RL experiments](#federated-rl-experiments)
+  - [Gossip RL experiments](#gossip-rl-experiments)
+  - [Experiment logging](#configure-experiment-logging)
+
 
 ### `Environment` configuration
 
@@ -69,6 +84,30 @@ of agents names or IDs. As an example:
   "max_time": 3600,
   "time_step": 10,
   "agents": ["agent_0", "agent_1", "agent_2"]
+}
+```
+
+#### Gossip RL
+
+For gossip experiments, multi-agent environments must also define a 
+neighborhood  mapping in  env_config , because the gossip training class 
+reads that structure to determine which agents can exchange models during 
+each round.
+
+A typical example (for a fully-connected network) is:
+
+```
+{
+  "env_name": "BaseMultiAgentEnvironment",
+  "min_time": 0,
+  "max_time": 3600,
+  "time_step": 10,
+  "agents": ["agent_0", "agent_1", "agent_2"],
+  "neighborhood": {
+    "agent_0": ["agent_1", "agent_2"],
+    "agent_1": ["agent_0", "agent_2"],
+    "agent_2": ["agent_0", "agent_1"]
+  }
 }
 ```
 
@@ -413,9 +452,13 @@ a hyperparameter tuning experiment is defined. Note, however, that:
 - the `stopping_criteria` dictionary must be provided list the (possibly,
   multiple) stopping criteria to be considered during the training. The only
   exception is when a `TuningExperiment` is restored from a checkpoint, when the
-  stopping criterion is copied from the previous run. The available termination
-  conditions are:
-  - `max_iterations`: the maximum number of training iterations.
+  stopping criterion is copied from the previous run. For standard training 
+  and hyperparameter tuning experiments, the available termination condition 
+  `max_iterations`, which denotes the maximum number of training iterations. 
+  Federated and gossip RL training experiments require both `max_iterations` 
+  and `max_federation_rounds`: the federated stopping logic checks both the 
+  local training horizon (`max_iterations` to be run in each round) and the 
+  number of federation rounds to consider.
 
 Additional parameters are:
 
@@ -453,6 +496,9 @@ Additional parameters are:
 - `checkpoint_interval`: after how many iterations an algorithm checkpoint
   should be saved. **Important note:** one checkpoint is always saved at the
   end of the training loop, even if no parameter is provided here.
+- `save_manual_checkpoints`: if `True`, saves checkpoints by dumping the whole 
+  `Algorithm` state instead of relying on Ray RLLib checkpointing mechanism. 
+  This solves some ongoing issues with performance drop after reloading.
 - `plot_interval`: TBA
 
 > [!WARNING]
@@ -493,6 +539,114 @@ Example (for a hyperparameter tuning experiment):
   }
 }
 ```
+
+#### Federated RL experiments
+
+The following additional, non-mandatory exp_config keys are supported by 
+federated training:
+- `n_train_iterations_before_federation_starts`: extra number of local 
+  training iterations to execute before starting the first federation round.
+- `networks_to_aggregate`: list of layer-name prefixes that identify which 
+  subnetworks can be aggregated. Its default value is `["all"]`, meaning that 
+  all subnetworks weights are averaged in each round (unless included in the 
+  list of private layers).
+- `private_layers`: dual to the former, list of layer-name prefixes that must 
+  remain local and are never aggregated.
+
+> [!WARNING]
+> `networks_to_aggregate` and `private_layers` cannot overlap. An error is 
+> raised if the same prefix appears in both lists.
+
+A minimal example of experiment configuration for federated training is:
+
+```
+{
+  "algorithm": "PPO",
+  "env_config_file": "config_files/env_config.json",
+  "ray_config_file": "config_files/ray_config.json",
+  "logdir": "OUTPUT",
+  "evaluation_interval": 5,
+  "checkpoint_interval": 5,
+  "networks_to_aggregate": ["policy", "encoder"],
+  "private_layers": ["value_head"],
+  "n_train_iterations_before_federation_starts": 10,
+  "stopping_criteria": {
+    "max_iterations": 5,
+    "max_federation_rounds": 20
+  }
+}
+```
+
+In the previous example, all layers whose names start with `policy` or 
+`encoder` are candidates for aggregation, while the `value_head` layers are 
+kept local to each agent. The first federation round performs 10 + 5 local 
+iterations because the warm-up term is added only before the first aggregation 
+step, while later rounds run 5 training iterations each.
+
+#### Gossip RL experiments
+
+[As already mentioned](#environment-configuration), the environment 
+configuration for gossip experiments must include a `neighborhood` dictionary 
+mapping each agent to the list of agents it may sample from for aggregation. 
+
+The gossip experiment adds the following non-mandatory configuration fields 
+on top of [the federated ones](#federated-rl-experiments):
+- `n_models_to_share`: by default, 1. Denotes the number of neighbors sampled 
+  (without replacement) for aggregation by each agent at each round.
+- `exp_seed`: seed used to initialize the NumPy random generator that selects 
+  the neighbors to ensure reproducibility.
+
+> [!WARNING]
+> During validation, the class reads this structure from `env_config`, reads 
+> `n_models_to_share` from `exp_config`, and checks that the requested number 
+> of sampled neighbors does not exceed the degree of any agent. 
+
+A minimal example is:
+
+```
+{
+  "algorithm": "PPO",
+  "env_config_file": "config_files/env_config_gossip.json",
+  "ray_config_file": "config_files/ray_config.json",
+  "logdir": "OUTPUT",
+  "evaluation_interval": 5,
+  "checkpoint_interval": 5,
+  "networks_to_aggregate": ["policy"],
+  "private_layers": ["critic"],
+  "n_models_to_share": 1,
+  "exp_seed": 4850,
+  "n_train_iterations_before_federation_starts": 10,
+  "stopping_criteria": {
+    "max_iterations": 5,
+    "max_federation_rounds": 20
+  }
+}
+```
+
+assuming the corresponding neighborhood defined in the environment 
+configuraiton:
+
+```
+{
+  .
+  .
+  .
+  "agents": ["agent_0", "agent_1", "agent_2", "agent_3"],
+  "neighborhood": {
+    "agent_0": ["agent_1", "agent_2"],
+    "agent_1": ["agent_0", "agent_3"],
+    "agent_2": ["agent_0", "agent_3"],
+    "agent_3": ["agent_1", "agent_2"]
+  }
+}
+```
+
+In this configuration, each agent samples one neighbor per round according 
+to `neighborhood`, aggregates only the layers whose names start with `policy`, 
+and keeps layers matching `critic` private. Because the random neighbor choice 
+is driven by a seeded NumPy generator, using the same `exp_seed` makes the 
+communication pattern reproducible across runs, provided that the rest of the 
+setup is unchanged.
 
 #### Configure experiment logging
 
