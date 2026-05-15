@@ -190,6 +190,12 @@ A more comprehensive list is provided in
 > to the path to the callbacks class as it would be reported while importing the
 > module (e.g., `"callbacks.base_callbacks.BaseCallbacks"`).
 
+> [!CAUTION]
+> Due to a known [issue](../../ray_issues_to_track.md) with RLLib old API 
+> stack (i.e., the one currently supported by RL4CC), setting 
+> `evaluation_num_workers` in the Ray config results in an inconsistent 
+> number of evaluation episodes. 
+
 Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and
 [DQN](ray_config_dqn.json.template) are provided.
 
