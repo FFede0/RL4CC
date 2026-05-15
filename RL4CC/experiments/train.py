@@ -100,9 +100,9 @@ class TrainingExperiment(BaseExperiment):
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
       # save evaluation results every `evaluation_interval` iterations
       if it % self.evaluation_interval == 0:
+        eval_result = result.get("evaluation") or algo.evaluate()
         self.update_evaluation_metrics_file(
-          result["training_iteration"], 
-          result.get("evaluation", algo.evaluate())
+          result["training_iteration"], eval_result
         )
       # plot results at the beginning and every `plot_interval` iterations
       if it == 1 or it % self.plot_interval == 0:
