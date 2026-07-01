@@ -240,10 +240,9 @@ def post_action_request(body: ActionRequest):
     logger.log("Observation formatted.", 1)
     logger.log(f"  Formatted observation: {observation}", 2)
     # require action
-    logger.log("Interrogating the agent...", 0)
-    action = algo.compute_single_action(
-      observation, agent_parameters.get("explore", False)
-    )
+    explore = agent_parameters.get("explore", False)
+    logger.log(f"Interrogating the agent (explore={explore})...", 0)
+    action = algo.compute_single_action(observation, explore)
     logger.log(f"Chosen action: {action}", 2)
     logger.log("Agent interrogated.", 1)
     dec_action = JSONResponse(
