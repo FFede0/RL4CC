@@ -22,9 +22,9 @@ from ray.rllib.utils.typing import AgentConnectorDataType
 from ray.rllib.policy.sample_batch import DEFAULT_POLICY_ID
 from gymnasium.spaces import Dict as gdict
 from fastapi.responses import JSONResponse
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import numpy as np
 import datetime
 import json
@@ -218,10 +218,12 @@ def is_alive():
 
 
 @app.post("/action")
-def post_action_request(body: ActionRequest):
+def post_action_request(body: ActionRequest, explore: Optional[bool] = Header(default=False)):
   """
   Function getting a json with the current environment state and returning
   the next agent(s) action(s).
+
+  If `explore` is set to `False`, the returned action(s) is(are) deterministic.
   """
   # create a logger
   logger = build_logger("action")
@@ -240,9 +242,9 @@ def post_action_request(body: ActionRequest):
     logger.log("Observation formatted.", 1)
     logger.log(f"  Formatted observation: {observation}", 2)
     # require action
-    logger.log("Interrogating the agent...", 0)
+    logger.log(f"Interrogating the agent (explore={explore})...", 0)
     action = algo.compute_single_action(
-      observation, agent_parameters.get("explore", False)
+      observation, agent_parameters.get("explore", explore)
     )
     logger.log(f"Chosen action: {action}", 2)
     logger.log("Agent interrogated.", 1)
