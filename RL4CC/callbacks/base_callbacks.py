@@ -98,7 +98,9 @@ class BaseCallbacks(DefaultCallbacks):
             episode.user_data[f"{key}_{agent}"].append(val)
     except AttributeError:
       for key in self.RELEVANT_KEYS:
-        val = episode.last_info_for()[key]
+        val = None
+        if key in episode.last_info_for():
+          val = episode.last_info_for()[key]
         if isinstance(val, np.ndarray):
           val = val.tolist()
         # add to user_data
@@ -137,7 +139,13 @@ class BaseCallbacks(DefaultCallbacks):
     except AttributeError:
       for key in self.RELEVANT_KEYS:
         episode.hist_data[key] = episode.user_data[key]
-        episode.custom_metrics[f"{key}_avg"] = np.mean(episode.user_data[key])
+        if episode.user_data[key] is not None:
+          try:
+            episode.custom_metrics[f"{key}_avg"] = np.mean(
+              episode.user_data[key][:-1]
+            )
+          except Exception:
+            pass
     # add worker index
     episode.hist_data["worker_index"] = episode.user_data["worker_index"]
   

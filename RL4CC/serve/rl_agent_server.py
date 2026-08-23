@@ -38,6 +38,13 @@ if APP_BOOTSTRAP_MODULES:
     if module:
       __import__(module)
 
+APP_BOOTSTRAP_MODULES = os.environ.get("APP_BOOTSTRAP_MODULES", "")
+if APP_BOOTSTRAP_MODULES:
+  for module in APP_BOOTSTRAP_MODULES.split(","):
+    module = module.strip()
+    if module:
+      __import__(module)
+
 
 ##############################################################################
 # CONFIG
