@@ -193,7 +193,7 @@ class Algorithm:
       algo_state = {
         "algorithm_class": self.algo.__class__,
         "config": self.algo.config.to_dict(),
-        "state": self.algo.get_state()
+        "state": self.algo.__getstate__()
       }
       # -- replay buffer
       replay_buffer = getattr(self.algo, "local_replay_buffer", None)
@@ -248,6 +248,7 @@ class Algorithm:
     config = algo_state["config"]
     config["create_env_on_driver"] = False
     config["disable_env_checking"] = True
+    config.pop("framework")
     # create algorithm
     self.algo = algo_cls(config = config)
     # setup all algorithm components (including replay buffer)

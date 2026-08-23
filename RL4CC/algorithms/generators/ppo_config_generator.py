@@ -62,10 +62,12 @@ class PPOConfigGenerator(AlgoConfigGenerator):
     if "batch_size" in all_params:
       batch_size = all_params.pop("batch_size")
       all_params["sgd_minibatch_size"] = batch_size
+      all_params["minibatch_size"] = batch_size
     # number of sgd iterations
     if "num_train_batches" in all_params:
       num_batches = all_params.pop("num_train_batches")
       all_params["num_sgd_iter"] = num_batches
+      all_params["num_epochs"] = num_batches
   
   def count_sampled_steps(
       self, algo_config: AlgorithmConfig
