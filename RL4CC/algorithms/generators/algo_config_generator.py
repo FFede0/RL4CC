@@ -136,7 +136,14 @@ class AlgoConfigGenerator(ABC):
       .environment(
         env_config["env_name"],
         # pass-along config dictionary avoiding env_name
-        env_config = {k: v for k,v in env_config.items() if k != "env_name"}
+        env_config = {
+          **{
+            k: self.interpret_tune_config(
+              k, v
+            ) for k,v in env_config.items() if k != "env_name"
+          },
+          "exp_logdir": exp_logdir
+        }
       )
     )
     # process the configuration parameters
@@ -148,7 +155,7 @@ class AlgoConfigGenerator(ABC):
       policy_generator = PoliciesGenerator()
       all_params["multiagent"] = policy_generator.generate_multiagent_config(
         agents = env_config["agents"],
-        policy_config = None
+        policy_config = all_params.pop("multiagent_policies_config", None)
       )
       # -- add the number of agents to the custom model configuration
       cm = all_params.get("model", {}).get("custom_model")
@@ -168,7 +175,9 @@ class AlgoConfigGenerator(ABC):
       if len(eval_config) > 0:
         algo_config.evaluation(
           evaluation_config = AlgorithmConfig.overrides(
-            env_config = eval_config
+            env_config = {
+              k: self.interpret_tune_config(k,v) for k,v in eval_config.items()
+            }
           )
         )
     # validate the number of collected and trained steps
@@ -205,8 +214,11 @@ class AlgoConfigGenerator(ABC):
         # check the existence of Tuning Strings, convert them to tune objects 
         # wherever they exist
         value = self.interpret_tune_config(key, value)
-        if isinstance(value, dict):
-          all_params.update(value)
+        if key != "multiagent_policies_config":
+          if isinstance(value, dict):
+            all_params.update(value)
+          else:
+            all_params.update({key: value})
         else:
           all_params.update({key: value})
     # manage "special" keys
@@ -248,6 +260,19 @@ class AlgoConfigGenerator(ABC):
       self.convert_rollout_parameters(all_params, env_config)
       self.convert_resources_parameters(all_params)
       self.convert_training_parameters(all_params)
+      # -- for multi-agent policies config
+      if "multiagent_policies_config" in all_params:
+        for agent in all_params["multiagent_policies_config"]:
+          self.convert_rollout_parameters(
+            all_params["multiagent_policies_config"][agent], 
+            env_config
+          )
+          self.convert_resources_parameters(
+            all_params["multiagent_policies_config"][agent]
+          )
+          self.convert_training_parameters(
+            all_params["multiagent_policies_config"][agent]
+          )
     # process the evaluation interval
     self.convert_evaluation_parameters(all_params, env_config, eval_interval)
     # manage the debugging configuration, creating the experiment logdir 
@@ -378,6 +403,14 @@ class AlgoConfigGenerator(ABC):
     if "evaluation_config" in all_params:
       all_params["evaluation_config"] = self.generate_eval_config(
         env_config, all_params["evaluation_config"]
+      )
+    # warn about potential issue with `evaluation_num_workers`
+    if "evaluation_num_workers" in all_params:
+      self.logger.warn(
+        "setting `evaluation_num_workers` may result in an inconsistent "
+        f"number of evaluation {unit}. It is recommended to avoid defining "
+        "the number of workers and let Ray sort it out. See "
+        "ray_issues_to_track.md for details"
       )
 
   def convert_resources_parameters(self, all_params):

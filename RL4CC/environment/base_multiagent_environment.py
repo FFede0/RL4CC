@@ -48,13 +48,15 @@ class BaseMultiAgentEnvironment(MultiAgentEnv):
     seed = None
     # list of agent names (example: agent_0,...,agent_A)
     self.agents = env_config["agents"]
+    # experiment `logdir`
+    self.exp_logdir = env_config["exp_logdir"]
     return seed
   
   def define_observation_spaces(self):
     """
     Define the environment observation space(s)
     """
-    self.observation_space = Dict({
+    self._observation_space = Dict({
       agent: Box(
         low = self.min_time, 
         high = self.max_time, 
@@ -62,14 +64,22 @@ class BaseMultiAgentEnvironment(MultiAgentEnv):
       ) for agent in self.agents
     })
   
+  @property
+  def observation_space(self):
+    return self._observation_space
+  
   def define_action_spaces(self):
     """
     Define the environment action space(s)
     """
     # {do nothing}
-    self.action_space = Dict({
+    self._action_space = Dict({
       agent: Discrete(1) for agent in self.agents
     })
+  
+  @property
+  def action_space(self):
+    return self._action_space
   
   def observation(self):
     """

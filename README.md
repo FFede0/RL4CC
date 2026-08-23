@@ -34,9 +34,14 @@ It includes the following components:
   trainable and by a `TuneConfig` and `RunConfig`
   [generator](RL4CC/algorithms/generators/tune_config_generator.py).
 
-- a [`TuningExperiment`](RL4CC/experiments/tune.py) class, to be used as entrypoint
-  to define automatic hyperparameter tuning, as explained in
+- a [`TuningExperiment`](RL4CC/experiments/tune.py) class, to be used as 
+  entrypoint to define automatic hyperparameter tuning, as explained in
   the following [section](#how-to-start-hyperparameter-tuning).
+
+- a [`FederatedTrainingExperiment`](RL4CC/experiments/federated_train.py) 
+  and a [`GossipTrainingExperiment`](RL4CC/experiments/gossip_train.py) class, 
+  to be used as entrypoint to run experiments with federated and gossip RL, as 
+  explained in the following [section](#federated-and-gossip-rl).
 
 - a simple [`ProgressReporter`](RL4CC/log_and_report/base_tune_progress_reporter.py) for 
   Ray Tune, which periodically logs information related to the number of 
@@ -51,7 +56,24 @@ It includes the following components:
   print `INFO`, `WARNING` and `ERROR` messages in a standard format.
 
 Detailed information about these components are provided in the following
-sections.
+sections:
+- [Install and build RL4CC](#build-the-rl4cc-library)
+- [How to start a training experiment](#how-to-start-a-training-experiment)
+  - [Training experiments with a custom Environment](#training-experiments-with-a-custom-environment)
+  - [Training experiments with a custom model](#training-experiments-with-a-custom-model)
+  - [Training experiments with plots](#training-experiments-with-plots)
+  - [Structure of the expected outputs](#expected-outputs)
+- [How to start federated/gossip RL experiments](#federated-and-gossip-rl)
+- [How to start hyperparameter tuning](#how-to-start-hyperparameter-tuning)
+- [The RL4CC Logger](#the-rl4cc-logger)
+- [How to add new RL methods](#how-to-add-new-rl-methods)
+- [How to contribute to RL4CC](#how-to-contribute-to-rl4cc)
+  - [Regression tests](#regression-tests)
+
+Additionally, RL4CC enables to serve pre-trained RL models (available as 
+checkpoints) through a Web API that can be deployed as a Docker container. 
+Additional information are provided in the 
+["serve"](#use-rl4cc-to-serve-pre-trained-rl-agents) section.
 
 ## Build the RL4CC library
 
@@ -69,9 +91,16 @@ to install RL4CC as a package.
 Now by checking the installed packages with `pip3 freeze`, you will notice that 
 RL4CC is among the dependencies. 
 
+> [!NOTE]
+> To download and install the RL4CC library using `pip`, add to your 
+> requirements file `git+https://github.com/FFede0/RL4CC.git` (or 
+> `git+https://github.com/FFede0/RL4CC.git@test_ray2.40.0` to install a 
+> specific branch version).
+
 ## How to start a training experiment
 
-To define and start a training experiment exploiting one of the available algorithms:
+To define and start a training experiment exploiting one of the available 
+algorithms:
 
 1. define the `exp_config` configuration (and, if no previous checkpoint is
    provided, the `env_config` and `ray_config` configurations) as detailed [in
@@ -256,6 +285,46 @@ if nothing is provided). These include:
     (see, e.g., the provided [`BaseCallbacks`
     class](RL4CC/callbacks/base_callbacks.py)).
 
+## Federated and Gossip RL
+
+Federated training is implemented by the `FederatedTrainingExperiment` class, 
+which extends `TrainingExperiment` and introduces a two-level loop composed 
+of federation rounds and local training iterations. At the beginning of 
+round 1, the class creates a dedicated `federation_folder` inside the 
+experiment log directory. From round 2 onward, the algorithm loads 
+`agg_weights.json` from the previous round before starting local training.
+
+The (automatically generated) log directory name for federated experiments 
+uses the pattern `{algo}fed_{env_name}_{timestamp}`. During each round, the 
+class stores the local weights in `federation_folder/round_<k>/weights.json` 
+and the aggregated weights in `federation_folder/round_<k>/agg_weights.json`. 
+It also records the last federation round, round durations, experiment start 
+and end timestamps, total duration, and average time per round in the 
+progress file.
+
+The federated aggregation logic inspects the model parameters layer by 
+layer across all agents and averages only the layers that are shared by all 
+agents, not marked as private, selected for aggregation, and shape-compatible.
+
+If a layer is missing for some agent, has inconsistent shapes across agents, 
+or belongs to a private or excluded subnetwork, that layer remains local and 
+is copied back only to the corresponding agent-specific model. The actual 
+aggregation rule used by default is the arithmetic mean computed over 
+the stacked parameter tensors.
+
+Gossip training is implemented by `GossipTrainingExperiment`, which extends 
+the federated experiment and reuses the same local-training and aggregation 
+helper functions. The key difference is that aggregation is no longer global 
+across all agents at each round. Instead, each agent samples a subset of 
+neighbors from a user-provided neighborhood graph and only those sampled 
+models participate in the aggregation for that agent in that round.
+
+The (automatically generated) log directory name for gossip experiments uses 
+the pattern `{algo}gossip_{env_name}_{timestamp}`. As in federated training, 
+each round saves `weights.json` and `agg_weights.json` inside the round 
+folder. In addition, gossip training stores `who_receives_from_whom.json`, 
+which records the random communication pattern used in that round.
+
 ## How to start hyperparameter tuning
 
 Hyperparameter Tuning is an integration of the Ray Tune, Air, Rllib libraries.
@@ -337,6 +406,187 @@ The RL4CC library implements the MAPPO algorithm, i.e., a PPO version that
 exploits a centralized critic model. Details about the MAPPO algorithm 
 configuration parameters are provided in the 
 [algorithms/README](algorithms/README.md) file.
+
+## Use RL4CC to serve pre-trained RL agents
+
+RL4CC provides a ready-to-use REST API (based on 
+[FastAPI](https://fastapi.tiangolo.com)) to serve trained agents.
+
+### Deployment instructions
+
+A pre-configured [Dockerfile](deployment/Dockerfile.rl4cc-serve) is available 
+to deploy the service without needing to install RL4CC manually. The 
+required steps are:
+
+1. enter the directory from which you want to run the application (more 
+information are provided below)
+2. download the Dockerfile:
+
+```
+curl -L \
+  https://raw.githubusercontent.com/FFede0/RL4CC/test_ray2.40.0/deployment/Dockerfile.rl4cc-serve \
+  -o Dockerfile
+```
+
+3. build the image:
+
+```
+docker build -t rl4cc/serve:26.03.27 .
+```
+
+4. run the container:
+
+```
+CHECKPOINT_DIR=path_to_the_trained_model
+CONFIGURATION_FILE=my_exp_file.json
+
+docker run \
+  -d \
+  --name agentserver \
+  --rm \
+  -p 8000:8000 \
+  -v ${CHECKPOINT_DIR}:/app/models/checkpoint \
+  -v ${CONFIGURATION_FILE}:/app/config/config.json \
+  --shm-size=1g \
+  rl4cc/serve:26.03.27
+```
+
+The service requires the following environment variables:
+- `CHECKPOINT_DIR`: path to the trained model checkpoint; by default, it is 
+set to `/app/models/checkpoint`, but it can be overwritten by adding 
+`-e CHECKPOINT_DIR=some_other_path` to the `docker run` command (**note:** 
+in this case, the destination folder when mounting the volume should be 
+updated accordingly)
+- `CONFIGURATION_FILE`: experiment configuration file (ideally in the same 
+format discussed in the 
+[README](RL4CC/config_files/README.md#experiment-configuration)); by default, 
+it is set to `/app/config/config.json`, but it can be overwritten by adding 
+`-e CONFIGURATION_FILE=some_other_path` to the `docker run` command (**note:** 
+in this case, the destination folder when mounting the volume should be 
+updated accordingly).
+
+Once running, the service is available at: `http://${HOST}:${PORT}`. The 
+`HOST` and `PORT` environment variables are set at container creation to 
+`0.0.0.0` and `8000`, respectively, but can be overwritten by providing 
+`-e HOST=<some valid ip address> -e PORT=<some available port>` to the 
+`docker run` command.
+
+> [!NOTE] 
+> The only information currently loaded from the `CONFIGURATION_FILE` is the 
+> algorithm name; therefore, a simplified version with respect to the full 
+> experiment configuration file may be provided.
+
+> [!CAUTION]
+> In order to properly load the checkpoint, the service may require to install 
+> specific libraries, import agent-specific modules, and/or register a custom 
+> model or environment. 
+> The user must therefore: (1) add to the repository from which the Docker 
+> image is created a `requirements.txt` file with additional libraries to be 
+> installed via `pip` (if any). (2) Ensure that all modules to be loaded, as 
+> well as additional files required by the agent (e.g., datasets) are 
+> available to the container; to this end, consider that any Python file in 
+> the base directory from which you create the Docker image is copied in the 
+> container working directory `/app`. To ensure that any custom environment or 
+> model is properly registered, follow the instructions below.
+
+If the pre-trained algorithm makes use of a custom environment, the module 
+including instructions for the environment registration as those listed 
+[above](#training-experiments-with-a-custom-environment):
+
+```
+from .my_custom_environment import MyCustomEnvironment
+from ray.tune.registry import register_env
+
+register_env("MyCustomEnvironment", lambda config: MyCustomEnvironment(config))
+```
+
+must be imported **before** the checkpoint is loaded (the same happens for a 
+[custom neural network model](#training-experiments-with-a-custom-model)). To 
+ensure this, set the environment variable `APP_BOOTSTRAP_MODULES` to the list 
+of modules including registration instructions when creating the container. As 
+an example, if the lines reported above are saved in a `register_env.py` file, 
+add `-e APP_BOOTSTRAP_MODULES=register_env` to your `docker run` command.
+
+> [!NOTE]
+> About using Ray from Docker containers: as mentioned in 
+> [the official documentation](https://docs.ray.io/en/latest/ray-overview/installation.html#launch-ray-in-docker), 
+> Docker containers running Ray require access to reasonable memory. Replace 
+> `--shm-size=1g` from the `docker run` command above with a limit appropriate 
+> for your system. As mentioned, "A good estimate for this is to use roughly 
+> 30% of your available memory (this is what Ray uses internally for its 
+> Object Store)".
+
+### Execution instructions
+
+To check that the service has been correctly deployed, you can run:
+
+```
+HOST=0.0.0.0
+PORT=8000
+
+curl -X GET http://${HOST}:${PORT}/
+```
+
+This lists the available endpoints. In particular,
+
+#### Compute a single action
+
+The `/action` endpoint allows to ask the agent(s) the next action to take, 
+given the current observation. 
+
+It expects a body including an `observation` dictionary with the current
+observation the agent(s) should consider, and an `agent_parameters` including
+additional configuration information. The currently available configuration
+parameter is `explore` (default to `False`), to be set to `True` if the agent(s)
+is free to select a random action (with some probability that depends on the
+loaded algorithm), `False` if the agent(s) should fully exploit the loaded
+policy.
+
+The `observation` format must match the observation space used during 
+training. It supports both single and multi-agent setups (examples are 
+provided below), and the provided inputs are automatically converted to 
+NumPy arrays and reshaped according to the `observation_space` definition 
+available in the environment.
+
+Example (single-agent), following the 
+[base environment](RL4CC/environment/base_environment.py):
+
+```
+curl -X POST http://localhost:8000/action \
+  -H "Content-Type: application/json" \
+  -d '{
+    "observation": {
+      "current_time": 100
+    },
+    "agent_parameters": {
+      "explore": false
+    }
+  }'
+```
+
+Example (multi-agent), following the 
+[base environment](RL4CC/environment/base_multiagent_environment.py):
+
+```
+curl -X POST http://localhost:8000/action \
+  -H "Content-Type: application/json" \
+  -d '{
+    "observation": {
+      "agent_0": {
+        "current_time": 100
+      },
+      "agent_1": {
+        "current_time": 100
+      }
+    },
+    "agent_parameters": {
+      "explore": false
+    }
+  }'
+```
+
+The response is given as a dictionary with a key for each agent (in the 
+multi-agent setting) and the corresponding chosen action.
 
 ## How to contribute to RL4CC
 

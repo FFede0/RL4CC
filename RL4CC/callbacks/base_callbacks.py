@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from ray.rllib.evaluation import Episode, RolloutWorker
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.policy import Policy
 from ray.rllib.env import BaseEnv
@@ -34,10 +33,10 @@ class BaseCallbacks(DefaultCallbacks):
   def on_episode_start(
       self,
       *,
-      worker: RolloutWorker,
+      worker,
       base_env: BaseEnv,
       policies: Dict[str, Policy],
-      episode: Episode,
+      episode,
       env_index: int,
       **kwargs,
     ):
@@ -70,10 +69,10 @@ class BaseCallbacks(DefaultCallbacks):
   def on_episode_step(
       self,
       *,
-      worker: RolloutWorker,
+      worker,
       base_env: BaseEnv,
       policies: Dict[str, Policy],
-      episode: Episode,
+      episode,
       env_index: int,
       **kwargs,
     ):
@@ -95,10 +94,13 @@ class BaseCallbacks(DefaultCallbacks):
           if isinstance(val, np.ndarray):
             val = val.tolist()
           # add to user_data
-          episode.user_data[f"{key}_{agent}"].append(val)
+          if val is not None:
+            episode.user_data[f"{key}_{agent}"].append(val)
     except AttributeError:
       for key in self.RELEVANT_KEYS:
-        val = episode.last_info_for()[key]
+        val = None
+        if key in episode.last_info_for():
+          val = episode.last_info_for()[key]
         if isinstance(val, np.ndarray):
           val = val.tolist()
         # add to user_data
@@ -109,10 +111,10 @@ class BaseCallbacks(DefaultCallbacks):
   def on_episode_end(
       self,
       *,
-      worker: RolloutWorker,
+      worker,
       base_env: BaseEnv,
       policies: Dict[str, Policy],
-      episode: Episode,
+      episode,
       env_index: int,
       **kwargs,
     ):
@@ -137,14 +139,20 @@ class BaseCallbacks(DefaultCallbacks):
     except AttributeError:
       for key in self.RELEVANT_KEYS:
         episode.hist_data[key] = episode.user_data[key]
-        episode.custom_metrics[f"{key}_avg"] = np.mean(episode.user_data[key])
+        if episode.user_data[key] is not None:
+          try:
+            episode.custom_metrics[f"{key}_avg"] = np.mean(
+              episode.user_data[key][:-1]
+            )
+          except Exception:
+            pass
     # add worker index
     episode.hist_data["worker_index"] = episode.user_data["worker_index"]
   
   def on_sample_end(
       self, 
       *, 
-      worker: RolloutWorker, 
+      worker, 
       samples: SampleBatch, 
       **kwargs
     ):
@@ -171,8 +179,8 @@ class BaseCallbacks(DefaultCallbacks):
   def on_postprocess_trajectory(
       self,
       *,
-      worker: RolloutWorker,
-      episode: Episode,
+      worker,
+      episode,
       agent_id: str,
       policy_id: str,
       policies: Dict[str, Policy],
