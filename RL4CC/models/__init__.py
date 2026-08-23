@@ -19,3 +19,9 @@ try:
   ModelCatalog.register_custom_model("custom_tf_model", CustomTFModel)
 except ModuleNotFoundError as error:
   logger.warn(f"Could not register CustomTFModel: No module named {error.name!r}.")
+
+try:
+  from .centralized_critic_model import CustomTorchCCModel
+  ModelCatalog.register_custom_model("centralizedcritic", CustomTorchCCModel)
+except ModuleNotFoundError as error:
+  logger.warn(f"Could not register CustomTorchCCModel: No module named {error.name!r}.")

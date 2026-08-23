@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from RL4CC.experiments.base_experiment import BaseExperiment
+from RL4CC.utilities.common import not_defined, defined
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.algorithm import Algorithm
-from RL4CC.utilities.common import not_defined
 
 from ray.rllib.policy.policy import Policy
 from datetime import datetime
@@ -41,6 +41,9 @@ class TrainingExperiment(BaseExperiment):
   
   def run(self) -> Policy:
     # define algorithm
+    multiagent = False
+    if self.env_config is not None and defined("agents", self.env_config):
+      multiagent = True
     algo = Algorithm(
       algo_name = self.exp_config["algorithm"], 
       checkpoint_path = self.checkpoint_path,
@@ -48,6 +51,7 @@ class TrainingExperiment(BaseExperiment):
       ray_config = self.ray_config,
       logdir = self.logdir,
       eval_interval = self.evaluation_interval,
+      multiagent = multiagent,
       logger = self.logger
     )
     # build (if the algorithm is not loaded from an existing checkpoint)
@@ -68,10 +72,10 @@ class TrainingExperiment(BaseExperiment):
     pass
 
   def on_iteration_start(self, algo: Algorithm, it: int):
-    pass
+    return algo
 
   def on_iteration_end(self, algo: Algorithm, it: int):
-    pass
+    return algo
 
   def training_loop(self, algo: Algorithm):
     """
@@ -82,7 +86,7 @@ class TrainingExperiment(BaseExperiment):
     self.update_progress_file("experiment_start_timestamp", start.timestamp())
     it = 1
     while not self.stop(it):
-      self.on_iteration_start(algo, it)
+      algo = self.on_iteration_start(algo, it)
       # train
       true_it = algo.last_iteration() + 1
       self.logger.log(f"starting iteration {it} ({true_it})", 3)
@@ -92,22 +96,22 @@ class TrainingExperiment(BaseExperiment):
       # save checkpoint at the beginning and every `checkpoint_frequency` 
       # iterations
       if it == 1 or it % self.checkpoint_config["checkpoint_frequency"] == 0:
-        last_chpt_dir = algo.save_checkpoint()
+        last_chpt_dir = self.save_checkpoint(algo)
         self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
       # save evaluation results every `evaluation_interval` iterations
       if it % self.evaluation_interval == 0:
+        eval_result = result.get("evaluation") or algo.evaluate()
         self.update_evaluation_metrics_file(
-          result["training_iteration"], 
-          result["evaluation"]
+          result["training_iteration"], eval_result
         )
       # plot results at the beginning and every `plot_interval` iterations
       if it == 1 or it % self.plot_interval == 0:
         self.plot_results(result)
-      self.on_iteration_end(algo, it)
+      algo = self.on_iteration_end(algo, it)
       # move to the next iteration
       it += 1
     # save last checkpoint
-    last_chpt_dir = algo.save_checkpoint()
+    last_chpt_dir = self.save_checkpoint(algo)
     self.update_progress_file("last_checkpoint_dir", last_chpt_dir)
     # perform final evaluation (if it has not just be performed)
     if (it - 1) % self.evaluation_interval != 0:
@@ -154,3 +158,12 @@ class TrainingExperiment(BaseExperiment):
           f"Stopping criterion `{key}` is not supported"
         )
     self.stop = stop_on_max_iter
+  
+  def save_checkpoint(self, algo: Algorithm) -> str:
+    """
+    Save an algorithm checkpoint
+    """
+    save_manual_checkpoints = self.exp_config.get(
+      "save_manual_checkpoints", False
+    )
+    return algo.save_checkpoint(manual = save_manual_checkpoints)
