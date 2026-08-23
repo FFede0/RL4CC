@@ -404,6 +404,14 @@ class AlgoConfigGenerator(ABC):
       all_params["evaluation_config"] = self.generate_eval_config(
         env_config, all_params["evaluation_config"]
       )
+    # warn about potential issue with `evaluation_num_workers`
+    if "evaluation_num_workers" in all_params:
+      self.logger.warn(
+        "setting `evaluation_num_workers` may result in an inconsistent "
+        f"number of evaluation {unit}. It is recommended to avoid defining "
+        "the number of workers and let Ray sort it out. See "
+        "ray_issues_to_track.md for details"
+      )
 
   def convert_resources_parameters(self, all_params):
     """
