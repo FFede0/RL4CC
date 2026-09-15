@@ -22,6 +22,7 @@ from ray.tune.registry import get_trainable_cls
 from ray.tune.search.sample import Domain
 from abc import ABC, abstractmethod
 from collections import namedtuple
+from typing import Tuple
 from ray import tune
 import numpy as np
 import inspect
@@ -288,17 +289,28 @@ class AlgoConfigGenerator(ABC):
       all_params["logger_config"] = None
   
   def validate_key_usage(self, all_params: dict):
+    self._validate_key_usage(
+      self._protected_keys, self._suggested_keys, all_params, self.logger
+    )
+  
+  @staticmethod
+  def _validate_key_usage(
+      protected_keys: list,
+      suggested_keys: list, 
+      all_params: dict,
+      logger: Logger
+    ) -> Tuple[bool, bool]:
     """
     Checks if the user is setting any protected/suggested key and throws
     appropriate errors/warnings
     """
     # check if the user is setting any suggested key
     using_suggested_keys = any(
-      k in all_params for k,_ , _ in self._suggested_keys
+      k in all_params for k,_ , _ in suggested_keys
     )
     # check if the user is setting any protected key
     using_protected_keys = False
-    for pk,_ in self._protected_keys:
+    for pk,_ in protected_keys:
       if pk in all_params:
         # prevent the user from improperly setting the environment config
         if pk == "env" or pk == "env_config":
@@ -328,7 +340,7 @@ class AlgoConfigGenerator(ABC):
           # raise a warning otherwise
           else:
             pv = all_params[pk]
-            self.logger.warn(
+            logger.warn(
               f"manually setting protected key `{pk}` with value: {pv}"
             )
     return using_suggested_keys, using_protected_keys
