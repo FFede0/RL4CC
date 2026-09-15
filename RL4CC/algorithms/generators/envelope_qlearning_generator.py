@@ -22,7 +22,8 @@ from RL4CC.algorithms.generators.morl_algorithm_generatory import (
 from RL4CC.log_and_report.rl4cc_logger import Logger
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
-from typing import Tuple
+from copy import deepcopy
+import numpy as np
 import os
 
 
@@ -32,7 +33,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     ) -> None:
     super().__init__(logger)
     self.algo = "EnvelopeQLearning"
-    self.algo_init_keys = [
+    self._algo_init_keys = [
       "batch_size",
       "buffer_size",
       "device",
@@ -56,6 +57,40 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
       "target_net_update_freq",
       "tau"
     ]
+  
+  def convert_evaluation_parameters(
+      self, all_params: dict, env_config: dict, eval_interval: int
+    ):
+    # evaluation interval
+    if eval_interval is not None and not np.isinf(eval_interval):
+      all_params["eval_freq"] = eval_interval * all_params["total_timesteps"]
+    eval_config = all_params.pop("evaluation", {})
+    # env config for evaluation
+    eval_env_config = deepcopy(env_config)
+    if "evaluation_config" in eval_config:
+      eval_env_config.update(eval_config["evaluation_config"])
+    all_params["evaluation_config"] = eval_env_config
+    # number of workers
+    if eval_config.pop("evaluation_num_workers", 1) != 1:
+      raise ValueError(
+        "MORL algorithms currently support only a single rollout worker"
+      )
+    # duration
+    unit = eval_config.pop("evaluation_duration_unit", "episodes")
+    if "evaluation_duration_per_worker" in eval_config:
+      duration = eval_config.pop(
+        "evaluation_duration_per_worker"
+      )
+      if unit == "timesteps":
+        nspe = AlgoConfigGenerator.compute_num_steps_per_episode(env_config)
+        all_params["num_eval_episodes_for_front"] = int(np.ceil(duration/nspe))
+      elif unit == "episodes":
+        all_params["num_eval_episodes_for_front"] = duration
+      else:
+        raise ValueError(f"ERROR: invalid `evaluation_duration_unit` {unit}")
+    # all additional evaluation parameters
+    for k, v in eval_config.items():
+      all_params[k] = v
   
   def convert_exploration_parameters(self, all_params: dict):
     """
@@ -107,14 +142,11 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     """
     training_params = all_params.pop("training", {})
     for k, v in training_params.items():
-      if k in self.algo_init_keys:
+      if k in self._algo_init_keys:
         all_params[k] = v
       else:
-        # batch size
-        if k == "train_batch_size":
-          all_params["batch_size"] = v
         # gradient clip
-        elif k == "grad_clip":
+        if k == "grad_clip":
           all_params["max_grad_norm"] = v
         # learning rate
         elif k == "lr":
@@ -145,17 +177,22 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
       self,
       env_config: dict,
       algo_config: dict = None,
-      exp_logdir: str = None
+      exp_logdir: str = None,
+      eval_interval: int = None
     ):
     """
     Generates the `MORL-Baselines::Envelope` algorith considering the provided 
     environment and configuration dictionaries
     """
+    # process configuration parameters
+    morl_config, all_params = self.process_config_parameters(
+      algo_config, env_config, eval_interval
+    )
     # make environment
-    env, eval_env = self.make_env(env_config, algo_config, exp_logdir)
-    # filter keys in algorithm configuration
-    morl_config, additional_params = self.filter_algo_config(
-      algo_config, env_config
+    env, eval_env = self.make_env(
+      env_config, 
+      all_params.pop("evaluation_config"), 
+      exp_logdir
     )
     # generate algorithm
     expname = self.algo if exp_logdir is None else os.path.basename(exp_logdir)
@@ -166,4 +203,4 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
       project_name = self.algo,
       experiment_name = expname
     )
-    return algo, eval_env, additional_params
+    return algo, eval_env, all_params
