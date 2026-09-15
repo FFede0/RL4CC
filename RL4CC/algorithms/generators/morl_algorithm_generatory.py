@@ -25,6 +25,7 @@ from abc import ABC, abstractmethod
 import mo_gymnasium as mo_gym
 from copy import deepcopy
 from typing import Tuple
+import json
 
 
 class MORLAlgorithmGenerator(ABC):
@@ -145,3 +146,13 @@ class MORLAlgorithmGenerator(ABC):
         else:
           dict_to_drop[k] = v
     return dict_to_keep, dict_to_drop
+  
+  def to_dict(self, algo) -> dict:
+    return algo.get_config()
+  
+  def to_json(self, algo) -> str:
+    """
+    Converts the given algorithm into a string with json format
+    """
+    algo_dict = self.to_dict(algo)
+    return json.dumps(algo_dict, indent = 2)
