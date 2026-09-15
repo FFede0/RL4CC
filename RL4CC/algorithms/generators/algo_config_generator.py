@@ -29,6 +29,7 @@ import json
 
 
 class AlgoConfigGenerator(ABC):
+  backend = "ray"
   ParameterDomain = namedtuple("ParameterDomain", "value lower upper")
   def __init__(
       self, logger: Logger = Logger(name="RL4CC-AlgoConfigGenerator")
