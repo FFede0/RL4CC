@@ -24,7 +24,8 @@
     "env_config": {
       "min_time": 0,
       "max_time": 3600,
-      "time_step": 10
+      "time_step": 10,
+      "exp_logdir": null
     },
     "disable_env_checking": false,
     "action_mask_key": "action_mask",

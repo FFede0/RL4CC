@@ -56,7 +56,8 @@
         "node_0",
         "node_1",
         "node_2"
-      ]
+      ],
+      "exp_logdir": null
     },
     "normalize_actions": true,
     "env_task_fn": null,

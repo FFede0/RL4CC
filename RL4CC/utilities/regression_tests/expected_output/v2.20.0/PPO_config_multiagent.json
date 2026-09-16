@@ -61,7 +61,8 @@
         "agent_0",
         "agent_1",
         "agent_2"
-      ]
+      ],
+      "exp_logdir": null
     },
     "auto_wrap_old_gym_envs": -1,
     "clip_actions": false,
