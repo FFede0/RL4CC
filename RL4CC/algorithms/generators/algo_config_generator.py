@@ -289,7 +289,7 @@ class AlgoConfigGenerator(ABC):
       all_params["logger_config"] = None
   
   def validate_key_usage(self, all_params: dict):
-    self._validate_key_usage(
+    return self._validate_key_usage(
       self._protected_keys, self._suggested_keys, all_params, self.logger
     )
   
