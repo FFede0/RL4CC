@@ -13,7 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from RL4CC.algorithms.backends import MORLAlgorithmBackend, RayAlgorithmBackend
+try:
+  from RL4CC.algorithms.backends import MORLAlgorithmBackend
+except ImportError:
+  pass
+try:
+  from RL4CC.algorithms.backends import RayAlgorithmBackend
+except ImportError:
+  pass
 from RL4CC.algorithms.generators_factory import AGfactory
 from RL4CC.utilities.common import write_config_file
 from RL4CC.log_and_report.rl4cc_logger import Logger
@@ -43,7 +50,7 @@ class Algorithm:
     # switch according to backend
     if self.generator.backend == "ray":
       self.backend = RayAlgorithmBackend(
-        algo_config_generator = self.generator,
+        generator = self.generator,
         checkpoint_path = checkpoint_path,
         env_config = env_config,
         learner_config = learner_config,
@@ -67,8 +74,9 @@ class Algorithm:
       raise ValueError(
         f"Unsupported algorithm backend: {self.generator.backend}"
       )
+    self.logdir = self.backend.logdir
  
-  def build(self, algo_config: AlgorithmConfig = None):
+  def build(self):
     """
     Build the `Algorithm` according to the provided checkpoint path or 
     configuration dictionaries
@@ -180,7 +188,7 @@ class Algorithm:
     Print the `AlgorithmConfig` in json format (by default, to a file saved 
     in the `Algorithm` logdir)
     """
-    jj = self.generator.to_json(self.algo_config)
+    jj = self.generator.to_json(self.backend.algo_config)
     if to_file:
       write_config_file(
         jj,
