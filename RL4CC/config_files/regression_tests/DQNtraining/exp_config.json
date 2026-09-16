@@ -1,7 +1,7 @@
 {
   "algorithm": "DQN",
   "env_config_file": "config_files/regression_tests/DQNtraining/env_config.json",
-  "ray_config_file": "config_files/regression_tests/DQNtraining/learner_config.json",
+  "learner_config_file": "config_files/regression_tests/DQNtraining/learner_config.json",
   "logdir": "utilities/regression_tests/LOGDIR/DQNtraining",
   "evaluation_interval": 1,
   "logger": {

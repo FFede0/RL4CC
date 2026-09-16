@@ -1,7 +1,7 @@
 {
   "algorithm": "SAC",
   "env_config_file": "config_files/regression_tests/SACgenerator/env_config.json",
-  "ray_config_file": "config_files/regression_tests/SACgenerator/learner_config.json",
+  "learner_config_file": "config_files/regression_tests/SACgenerator/learner_config.json",
   "evaluation_interval": 5,
   "stopping_criteria": {
     "max_iterations": 10

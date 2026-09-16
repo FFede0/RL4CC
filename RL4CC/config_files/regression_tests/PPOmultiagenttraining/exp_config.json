@@ -1,7 +1,7 @@
 {
   "algorithm": "PPO",
   "env_config_file": "config_files/regression_tests/PPOmultiagenttraining/env_config.json",
-  "ray_config_file": "config_files/regression_tests/PPOmultiagenttraining/learner_config.json",
+  "learner_config_file": "config_files/regression_tests/PPOmultiagenttraining/learner_config.json",
   "logdir": "utilities/regression_tests/LOGDIR/PPOmultiagenttraining",
   "evaluation_interval": 1,
   "logger": {
