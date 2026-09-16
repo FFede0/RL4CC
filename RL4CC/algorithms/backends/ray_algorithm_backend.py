@@ -43,7 +43,7 @@ class RayAlgorithmBackend(AlgorithmBackend):
       generator: AlgoConfigGenerator,
       checkpoint_path: str = None,
       env_config: dict = None,
-      algorithm_config: dict = None,
+      learner_config: dict = None,
       logdir: str = None,
       eval_interval: int = None,
       use_tune: bool = False,
@@ -65,7 +65,7 @@ class RayAlgorithmBackend(AlgorithmBackend):
       # ...generate `AlgorithmConfig`
       self.algo_config = (
         self.generator.generate_algo_config(
-          ray_config = algorithm_config,
+          learner_config = learner_config,
           env_config = env_config,
           eval_interval = eval_interval,
           exp_logdir = logdir,
@@ -74,13 +74,11 @@ class RayAlgorithmBackend(AlgorithmBackend):
         )
       )
 
-  def build(self, algo_config: AlgorithmConfig = None):
+  def build(self):
     """
     Build the `Algorithm` according to the provided checkpoint path or 
     configuration dictionaries
     """
-    if algo_config is not None:
-      self.algo_config = algo_config
     self.algo = self.algo_config.build()
     self.logdir = self.algo.logdir
     self.logger.log(
