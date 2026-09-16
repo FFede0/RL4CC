@@ -1,7 +1,7 @@
 from RL4CC.utilities.common import load_config_file, write_config_file
 from RL4CC.utilities.common import compare_dictionaries
 from RL4CC.log_and_report.rl4cc_logger import Logger
-from RL4CC.algorithms.generators_factory import ACGfactory
+from RL4CC.algorithms.generators_factory import AGfactory
 
 from ray import __version__ as rayver
 from typing import Tuple
@@ -16,7 +16,7 @@ def test_default_generator(
   method
   """
   # run
-  generator = ACGfactory.create(algo, logger = logger)
+  generator = AGfactory.create(algo, logger = logger)
   algo_config_dict = generator.to_dict(generator.base_algo_config)
   # load expected output for comparison
   expected_dict = load_config_file(expected_out)
@@ -54,7 +54,7 @@ def test_algo_config_generator(
     env_config["env_name"] = "BaseMultiAgentEnvironment"
     env_config["agents"] = [f"agent_{i}" for i in range(3)]
   # run
-  generator = ACGfactory.create(algo, logger = logger)
+  generator = AGfactory.create(algo, logger = logger)
   algo_config = generator.generate_algo_config(
     env_config = env_config,
     learner_config = learner_config,
@@ -159,7 +159,7 @@ def main() -> Tuple[int, int]:
   # test the registered generators
   num_passed_tests = 0
   total_num_tests = 0
-  for algo in ACGfactory.algo_config_generators.keys():
+  for algo in AGfactory.algo_generators.keys():
     logger.breakline()
     passed, total = test_algo_generators(
       logger = logger,
