@@ -158,6 +158,9 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
         # number of steps to be sampled before training starts
         elif k == "num_steps_sampled_before_learning_starts":
           all_params["learning_starts"] = v
+        # reference points
+        elif k == "ref_point":
+          all_params["ref_point"] = np.array(v)
         # replay buffer
         elif k == "replay_buffer_config":
           # -- capacity
@@ -199,7 +202,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     algo = Envelope(
       env,
       **morl_config,
-      log = False,#True,
+      log = True,
       project_name = self.algo,
       experiment_name = expname
     )
