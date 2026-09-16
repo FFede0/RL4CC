@@ -53,6 +53,7 @@ class RayAlgorithmBackend(AlgorithmBackend):
     self.logger = logger
     self.generator = generator
     self.use_tune = use_tune
+    self.logdir = None
     # load the Ray `Algorithm` from a checkpoint (if provided)
     if checkpoint_path is not None:
       self.load_checkpoint(checkpoint_path)
