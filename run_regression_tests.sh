@@ -3,5 +3,8 @@
 pip uninstall -y RL4CC
 pip install .
 
-cd RL4CC && python run_regression_tests.py && cd ..
+echo
+echo "########################################################################"
+echo
 
+cd RL4CC && python run_regression_tests.py && cd ..
