@@ -274,6 +274,9 @@ class BaseExperiment(ABC):
     ):
       items_for_loop = evaluation_metrics["hist_stats"].items()
       em = {**evaluation_metrics}
+    else:
+      items_for_loop = evaluation_metrics.items()
+      em = {"hist_stats": {}}
     for key, val in items_for_loop:
       newval = []
       for x in val:
