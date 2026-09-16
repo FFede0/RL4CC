@@ -296,7 +296,9 @@
     "synchronize_filters": -1,
     "enable_async_evaluation": -1,
     "custom_async_evaluation_function": -1,
-    "replay_sequence_length": null
+    "replay_sequence_length": null,
+    "minibatch_size": 128,
+    "num_epochs": 2
   },
   "callbacks": {
     "callbacks_class": "callbacks.base_callbacks.BaseCallbacks"
