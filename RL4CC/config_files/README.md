@@ -113,7 +113,7 @@ A typical example (for a fully-connected network) is:
 
 ### Ray `Algorithm` configuration
 
-The `ray_config` file must include parameters related to the definition of a Ray
+The `learner_config` file must include parameters related to the definition of a Ray
 [`AlgorithmConfig`](https://docs.ray.io/en/releases-2.20.0/rllib/rllib-training.html#configuring-rllib-algorithms)
 object.
 
@@ -171,7 +171,7 @@ A more comprehensive list is provided in
 
 > [!CAUTION]
 > There are few elements that, differently from what is explained in the Ray
-> documentation **should NOT** be managed through `ray_config`. These are:
+> documentation **should NOT** be managed through `learner_config`. These are:
 >
 > - `env` and `env_config`, from the `environment` parameters group;
 >
@@ -196,8 +196,8 @@ A more comprehensive list is provided in
 > `evaluation_num_workers` in the Ray config results in an inconsistent 
 > number of evaluation episodes. 
 
-Sample `ray_config.json` files for [PPO](ray_config_ppo.json.template) and
-[DQN](ray_config_dqn.json.template) are provided.
+Sample `learner_config.json` files for [PPO](learner_config_ppo.json.template) 
+and [DQN](learner_config_dqn.json.template) are provided.
 
 #### How to use custom Policy models
 
@@ -217,7 +217,7 @@ section of the Ray configuration file.
 
 For example, to use the provided Torch-based
 [CustomTorchModel](../models/custom_torch_model.py), which is registered
-under the name `custom_torch_model`, provide in the ray_config.json file,
+under the name `custom_torch_model`, provide in the learner_config.json file,
 under the `model` dictionary in the `training` section, the following
 information:
 
@@ -252,14 +252,14 @@ corresponding template files.
 
 > [!WARNING]
 > The framework the model is based on **must** match the framework passed in 
-> the `ray_config`, otherwise this will result in runtime errors.
+> the `learner_config`, otherwise this will result in runtime errors.
 
 > [!NOTE] 
 > A notable example of custom policy is the 
 > [centralized critic model](../models/centralized_critic_model.py) 
 > implemented to support the MAPPO algorithm. This is registered in RL4CC as 
 > `centralizedcritic` and should be selected as shown in the sample 
-> [MAPPO configuration file](../config_files/ray_config_mappo.json.template).
+> [MAPPO configuration file](../config_files/learner_config_mappo.json.template).
 
 ### Configure hyperparameter tuning
 
@@ -267,7 +267,7 @@ To run hyperparameter tuning, the user should:
 
 1. provide a `tune_config` (including parameters related to the configuration of
    the `Tuner` object), and
-2. adapt the `ray_config` file to properly define the search space.
+2. adapt the `learner_config` file to properly define the search space.
 
 Details are provided in the following.
 
@@ -280,7 +280,7 @@ These are:
 
 - `num_tune_trials`: the number of tuning trials (possibly run in parallel, if
   the cluster resources are enough to do so). These trials will sample from the
-  Tune search space (defined according to the elements in the `ray_config`, as
+  Tune search space (defined according to the elements in the `learner_config`, as
   detailed in [the next section](#configuring-the-search-space-for-parameters)).
   **Note that,** if the `num_tune_trials` parameter is -1, (virtually) infinite
   samples are generated until a stopping condition is met.
@@ -408,12 +408,12 @@ The Tuner configuration `tune_config` described in the section
 [above](#tuner-configuration) is responsible for the behaviour of the `Tuner`
 and how it handles the `Trials` running in parallel. However, to actually
 fine-tune algorithm parameters, the user should define the search space by
-suitably adapting the `ray_config`.
+suitably adapting the `learner_config`.
 
 This can be simply done by providing the values of each parameter to be tuned as
 a `tune.**search_space` string. For example, if the learning rate for the PPO
 algorithm is to be tuned, locate the corresponding parameter (`lr`, in the
-`training` section) in the `ray_config` file and set it as:
+`training` section) in the `learner_config` file and set it as:
 
 ```
 "training": {
@@ -488,9 +488,9 @@ Additional parameters are:
   [above](#environment-configuration).
 - `env_config`: dictionary containing the environment configuration described
   [above](#environment-configuration).
-- `ray_config_file`: path to the `ray_config.json` file described
+- `learner_config_file`: path to the `learner_config.json` file described
   [above](#ray-algorithm-configuration).
-- `ray_config`: dictionary containing the Ray configuration described
+- `learner_config`: dictionary containing the Ray configuration described
   [above](#ray-algorithm-configuration).
 - `tune_config_file`: path to the `tune_config.json` file described
   [above](#tuner-configuration).
@@ -510,7 +510,7 @@ Additional parameters are:
 > [!WARNING]
 > If no previously checkpoint is provided, you **must** specify either
 > `env_config_file` or `env_config` but not both. The same applies to
-> Ray config (`ray_config_file` and `ray_config`) and tuner configuration
+> Ray config (`learner_config_file` and `learner_config`) and tuner configuration
 > (`tune_config_file` and `tune_config`),
 
 Example (for a training experiment):
@@ -519,7 +519,7 @@ Example (for a training experiment):
 {
   "algorithm": "PPO",
   "env_config_file": "config_files/env_config.json",
-  "ray_config_file": "config_files/ray_config.json",
+  "learner_config_file": "config_files/learner_config.json",
   "logdir": "OUTPUT",
   "evaluation_interval": 5,
   "checkpoint_interval": 5,
@@ -535,7 +535,7 @@ Example (for a hyperparameter tuning experiment):
 {
   "algorithm": "PPO",
   "env_config_file": "config_files/env_config.json",
-  "ray_config_file": "config_files/ray_config.json",
+  "learner_config_file": "config_files/learner_config.json",
   "tune_config_file": "config_files/tune_config.json",
   "logdir": "OUTPUT",
   "evaluation_interval": 5,
@@ -569,7 +569,7 @@ A minimal example of experiment configuration for federated training is:
 {
   "algorithm": "PPO",
   "env_config_file": "config_files/env_config.json",
-  "ray_config_file": "config_files/ray_config.json",
+  "learner_config_file": "config_files/learner_config.json",
   "logdir": "OUTPUT",
   "evaluation_interval": 5,
   "checkpoint_interval": 5,
@@ -613,7 +613,7 @@ A minimal example is:
 {
   "algorithm": "PPO",
   "env_config_file": "config_files/env_config_gossip.json",
-  "ray_config_file": "config_files/ray_config.json",
+  "learner_config_file": "config_files/learner_config.json",
   "logdir": "OUTPUT",
   "evaluation_interval": 5,
   "checkpoint_interval": 5,

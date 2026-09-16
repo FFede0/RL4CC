@@ -105,7 +105,7 @@ To define and start a training experiment exploiting one of the available
 algorithms:
 
 1. define the `exp_config` configuration (and, if no previous checkpoint is
-   provided, the `env_config` and `ray_config` configurations) as detailed [in
+   provided, the `env_config` and `learner_config` configurations) as detailed [in
    the README](RL4CC/config_files/README.md). These configurations can be 
    defined in Python as dictionaries or using JSON files.
 
@@ -200,7 +200,7 @@ exp.run()
 
 i.e., you must ensure that `src/__init__.py` is actually executed.
 
-Moreover, the `custom_model` section of the `ray_config` configuration must be
+Moreover, the `custom_model` section of the `learner_config` configuration must be
 properly defined, as detailed in the corresponding
 [README](RL4CC/config_files/README.md#how-to-use-custom-policy-models).
 
@@ -222,7 +222,7 @@ As we use `custom_metrics` to save all metrics that we want to plot, you should 
 }
 ```
 
-in the `ray_config` configuration.
+in the `learner_config` configuration.
 
 ### Expected outputs
 
@@ -232,7 +232,7 @@ config](RL4CC/config_files/README.md#experiment-configuration) (or in `~/ray_res
 if nothing is provided). These include:
 
 - `complete_config`: a directory containing the configuration (`exp_config`,
-  `env_config` and `ray_config`) used to define the experiment, saved as JSON
+  `env_config` and `learner_config`) used to define the experiment, saved as JSON
   files.
 
 > [!NOTE]
@@ -241,7 +241,7 @@ if nothing is provided). These include:
 > - JSON files are saved here, regardless the fact that the user passed the
 >   configuration(s) as file(s) or as `dict` object(s).
 > - While `env_config.json` and `exp_config.json` are simply copied from the
->   user-defined configurations, the `ray_config.json` file reported here
+>   user-defined configurations, the `learner_config.json` file reported here
 >   includes also the default values assigned to keys that were not included
 >   in the user-defined configuration.
 
@@ -270,7 +270,7 @@ if nothing is provided). These include:
   config](RL4CC/config_files/README.md#experiment-configuration).
 
 - `progress.csv` and/or `result.json`, according to the logging configuration
-  specified in the [`ray_config`
+  specified in the [`learner_config`
   config](RL4CC/config_files/README.md#ray-algorithm-configuration). Each row of these
   files includes values collected during one training iteration. By default,
   this will store:
@@ -337,7 +337,7 @@ algorithms:
 1. define the `tune_config` configuration in the `exp_config` configuration as
    indicated [in the README](RL4CC/config_files/README.md); note that, since the
    tuning experiment will run multiple training experiments, also the
-   `env_config` and `ray_config` configurations need to be defined as described
+   `env_config` and `learner_config` configurations need to be defined as described
    in the [previous section](#how-to-start-a-training-experiment). You can
    define `tune_config` as a dictionary or create a JSON file like
    `tune_config.json`.

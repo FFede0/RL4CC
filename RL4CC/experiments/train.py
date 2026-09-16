@@ -48,7 +48,7 @@ class TrainingExperiment(BaseExperiment):
       algo_name = self.exp_config["algorithm"], 
       checkpoint_path = self.checkpoint_path,
       env_config = self.env_config,
-      ray_config = self.ray_config,
+      learner_config = self.learner_config,
       logdir = self.logdir,
       eval_interval = self.evaluation_interval,
       multiagent = multiagent,

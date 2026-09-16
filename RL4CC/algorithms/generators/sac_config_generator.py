@@ -43,9 +43,9 @@ class SACConfigGenerator(DQNConfigGenerator):
     return using_suggested_keys, using_protected_keys
   
   def to_dict(self, algo_config: AlgorithmConfig) -> dict:
-    ray_config = super().to_dict(algo_config)
+    learner_config = super().to_dict(algo_config)
     # config dict for optimization (parameter and member have different names)
-    if "optimization" in ray_config.get("not_classified", {}):
-      opt = ray_config["not_classified"].pop("optimization")
-      ray_config["training"]["optimization_config"] = opt
-    return ray_config
+    if "optimization" in learner_config.get("not_classified", {}):
+      opt = learner_config["not_classified"].pop("optimization")
+      learner_config["training"]["optimization_config"] = opt
+    return learner_config

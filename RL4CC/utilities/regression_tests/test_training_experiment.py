@@ -18,7 +18,7 @@ def test_training_loop(
     tol: float
   ) -> Tuple[bool, str]:
   # run
-  exp = TrainingExperiment(logger=logger, exp_config_file=exp_config_file)
+  exp = TrainingExperiment(logger = logger, exp_config_file = exp_config_file)
   exp.run()
   # compare with expected output
   progress = pd.read_csv(
@@ -76,7 +76,7 @@ def update_experiment_config(exp_config: dict, exp_logdir: str) -> bool:
     last_checkpoint_dir = exp_progress.get("last_checkpoint_dir")
     if last_checkpoint_dir is not None:
       _ = exp_config.pop("env_config_file")
-      _ = exp_config.pop("ray_config_file")
+      _ = exp_config.pop("learner_config_file")
       exp_config["from_checkpoint"] = last_checkpoint_dir
       updated = True
   return updated

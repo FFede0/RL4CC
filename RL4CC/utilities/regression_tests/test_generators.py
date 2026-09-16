@@ -23,7 +23,8 @@ def test_default_generator(
   equal, different_keys = compare_dictionaries(algo_config_dict, expected_dict)
   if not equal:
     logger.err(
-      f"failed test_default_generator() on algo: {algo}; different keys: {different_keys}"
+      f"failed test_default_generator() on algo: {algo}; "
+      f"different keys: {different_keys}"
     )
     write_config_file(
       generator.to_json(generator.base_algo_config),
@@ -46,7 +47,7 @@ def test_algo_config_generator(
   # load config files
   exp_config = load_config_file(exp_config_file)
   env_config = load_config_file(exp_config["env_config_file"])
-  ray_config = load_config_file(exp_config["ray_config_file"])
+  learner_config = load_config_file(exp_config["learner_config_file"])
   algo = exp_config["algorithm"]
   # -- add multiagent info (if required)
   if multiagent and "agents" not in env_config:
@@ -56,7 +57,7 @@ def test_algo_config_generator(
   generator = ACGfactory.create(algo, logger = logger)
   algo_config = generator.generate_algo_config(
     env_config = env_config,
-    ray_config = ray_config,
+    learner_config = learner_config,
     eval_interval = exp_config.get("evaluation_interval"),
     multiagent = multiagent
   )

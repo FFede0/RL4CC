@@ -82,14 +82,14 @@ class BaseExperiment(ABC):
         self.exp_config["from_checkpoint"]
       )
       self.env_config = None
-      self.ray_config = None
+      self.learner_config = None
       self.logdir = None
       # ...environment and ray configurations (if provided) are ignored
       keys = [
         "env_config_file",
         "env_config",
-        "ray_config_file",
-        "ray_config",
+        "learner_config_file",
+        "learner_config",
         "logdir"
       ]
       for key in keys:
@@ -116,23 +116,23 @@ class BaseExperiment(ABC):
         self.env_config = load_config_file(self.exp_config["env_config_file"])
       else:
         self.env_config = self.exp_config["env_config"]
-      # Load the ray_config. The user can specify the ray_config via the
-      # ray_config_file parameter or directly via the ray_config parameter.
-      if (not_defined("ray_config_file", self.exp_config)
-          and not_defined("ray_config", self.exp_config)):
+      # Load the learner_config. The user can specify the learner_config via the
+      # learner_config_file parameter or directly via the learner_config parameter.
+      if (not_defined("learner_config_file", self.exp_config)
+          and not_defined("learner_config", self.exp_config)):
         raise KeyError(
-          "ERROR: provide 'ray_config_file' or 'ray_config' if no previous "
+          "ERROR: provide 'learner_config_file' or 'learner_config' if no previous "
           "checkpoint is given"
         )
-      if (defined("ray_config_file", self.exp_config)
-          and defined("ray_config", self.exp_config)):
+      if (defined("learner_config_file", self.exp_config)
+          and defined("learner_config", self.exp_config)):
         raise KeyError(
-          "ERROR: 'ray_config_file' or 'ray_config' cannot be both set!"
+          "ERROR: 'learner_config_file' or 'learner_config' cannot be both set!"
         )
-      if defined("ray_config_file", self.exp_config):
-        self.ray_config = load_config_file(self.exp_config["ray_config_file"])
+      if defined("learner_config_file", self.exp_config):
+        self.learner_config = load_config_file(self.exp_config["learner_config_file"])
       else:
-        self.ray_config = self.exp_config["ray_config"]
+        self.learner_config = self.exp_config["learner_config"]
       self.checkpoint_path = None
       # base output directory
       base_logdir = self.exp_config.get(

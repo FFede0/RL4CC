@@ -27,10 +27,12 @@ import os
 
 
 class TuningExperiment(BaseExperiment):
-  def __init__(self,
-               exp_config_file: str = None,
-               exp_config: dict = None,
-               logger: Logger = Logger(name = "RL4CC")):
+  def __init__(
+      self,
+      exp_config_file: str = None,
+      exp_config: dict = None,
+      logger: Logger = Logger(name = "RL4CC")
+    ):
     super().__init__(exp_config_file, exp_config, logger)
   
   def validate_experiment_configuration(self):
@@ -76,7 +78,7 @@ class TuningExperiment(BaseExperiment):
       checkpoint_path = self.checkpoint_path,
       algo = self.exp_config["algorithm"],
       tune_config = self.tune_config,
-      ray_config = self.ray_config,
+      learner_config = self.learner_config,
       env_config = self.env_config,
       checkpoint_config = self.checkpoint_config,
       stopping_criterion = self.stop(),

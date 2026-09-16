@@ -111,7 +111,7 @@ class AlgoConfigGenerator(ABC):
   def generate_algo_config(
       self,
       env_config: dict,
-      ray_config: dict = None,
+      learner_config: dict = None,
       exp_logdir: str = None,
       eval_interval: int = None,
       use_tune: bool = False,
@@ -150,7 +150,7 @@ class AlgoConfigGenerator(ABC):
     )
     # process the configuration parameters
     all_params = self.process_config_parameters(
-      ray_config, env_config, exp_logdir, eval_interval
+      learner_config, env_config, exp_logdir, eval_interval
     )
     # add multi-agent config if required
     if multiagent:
@@ -200,7 +200,7 @@ class AlgoConfigGenerator(ABC):
 
   def process_config_parameters(
       self,
-      ray_config: dict,
+      learner_config: dict,
       env_config: dict,
       exp_logdir: str = None,
       eval_interval: int = None
@@ -210,9 +210,9 @@ class AlgoConfigGenerator(ABC):
     information to define an `AlgorithmConfig`
     """
     all_params = {}
-    # merge sub-dictionaries of ray_config
-    if ray_config is not None:
-      for key, value in ray_config.items():
+    # merge sub-dictionaries of learner_config
+    if learner_config is not None:
+      for key, value in learner_config.items():
         # check the existence of Tuning Strings, convert them to tune objects 
         # wherever they exist
         value = self.interpret_tune_config(key, value)
@@ -524,32 +524,32 @@ class AlgoConfigGenerator(ABC):
     # serializable
     all_params = self.replace_tune_objects(all_params)
     # split according to the dictionary of class method parameters
-    ray_config = {}
+    learner_config = {}
     for method, method_params in self.algo_methods.items():
       for param in method_params:
         if param in all_params:
-          if method not in ray_config:
-            ray_config[method] = {}
+          if method not in learner_config:
+            learner_config[method] = {}
           value = all_params.pop(param)
           if param == "rl_module_spec":
             value = str(value.__class__)
-          ray_config[method][param] = value
+          learner_config[method][param] = value
     # add those that could not be classified
-    ray_config["not_classified"] = {}
+    learner_config["not_classified"] = {}
     for param, value in all_params.items():
       key = self.base_algo_config._translate_special_keys(param, False)
       added = False
       for method, method_params in self.algo_methods.items():
         if key in method_params:
-          if method not in ray_config:
-            ray_config[method] = {}
+          if method not in learner_config:
+            learner_config[method] = {}
           if key == "rl_module_spec":
             value = str(value.__class__)
-          ray_config[method][key] = value
+          learner_config[method][key] = value
           added = True
       if not added:
-        ray_config["not_classified"][param] = value
-    return ray_config
+        learner_config["not_classified"][param] = value
+    return learner_config
 
   def to_json(self, algo_config: AlgorithmConfig) -> str:
     """

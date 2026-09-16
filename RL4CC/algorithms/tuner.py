@@ -28,7 +28,7 @@ class Tuner:
       algo: str,
       checkpoint_path: str = None,
       tune_config: dict = None,
-      ray_config: dict = None,
+      learner_config: dict = None,
       env_config: dict = None,
       checkpoint_config: dict = None,
       stopping_criterion: dict = None,
@@ -57,7 +57,7 @@ class Tuner:
       if defined("agents", env_config):
         multiagent = True
       self.algo_config = self.algo_config_generator.generate_algo_config(
-        ray_config = ray_config,
+        learner_config = learner_config,
         env_config = env_config,
         eval_interval = eval_interval,
         exp_logdir = storage_path,

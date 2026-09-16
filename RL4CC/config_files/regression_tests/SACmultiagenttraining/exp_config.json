@@ -1,7 +1,7 @@
 {
   "algorithm": "SAC",
   "env_config_file": "config_files/regression_tests/SACmultiagenttraining/env_config.json",
-  "ray_config_file": "config_files/regression_tests/SACmultiagenttraining/ray_config.json",
+  "ray_config_file": "config_files/regression_tests/SACmultiagenttraining/learner_config.json",
   "logdir": "utilities/regression_tests/LOGDIR/SACmultiagenttraining",
   "evaluation_interval": 1,
   "logger": {

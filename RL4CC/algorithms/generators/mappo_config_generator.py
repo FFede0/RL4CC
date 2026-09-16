@@ -31,7 +31,7 @@ class MAPPOConfigGenerator(PPOConfigGenerator):
   def generate_algo_config(
       self,
       env_config: dict,
-      ray_config: dict = None,
+      learner_config: dict = None,
       exp_logdir: str = None,
       eval_interval: int = None,
       use_tune: bool = False,
@@ -45,7 +45,7 @@ class MAPPOConfigGenerator(PPOConfigGenerator):
     """
     return super().generate_algo_config(
       env_config,
-      ray_config = ray_config,
+      learner_config = learner_config,
       exp_logdir = exp_logdir,
       eval_interval = eval_interval,
       use_tune = use_tune,
@@ -54,7 +54,7 @@ class MAPPOConfigGenerator(PPOConfigGenerator):
   
   def process_config_parameters(
       self,
-      ray_config: dict,
+      learner_config: dict,
       env_config: dict,
       exp_logdir: str = None,
       eval_interval: int = None
@@ -66,7 +66,7 @@ class MAPPOConfigGenerator(PPOConfigGenerator):
     MAPPO exploits a centralized critic model by default
     """
     all_params = super().process_config_parameters(
-      ray_config, 
+      learner_config, 
       env_config, 
       exp_logdir = exp_logdir, 
       eval_interval = eval_interval
