@@ -23,15 +23,18 @@ from ray.rllib.policy.policy import Policy
 from abc import ABC, abstractmethod
 from datetime import datetime
 import numpy as np
+import warnings
 import json
 import os
 
 
 class BaseExperiment(ABC):
-  def __init__(self,
-               exp_config_file: str = None,
-               exp_config: dict = None,
-               logger: Logger = Logger(name = "RL4CC")):
+  def __init__(
+      self,
+      exp_config_file: str = None,
+      exp_config: dict = None,
+      logger: Logger = Logger(name = "RL4CC")
+    ):
     # Handle exp_config_file and exp_config, they cannot be both None or both
     # set.
     if exp_config_file is None and exp_config is None:
@@ -110,27 +113,44 @@ class BaseExperiment(ABC):
       if (defined("env_config_file", self.exp_config)
           and defined("env_config", self.exp_config)):
         raise KeyError(
-          "ERROR: 'env_config_file' or 'env_config' cannot be both set!"
+          "ERROR: 'env_config_file' & 'env_config' cannot be both set!"
         )
       if defined("env_config_file", self.exp_config):
         self.env_config = load_config_file(self.exp_config["env_config_file"])
       else:
         self.env_config = self.exp_config["env_config"]
-      # Load the learner_config. The user can specify the learner_config via the
-      # learner_config_file parameter or directly via the learner_config parameter.
+      # Load the learner_config. The user can specify the learner_config via 
+      # the learner_config_file parameter or directly via the learner_config 
+      # parameter.
+      if "ray_config" in self.exp_config or \
+          "ray_config_file" in self.exp_config:
+        self.logger.warn(
+          "The experiment configuration keys `ray_config` & `ray_config_file` "
+          "are deprecated and will be removed in a future "
+          "version of RL4CC. Please rename it to `learner_config` or "
+          "`learner_config_file`."
+        )
+        self.exp_config["learner_config"] = self.exp_config.pop(
+          "ray_config", None
+        )
+        self.exp_config["learner_config_file"] = self.exp_config.pop(
+          "ray_config_file", None
+        )
       if (not_defined("learner_config_file", self.exp_config)
           and not_defined("learner_config", self.exp_config)):
         raise KeyError(
-          "ERROR: provide 'learner_config_file' or 'learner_config' if no previous "
-          "checkpoint is given"
+          "ERROR: provide 'learner_config_file' or 'learner_config' if no "
+          "previous checkpoint is given"
         )
       if (defined("learner_config_file", self.exp_config)
           and defined("learner_config", self.exp_config)):
         raise KeyError(
-          "ERROR: 'learner_config_file' or 'learner_config' cannot be both set!"
+          "ERROR: 'learner_config_file' & 'learner_config' cannot be both set!"
         )
       if defined("learner_config_file", self.exp_config):
-        self.learner_config = load_config_file(self.exp_config["learner_config_file"])
+        self.learner_config = load_config_file(
+          self.exp_config["learner_config_file"]
+        )
       else:
         self.learner_config = self.exp_config["learner_config"]
       self.checkpoint_path = None
