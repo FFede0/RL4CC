@@ -13,40 +13,60 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from RL4CC.algorithms.generators.algo_config_generator import AlgoConfigGenerator
-from RL4CC.algorithms.generators.ppo_config_generator import PPOConfigGenerator
-from RL4CC.algorithms.generators.dqn_config_generator import DQNConfigGenerator
-from RL4CC.algorithms.generators.sac_config_generator import SACConfigGenerator
-from RL4CC.algorithms.generators.mappo_config_generator import MAPPOConfigGenerator
 
 
-
-class AlgoConfigGeneratorsFactory:
+class AlgoGeneratorsFactory:
   """
-  Factory of `AlgoConfigGenerator`s
+  Factory of Algorithms (Config) Generators
   """
   def __init__(self):
-    self.algo_config_generators = {}
+    self.algo_generators = {}
   
-  def register(self, algo: str, generator: AlgoConfigGenerator):
+  def register(self, algo: str, generator):
     """
     Register the given `generator` under the provided `algo` name
     """
-    self.algo_config_generators[algo] = generator
+    self.algo_generators[algo] = generator
   
   def create(self, algo: str, **kwargs):
     """
     Create a new generator according to the given `algo` name
     """
-    generator = self.algo_config_generators.get(algo)
+    generator = self.algo_generators.get(algo)
     if not generator:
         raise ValueError(algo)
     return generator(**kwargs)
 
 
 ## Factory initialization
-ACGfactory = AlgoConfigGeneratorsFactory()
-ACGfactory.register("PPO", PPOConfigGenerator)
-ACGfactory.register("DQN", DQNConfigGenerator)
-ACGfactory.register("SAC", SACConfigGenerator)
-ACGfactory.register("MAPPO", MAPPOConfigGenerator)
+from RL4CC.log_and_report.rl4cc_logger import Logger
+logger = Logger(name="RL4CC-AlgorithmGenerators")
+AGfactory = AlgoGeneratorsFactory()
+#
+# -- Ray RLLib-based
+try: 
+  from RL4CC.algorithms.generators import (
+    PPOConfigGenerator,
+    DQNConfigGenerator,
+    SACConfigGenerator,
+    MAPPOConfigGenerator
+  )
+  AGfactory.register("PPO", PPOConfigGenerator)
+  AGfactory.register("DQN", DQNConfigGenerator)
+  AGfactory.register("SAC", SACConfigGenerator)
+  AGfactory.register("MAPPO", MAPPOConfigGenerator)
+except ImportError as error:
+  logger.warn(
+    f"Could not register algorithm: {error.msg!r}."
+  )
+#
+# MORL-Baselines-based
+try:
+  from RL4CC.algorithms.generators import (
+    EnvelopeQLearningGenerator
+  )
+  AGfactory.register("EnvelopeQLearning", EnvelopeQLearningGenerator)
+except ImportError as error:
+  logger.warn(
+    f"Could not register algorithm: {error.msg!r}."
+  )
