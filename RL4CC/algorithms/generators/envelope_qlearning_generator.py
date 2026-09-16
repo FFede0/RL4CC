@@ -162,7 +162,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
         elif k == "replay_buffer_config":
           # -- capacity
           if "capacity" in v:
-            all_params["buffer_size"] = v["capacity"]
+            all_params["buffer_size"] = int(v["capacity"])
           # -- prioritize experience replay
           if "prioritized_replay_alpha" in v:
             all_params["per"] = True
@@ -197,7 +197,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     algo = Envelope(
       env,
       **morl_config,
-      log = True,
+      log = False,#True,
       project_name = self.algo,
       experiment_name = expname
     )
