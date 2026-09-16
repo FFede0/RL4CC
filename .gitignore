@@ -1,3 +1,6 @@
+.vscode
+wandb/
+
 # Output of regression tests
 RL4CC/utilities/regression_tests/LOGDIR/*
 RL4CC/utilities/regression_tests/ERRORS/*
