@@ -51,7 +51,7 @@ class MORLAlgorithmGenerator(ABC):
       ("duration_per_worker",  "rollouts", "not_tunable"),
       ("duration_unit",  "rollouts", "not_tunable"),
       ("batch_size",  "training", "not_tunable"),
-      ("num_train_batches",  "training", "not_tunable")
+      ("num_train_batches",  "training", "not_tunable"),
       ("evaluation_duration_per_worker", "evaluation", "not_tunable")
     ]
   
@@ -141,18 +141,14 @@ class MORLAlgorithmGenerator(ABC):
       )
       # filter
       for k,v in updated_algo_config.items():
-        if k in self.algo_init_keys:
+        if k in self._algo_init_keys:
           dict_to_keep[k] = v
         else:
           dict_to_drop[k] = v
     return dict_to_keep, dict_to_drop
   
-  def to_dict(self, algo) -> dict:
-    return algo.get_config()
-  
-  def to_json(self, algo) -> str:
+  def to_json(self, algo_config) -> str:
     """
     Converts the given algorithm into a string with json format
     """
-    algo_dict = self.to_dict(algo)
-    return json.dumps(algo_dict, indent = 2)
+    return json.dumps(algo_config, indent = 2)
