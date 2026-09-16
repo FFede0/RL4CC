@@ -59,15 +59,21 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
   def convert_evaluation_parameters(
       self, all_params: dict, env_config: dict, eval_interval: int
     ):
+    eval_config = {}
+    if "evaluation" in all_params:
+      eval_config = deepcopy(all_params["evaluation"])
+    else:
+      all_params["evaluation"] = {}
     # evaluation interval
     if eval_interval is not None and not np.isinf(eval_interval):
-      all_params["eval_freq"] = eval_interval * all_params["total_timesteps"]
-    eval_config = all_params.pop("evaluation", {})
+      all_params["evaluation"]["eval_freq"] = eval_interval * all_params[
+        "total_timesteps"
+      ]
     # env config for evaluation
     eval_env_config = deepcopy(env_config)
     if "evaluation_config" in eval_config:
       eval_env_config.update(eval_config["evaluation_config"])
-    all_params["evaluation_config"] = eval_env_config
+    all_params["evaluation"]["evaluation_config"] = eval_env_config
     # number of workers
     if eval_config.pop("evaluation_num_workers", 1) != 1:
       raise ValueError(
@@ -81,14 +87,23 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
       )
       if unit == "timesteps":
         nspe = AlgoConfigGenerator.compute_num_steps_per_episode(env_config)
-        all_params["num_eval_episodes_for_front"] = int(np.ceil(duration/nspe))
+        all_params["evaluation"]["num_eval_episodes_for_front"] = int(
+          np.ceil(duration/nspe)
+        )
       elif unit == "episodes":
-        all_params["num_eval_episodes_for_front"] = duration
+        all_params["evaluation"]["num_eval_episodes_for_front"] = duration
       else:
         raise ValueError(f"ERROR: invalid `evaluation_duration_unit` {unit}")
+    else:
+      all_params["evaluation"]["num_eval_episodes_for_front"] = 5
     # all additional evaluation parameters
     for k, v in eval_config.items():
-      all_params[k] = v
+      all_params["evaluation"][k] = v
+    # add default values
+    if "num_eval_weights_for_front" not in all_params["evaluation"]:
+      all_params["evaluation"]["num_eval_weights_for_front"] = 100
+    if "num_eval_weights_for_eval" not in all_params["evaluation"]:
+      all_params["evaluation"]["num_eval_weights_for_eval"] = 50
   
   def convert_exploration_parameters(self, all_params: dict):
     """
@@ -194,7 +209,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     # make environment
     env, eval_env = self.make_env(
       env_config, 
-      all_params.pop("evaluation_config"), 
+      all_params.get("evaluation", {}).get("evaluation_config"), 
       exp_logdir
     )
     # generate algorithm
