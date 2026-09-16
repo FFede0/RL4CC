@@ -170,6 +170,8 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
         # target network update frequency
         elif k == "target_network_update_freq":
           all_params["target_net_update_freq"] = v
+        else:
+          all_params[k] = v
   
   def generate_algo(
       self,
