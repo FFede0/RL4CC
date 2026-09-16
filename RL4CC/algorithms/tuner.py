@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from RL4CC.algorithms.generators.tune_config_generator import TuneConfigGenerator
-from RL4CC.algorithms.generators_factory import ACGfactory
+from RL4CC.algorithms.generators_factory import AGfactory
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.utilities.common import defined
 
@@ -39,7 +39,7 @@ class Tuner:
     ):
     self.logger = logger
     self.tune_config_generator = TuneConfigGenerator(logger = self.logger)
-    self.algo_config_generator = ACGfactory.create(
+    self.algo_config_generator = AGfactory.create(
       algo, logger = self.logger
     )
     # load the Ray `Tuner` from a checkpoint (if provided)
