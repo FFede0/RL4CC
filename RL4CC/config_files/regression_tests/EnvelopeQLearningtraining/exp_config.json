@@ -1,7 +1,7 @@
 {
   "algorithm": "EnvelopeQLearning",
-  "env_config_file": "config_files/regression_tests/EnvelopeQLearninggenerator/env_config.json",
-  "learner_config_file": "config_files/regression_tests/EnvelopeQLearninggenerator/learner_config.json",
+  "env_config_file": "config_files/regression_tests/EnvelopeQLearningtraining/env_config.json",
+  "learner_config_file": "config_files/regression_tests/EnvelopeQLearningtraining/learner_config.json",
   "logdir": "utilities/regression_tests/LOGDIR/EnvelopeQLearnintraining",
   "evaluation_interval": 5,
   "stopping_criteria": {
