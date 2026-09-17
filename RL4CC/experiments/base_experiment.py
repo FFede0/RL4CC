@@ -167,7 +167,18 @@ class BaseExperiment(ABC):
           self.env_config.get("env_name")
         )
       else:
-        self.logdir = None
+        # for morl, the experiment logdir must be created if not provided
+        if backend == "morl":
+          base_logdir = os.path.expanduser("~/morl_results")
+          os.makedirs(base_logdir, exist_ok = True)
+          self.generate_logdir(
+            base_logdir,
+            self.exp_config.get("algorithm"),
+            self.env_config.get("env_name")
+          )
+        # ray does it on its own
+        else:
+          self.logdir = None
 
   def generate_logdir(self, base_logdir: str, algo: str, env_name: str) -> str:
     """
