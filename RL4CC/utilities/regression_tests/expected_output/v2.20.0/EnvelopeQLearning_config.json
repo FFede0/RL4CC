@@ -27,6 +27,11 @@
     "seed": null
   },
   "morl_train_config": {
+    "debugging": {
+      "logger_config": {
+        "wandb_log": false
+      }
+    },
     "total_timesteps": 360,
     "ref_point": [
       1.0
