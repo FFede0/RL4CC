@@ -10,8 +10,12 @@ except ImportError:
   pass
 
 # MO-Gymnasium-based multi-objective base environment
-from gymnasium.envs.registration import register
-register(
-  id = "BaseMultiObjectiveEnvironment",
-  entry_point = "RL4CC.environment.base_multiobjective_environment:BaseMultiObjectiveEnvironment",
-)
+try:
+  from RL4CC.environment.base_multiobjective_environment import BaseMultiObjectiveEnvironment
+  from gymnasium.envs.registration import register
+  register(
+    id = "BaseMultiObjectiveEnvironment",
+    entry_point = "RL4CC.environment.base_multiobjective_environment:BaseMultiObjectiveEnvironment",
+  )
+except ImportError:
+  pass
