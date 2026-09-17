@@ -55,6 +55,8 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
       "target_net_update_freq",
       "tau"
     ]
+    # generate default algorithm configuration
+    self.generate_default_config()
   
   def convert_evaluation_parameters(
       self, all_params: dict, env_config: dict, eval_interval: int
@@ -222,3 +224,20 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
       experiment_name = expname
     )
     return algo, eval_env, all_params
+  
+  def generate_default_config(self):
+    algo = Envelope(
+      self.make_env(
+        {
+          "env_name": "BaseMultiObjectiveEnvironment", 
+          "min_time": 0, 
+          "max_time": 0, 
+          "time_step": 0
+        }, 
+        None, 
+        None
+      )[0]
+    )
+    self.base_algo_config = {
+      "morl_init_config": algo.get_config()
+    }
