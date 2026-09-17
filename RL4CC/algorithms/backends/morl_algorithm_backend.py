@@ -47,20 +47,13 @@ class MORLAlgorithmBackend(AlgorithmBackend):
         "ERROR: no environment configuration provided"
       )
     # ...initialize algorithm
-    (
-      self.algo, 
-      self.eval_env, 
-      self.additional_params
-    ) = self.generator.generate_algo(
+    self.algo_config = self.generator.generate(
       env_config = env_config,
       algo_config = learner_config,
       exp_logdir = logdir,
       eval_interval = eval_interval
     )
-    self.algo_config = {
-      "morl_init_config": self.algo.get_config(),
-      "morl_train_config": deepcopy(self.additional_params)
-    }
+    self.algo, self.eval_env, self.additional_params = self.algo_config
     self.evaluation_config = {
       "evaluation_interval": eval_interval,
       **self.additional_params.pop("evaluation")

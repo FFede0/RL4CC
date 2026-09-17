@@ -193,12 +193,13 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
         else:
           all_params[k] = v
   
-  def generate_algo(
+  def generate(
       self,
       env_config: dict,
-      algo_config: dict = None,
+      learner_config: dict = None,
       exp_logdir: str = None,
-      eval_interval: int = None
+      eval_interval: int = None,
+      **kwargs
     ):
     """
     Generates the `MORL-Baselines::Envelope` algorith considering the provided 
@@ -206,7 +207,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     """
     # process configuration parameters
     morl_config, all_params = self.process_config_parameters(
-      algo_config, env_config, eval_interval
+      learner_config, env_config, eval_interval
     )
     # make environment
     env, eval_env = self.make_env(
@@ -226,18 +227,15 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     return algo, eval_env, all_params
   
   def generate_default_config(self):
-    algo = Envelope(
-      self.make_env(
-        {
-          "env_name": "BaseMultiObjectiveEnvironment", 
-          "min_time": 0, 
-          "max_time": 0, 
-          "time_step": 0
-        }, 
-        None, 
-        None
-      )[0]
-    )
-    self.base_algo_config = {
-      "morl_init_config": algo.get_config()
-    }
+    env = self.make_env(
+      {
+        "env_name": "BaseMultiObjectiveEnvironment", 
+        "min_time": 0, 
+        "max_time": 0, 
+        "time_step": 0
+      }, 
+      None, 
+      None
+    )[0]
+    algo = Envelope(env)
+    self.base_algo_config = (algo, env, {})

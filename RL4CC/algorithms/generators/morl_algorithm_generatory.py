@@ -89,12 +89,13 @@ class MORLAlgorithmGenerator(ABC):
     pass
 
   @abstractmethod
-  def generate_algo(
+  def generate(
       self,
       env_config: dict,
-      algo_config: dict = None,
+      learner_config: dict = None,
       exp_logdir: str = None,
-      eval_interval: int = None
+      eval_interval: int = None,
+      **kwargs
     ):
     """
     Generates the `MORL-Baselines` algorith considering the provided 
@@ -113,8 +114,10 @@ class MORLAlgorithmGenerator(ABC):
     updated_env_config["exp_logdir"] = exp_logdir
     env = mo_gym.make(env_config["env_name"], env_config = updated_env_config)
     # evaluation environment
-    updated_eval_env_config = deepcopy(eval_env_config)
-    updated_eval_env_config["exp_logdir"] = exp_logdir
+    updated_eval_env_config = updated_env_config
+    if eval_env_config is not None:
+      updated_eval_env_config = deepcopy(eval_env_config)
+      updated_eval_env_config["exp_logdir"] = exp_logdir
     eval_env = mo_gym.make(
       env_config["env_name"], env_config = updated_eval_env_config
     )
@@ -148,8 +151,18 @@ class MORLAlgorithmGenerator(ABC):
           dict_to_drop[k] = v
     return dict_to_keep, dict_to_drop
   
+  def to_dict(self, generator_output) -> str:
+    """
+    Needed only for compliance with ray-based generators
+    """
+    return {
+      "morl_init_config": generator_output[0].get_config(),
+      "morl_train_config": deepcopy(generator_output[-1])
+    }
+  
   def to_json(self, algo_config) -> str:
     """
     Converts the given algorithm into a string with json format
     """
-    return json.dumps(algo_config, indent = 2, cls = NumpyEncoder)
+    algo_dict = self.to_dict(algo_config)
+    return json.dumps(algo_dict, indent = 2, cls = NumpyEncoder)

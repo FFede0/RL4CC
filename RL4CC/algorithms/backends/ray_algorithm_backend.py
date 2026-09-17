@@ -65,7 +65,7 @@ class RayAlgorithmBackend(AlgorithmBackend):
           "ERROR: no environment configuration provided"
         )
       # ...generate `AlgorithmConfig`
-      self.algo_config = self.generator.generate_algo_config(
+      self.algo_config = self.generator.generate(
         learner_config = learner_config,
         env_config = env_config,
         eval_interval = eval_interval,

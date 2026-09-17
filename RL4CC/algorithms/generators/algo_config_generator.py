@@ -108,7 +108,7 @@ class AlgoConfigGenerator(ABC):
     """
     self.base_algo_config = get_trainable_cls(self.algo).get_default_config()
 
-  def generate_algo_config(
+  def generate(
       self,
       env_config: dict,
       learner_config: dict = None,

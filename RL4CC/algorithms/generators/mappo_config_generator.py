@@ -28,7 +28,7 @@ class MAPPOConfigGenerator(PPOConfigGenerator):
     # generate default `AlgorithmConfig`
     self.generate_default_config()
   
-  def generate_algo_config(
+  def generate(
       self,
       env_config: dict,
       learner_config: dict = None,
@@ -43,7 +43,7 @@ class MAPPOConfigGenerator(PPOConfigGenerator):
     ---
     MAPPO is a multi-agent algorithm by definition
     """
-    return super().generate_algo_config(
+    return super().generate(
       env_config,
       learner_config = learner_config,
       exp_logdir = exp_logdir,
