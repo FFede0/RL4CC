@@ -55,13 +55,13 @@ def test_algo_config_generator(
     env_config["agents"] = [f"agent_{i}" for i in range(3)]
   # run
   generator = AGfactory.create(algo, logger = logger)
-  algo_config = generator.generate_algo_config(
+  generator_output = generator.generate(
     env_config = env_config,
     learner_config = learner_config,
     eval_interval = exp_config.get("evaluation_interval"),
     multiagent = multiagent
   )
-  algo_config_dict = generator.to_dict(algo_config)
+  algo_config_dict = generator.to_dict(generator_output)
   # load expected output for comparison
   expected_dict = load_config_file(expected_out)
   equal, different_keys = compare_dictionaries(algo_config_dict, expected_dict)
@@ -71,7 +71,7 @@ def test_algo_config_generator(
       f"different keys: {different_keys}"
     )
     write_config_file(
-      generator.to_json(algo_config),
+      generator.to_json(generator_output),
       "utilities/regression_tests/ERRORS",
       f"{algo}_config.json"
     )
@@ -124,30 +124,33 @@ def test_algo_generators(
           f"the expected output file {expected_output_file} is not available"
         )
     # -- multi-agent
-    logger.log("--- multi-agent version")
-    expected_output_file = os.path.join(
-      base_output_folder, f"{algo}_config_multiagent.json"
-    ) if not algo.startswith("MA") else os.path.join(
-      base_output_folder, f"{algo}_config.json"
-    )
-    if os.path.exists(expected_output_file):
-      passed = test_algo_config_generator(
-        logger = logger, 
-        exp_config_file = exp_config_file, 
-        expected_out = expected_output_file,
-        multiagent = True
+    if AGfactory.get_backend(algo) != "morl":
+      logger.log("--- multi-agent version")
+      expected_output_file = os.path.join(
+        base_output_folder, f"{algo}_config_multiagent.json"
+      ) if not algo.startswith("MA") else os.path.join(
+        base_output_folder, f"{algo}_config.json"
       )
-      num_passed_tests += int(passed)
-    else:
-      logger.err(
-        f"the expected output file {expected_output_file} is not available"
-      )
+      if os.path.exists(expected_output_file):
+        passed = test_algo_config_generator(
+          logger = logger, 
+          exp_config_file = exp_config_file, 
+          expected_out = expected_output_file,
+          multiagent = True
+        )
+        num_passed_tests += int(passed)
+      else:
+        logger.err(
+          f"the expected output file {expected_output_file} is not available"
+        )
   else:
     logger.err(
       f"the configuration file {exp_config_file} is not available"
     )
   total_num_tests = (
-    total_num_tests + 2 if not algo.startswith("MA") else total_num_tests + 1
+    total_num_tests + 2 if (
+      not algo.startswith("MA") and AGfactory.get_backend(algo) != "morl"
+    ) else total_num_tests + 1
   )
   return num_passed_tests, total_num_tests
 
