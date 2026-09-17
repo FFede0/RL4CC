@@ -21,7 +21,7 @@ from RL4CC.log_and_report.rl4cc_logger import Logger
 
 from morl_baselines.common.evaluation import log_all_multi_policy_metrics
 from morl_baselines.common.weights import equally_spaced_weights
-from copy import deepcopy
+import pandas as pd
 import numpy as np
 import wandb
 import torch
@@ -49,7 +49,7 @@ class MORLAlgorithmBackend(AlgorithmBackend):
     # ...initialize algorithm
     self.algo_config = self.generator.generate(
       env_config = env_config,
-      algo_config = learner_config,
+      learner_config = learner_config,
       exp_logdir = logdir,
       eval_interval = eval_interval
     )
@@ -82,13 +82,8 @@ class MORLAlgorithmBackend(AlgorithmBackend):
         eval_env = None,            # no automatic evaluation
         **self.additional_params,
       )
-    results = collector.records
     self.iteration += 1
-    return {
-      "training_iteration": self.last_iteration(),
-      "timesteps_total": self.algo.global_step,
-      "wandb_logged_metrics": results
-    }
+    return self.update_train_results(collector.records)
 
   def evaluate(self) -> dict:
     """
@@ -224,7 +219,28 @@ class MORLAlgorithmBackend(AlgorithmBackend):
     )
     # restore information concerning the last executed iteration
     self.iteration = int(os.path.basename(os.path.split(path)[0])) + 1
-
+  
+  def update_train_results(self, records):
+    results = {
+      "training_iteration": self.last_iteration(),
+      "timesteps_total": self.algo.global_step,
+      "wandb_logged_metrics": records
+    }
+    # convert to dataframe
+    df = pd.DataFrame(results["wandb_logged_metrics"])
+    df["global_step"] = df["global_step"].ffill()
+    df = df.groupby("global_step").first().reset_index()
+    df["training_iteration"] = results["training_iteration"]
+    df["timesteps_total"] = results["timesteps_total"]
+    # print
+    # -- load previous results (if any)
+    results_file_path = os.path.join(self.logdir, 'progress.csv')
+    if os.path.exists(results_file_path):
+      previous_results = pd.read_csv(results_file_path)
+      df = pd.concat([previous_results, df], ignore_index = True)
+    # -- write
+    df.to_csv(results_file_path, index = False)
+    return results
 
 class WandbMetricsCollector:
   def __init__(self):
