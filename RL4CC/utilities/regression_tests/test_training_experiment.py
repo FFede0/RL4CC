@@ -1,5 +1,6 @@
-from RL4CC.experiments.train import TrainingExperiment
 from RL4CC.utilities.common import load_config_file, write_config_file
+from RL4CC.algorithms.generators_factory import AGfactory
+from RL4CC.experiments.train import TrainingExperiment
 from RL4CC.utilities.common import compute_deviation
 from RL4CC.log_and_report.rl4cc_logger import Logger
 
@@ -8,6 +9,34 @@ from typing import Tuple
 import pandas as pd
 import json
 import os
+
+
+def get_progress_columns_by_backend(backend: str) -> list:
+  if backend == "ray":
+    return [
+      "episode_reward_max",
+      "episode_reward_min",
+      "episode_reward_mean",
+      "episode_len_mean",
+      "episodes_this_iter",
+      "num_agent_steps_sampled",
+      "num_agent_steps_trained",
+      "num_env_steps_sampled_this_iter",
+      "num_env_steps_trained_this_iter"
+    ]
+  elif backend == "morl":
+    return [
+      "global_step",
+      "losses/grad_norm",
+      "losses/critic_loss",
+      "metrics/epsilon",
+      "metrics/homotopy_lambda",
+      "metrics/mean_priority",
+      "training_iteration",
+      "timesteps_total",
+    ]
+  else:
+    raise ValueError(f"Unsupported backend: {backend}")
 
 
 def test_training_loop(
@@ -27,17 +56,9 @@ def test_training_loop(
   expected_progress = pd.read_csv(expected_out)
   passed = False
   if len(progress) == len(expected_progress):
-    columns = [
-      "episode_reward_max",
-      "episode_reward_min",
-      "episode_reward_mean",
-      "episode_len_mean",
-      "episodes_this_iter",
-      "num_agent_steps_sampled",
-      "num_agent_steps_trained",
-      "num_env_steps_sampled_this_iter",
-      "num_env_steps_trained_this_iter"
-    ]
+    columns = get_progress_columns_by_backend(
+      AGfactory.get_backend(exp.exp_config["algorithm"])
+    )
     passed = True
     for col in columns:
       _, m, M, avg = compute_deviation(expected_progress[col], progress[col])
