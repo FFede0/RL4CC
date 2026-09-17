@@ -228,18 +228,19 @@ class MORLAlgorithmBackend(AlgorithmBackend):
     }
     # convert to dataframe
     df = pd.DataFrame(results["wandb_logged_metrics"])
-    df["global_step"] = df["global_step"].ffill()
-    df = df.groupby("global_step").first().reset_index()
-    df["training_iteration"] = results["training_iteration"]
-    df["timesteps_total"] = results["timesteps_total"]
-    # print
-    # -- load previous results (if any)
-    results_file_path = os.path.join(self.logdir, 'progress.csv')
-    if os.path.exists(results_file_path):
-      previous_results = pd.read_csv(results_file_path)
-      df = pd.concat([previous_results, df], ignore_index = True)
-    # -- write
-    df.to_csv(results_file_path, index = False)
+    if len(df) > 0:
+      df["global_step"] = df["global_step"].ffill()
+      df = df.groupby("global_step").first().reset_index()
+      df["training_iteration"] = results["training_iteration"]
+      df["timesteps_total"] = results["timesteps_total"]
+      # print
+      # -- load previous results (if any)
+      results_file_path = os.path.join(self.logdir, 'progress.csv')
+      if os.path.exists(results_file_path):
+        previous_results = pd.read_csv(results_file_path)
+        df = pd.concat([previous_results, df], ignore_index = True)
+      # -- write
+      df.to_csv(results_file_path, index = False)
     return results
 
 class WandbMetricsCollector:
