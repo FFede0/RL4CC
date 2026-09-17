@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from RL4CC.utilities.common import load_config_file, write_config_file
+from RL4CC.algorithms.generators_factory import AGfactory
 from RL4CC.utilities.common import not_defined, defined
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.utilities.common import update_json_file
@@ -78,8 +79,10 @@ class BaseExperiment(ABC):
       raise KeyError(
         "ERROR: `algorithm` is required"
       )
+    # based on the algorithm, identify backend
+    backend = AGfactory.get_backend(self.exp_config["algorithm"])
     # if a previous checkpoint path is provided...
-    if "from_checkpoint" in self.exp_config:
+    if "from_checkpoint" in self.exp_config and backend == "ray":
       self.checkpoint_path = os.path.abspath(
         self.exp_config["from_checkpoint"]
       )
@@ -152,7 +155,7 @@ class BaseExperiment(ABC):
         )
       else:
         self.learner_config = self.exp_config["learner_config"]
-      self.checkpoint_path = None
+      self.checkpoint_path = self.exp_config.get("from_checkpoint")
       # base output directory
       base_logdir = self.exp_config.get(
         "logdir"#, os.path.expanduser("~/ray_results"))
