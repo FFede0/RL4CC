@@ -26,5 +26,10 @@
   "rollouts": {
     "duration_unit": "timesteps",
     "duration_per_worker": 360
+  },
+  "debugging": {
+    "logger_config": {
+      "wandb_log": false
+    }
   }
 }
