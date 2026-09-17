@@ -220,7 +220,13 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     algo = Envelope(
       env,
       **morl_config,
-      log = True,
+      log = True if "debugging" not in all_params else all_params.pop(
+        "debugging", {"logger_config": {"wandb_log": True}}
+      ).get(
+        "logger_config", {"wandb_log": True}
+      ).get(
+        "wandb_log", True
+      ),
       project_name = self.algo,
       experiment_name = expname
     )
@@ -237,5 +243,5 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
       None, 
       None
     )[0]
-    algo = Envelope(env)
+    algo = Envelope(env, log = False)
     self.base_algo_config = (algo, env, {})
