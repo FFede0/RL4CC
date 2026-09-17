@@ -1,0 +1,29 @@
+{
+  "morl_init_config": {
+    "env_id": "BaseMultiObjectiveEnvironment",
+    "learning_rate": 0.0003,
+    "initial_epsilon": 0.01,
+    "epsilon_decay_steps": null,
+    "batch_size": 256,
+    "tau": 1.0,
+    "clip_grand_norm": 1.0,
+    "target_net_update_freq": 200,
+    "gamma": 0.99,
+    "use_envelope": true,
+    "num_sample_w": 4,
+    "net_arch": [
+      256,
+      256,
+      256,
+      256
+    ],
+    "per": true,
+    "gradient_updates": 1,
+    "buffer_size": 1000000,
+    "initial_homotopy_lambda": 0.0,
+    "final_homotopy_lambda": 1.0,
+    "homotopy_decay_steps": null,
+    "learning_starts": 100,
+    "seed": null
+  }
+}
