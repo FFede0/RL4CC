@@ -25,5 +25,6 @@
     "homotopy_decay_steps": null,
     "learning_starts": 100,
     "seed": null
-  }
+  },
+  "morl_train_config": {}
 }
