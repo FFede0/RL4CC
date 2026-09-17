@@ -229,6 +229,8 @@ class MORLAlgorithmBackend(AlgorithmBackend):
         "load_replay_buffer", True
       )
     )
+    # restore information concerning the last executed iteration
+    self.iteration = int(os.path.basename(os.path.split(path)[0])) + 1
 
 
 class WandbMetricsCollector:
