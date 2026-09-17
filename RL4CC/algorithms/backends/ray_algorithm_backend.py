@@ -29,6 +29,7 @@ from ray.rllib.policy.sample_batch import (
 from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
 from ray.rllib.algorithms import AlgorithmConfig
 
+import numpy as np
 import cloudpickle
 import json
 import os
@@ -85,7 +86,7 @@ class RayAlgorithmBackend(AlgorithmBackend):
     )
 
   def compute_single_action(
-      self, obs, explore: bool = False, weight = None
+      self, obs, explore: bool = False, weight: np.array = None
     ):
     """
     Compute a single action from agent(s) that received an observation

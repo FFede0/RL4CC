@@ -24,6 +24,7 @@ from morl_baselines.common.weights import equally_spaced_weights
 from copy import deepcopy
 import numpy as np
 import wandb
+import torch
 import os
 
 
@@ -41,34 +42,33 @@ class MORLAlgorithmBackend(AlgorithmBackend):
     self.logger = logger
     self.generator = generator
     self.logdir = logdir
+    if env_config is None:
+      raise RuntimeError(
+        "ERROR: no environment configuration provided"
+      )
+    # ...initialize algorithm
+    (
+      self.algo, 
+      self.eval_env, 
+      self.additional_params
+    ) = self.generator.generate_algo(
+      env_config = env_config,
+      algo_config = learner_config,
+      exp_logdir = logdir,
+      eval_interval = eval_interval
+    )
+    self.algo_config = {
+      "morl_init_config": self.algo.get_config(),
+      "morl_train_config": deepcopy(self.additional_params)
+    }
+    self.evaluation_config = {
+      "evaluation_interval": eval_interval,
+      **self.additional_params.pop("evaluation")
+    }
     # load the algorithm from a checkpoint (if provided)
+    # NOTE: the algorithm must be initialized first!
     if checkpoint_path is not None:
       self.load_checkpoint(checkpoint_path)
-    # otherwise...
-    else:
-      if env_config is None:
-        raise RuntimeError(
-          "ERROR: no environment configuration provided"
-        )
-      # ...initialize algorithm
-      (
-        self.algo, 
-        self.eval_env, 
-        self.additional_params
-      ) = self.generator.generate_algo(
-        env_config = env_config,
-        algo_config = learner_config,
-        exp_logdir = logdir,
-        eval_interval = eval_interval
-      )
-      self.algo_config = {
-        "morl_init_config": self.algo.get_config(),
-        "morl_train_config": deepcopy(self.additional_params)
-      }
-      self.evaluation_config = {
-        "evaluation_interval": eval_interval,
-        **self.additional_params.pop("evaluation")
-      }
 
   def build(self):
     """
@@ -92,7 +92,7 @@ class MORLAlgorithmBackend(AlgorithmBackend):
     results = collector.records
     self.iteration += 1
     return {
-      "training_iteration": self.iteration - 1,
+      "training_iteration": self.last_iteration(),
       "timesteps_total": self.algo.global_step,
       "wandb_logged_metrics": results
     }
@@ -154,25 +154,20 @@ class MORLAlgorithmBackend(AlgorithmBackend):
       self,
       obs,
       explore: bool = False,
-      weight=None
+      weight: np.array = None
     ):
-
     if weight is None:
-      raise ValueError(
-        "A weight vector is required for MORL algorithms"
-      )
-
+      raise ValueError("A weight vector is required for MORL algorithms")
+    # possibly random action
     if explore:
       return self.algo.act(
-        self.algo.th.as_tensor(obs)
-        if hasattr(self.algo, "th")
-        else obs,
-        weight
+        torch.as_tensor(obs),
+        torch.as_tensor(weight)
       )
-
-    return self.algo.eval(
-      obs,
-      np.asarray(weight)
+    # greedy action
+    return self.algo.max_action(
+      torch.as_tensor(obs),
+      torch.as_tensor(weight)
     )
 
   def stop(self):
@@ -188,51 +183,51 @@ class MORLAlgorithmBackend(AlgorithmBackend):
         pass
 
   def last_iteration(self) -> int:
-    return self.iteration
+    return self.iteration - 1
 
   def save_checkpoint(
       self,
       manual: bool = False,
       path: str = None
     ) -> str:
-
-    checkpoint_dir = (
-      path
-      if path is not None
-      else os.path.join(
-        self.logdir,
-        f"checkpoints/{self.last_iteration()}"
+    if manual:
+      self.logger.warn(
+        "Manual checkpoints are not implemented for MORL algorithms"
       )
+    checkpoint_dir = path if path is not None else os.path.join(
+      self.logdir, f"checkpoints/{self.last_iteration()}"
     )
-
-    os.makedirs(
-      checkpoint_dir,
-      exist_ok=True
-    )
-
-    filename = "EnvelopeQLearning"
-
+    os.makedirs(checkpoint_dir, exist_ok = True)
     self.algo.save(
-      save_dir=checkpoint_dir,
-      filename=filename
+      save_replay_buffer = self.additional_params.get(
+        "save_replay_buffer", True
+      ),
+      save_dir = checkpoint_dir, 
+      filename = self.generator.algo
     )
-
     last_checkpoint = os.path.join(
-      checkpoint_dir,
-      f"{filename}.tar"
+      checkpoint_dir, f"{self.generator.algo}.tar"
     )
-
     self.logger.log(
       "an Algorithm checkpoint has been created inside directory: "
       f"'{last_checkpoint}'",
       1
     )
-
     return last_checkpoint
 
   def load_checkpoint(self, path: str):
-    raise NotImplementedError(
-      "MORL checkpoint restoration should be implemented"
+    """
+    Load the provided `Algorithm` checkpoint
+    """
+    if not os.path.exists(path):
+      raise FileNotFoundError(
+        f"ERROR: checkpoint path {path} does not exist"
+      )
+    self.algo.load(
+      path, 
+      load_replay_buffer = self.additional_params.get(
+        "load_replay_buffer", True
+      )
     )
 
 

@@ -15,6 +15,8 @@ limitations under the License.
 """
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 
 class AlgorithmBackend(ABC):
   """
@@ -69,7 +71,7 @@ class AlgorithmBackend(ABC):
 
   @abstractmethod
   def compute_single_action(
-      self, obs, explore: bool = False, weight = None
+      self, obs, explore: bool = False, weight: np.array = None
     ):
     """
     Compute one action.
