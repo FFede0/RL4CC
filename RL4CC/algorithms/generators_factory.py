@@ -36,6 +36,15 @@ class AlgoGeneratorsFactory:
     if not generator:
         raise ValueError(algo)
     return generator(**kwargs)
+  
+  def get_backend(self, algo: str):
+    """
+    Identify the generator backend without instantiating one
+    """
+    generator = self.algo_generators.get(algo)
+    if not generator:
+        raise ValueError(algo)
+    return generator.backend
 
 
 ## Factory initialization
