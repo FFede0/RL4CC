@@ -111,155 +111,302 @@ A typical example (for a fully-connected network) is:
 }
 ```
 
-### Ray `Algorithm` configuration
+### How to configure the learner
 
-The `learner_config` file must include parameters related to the definition of a Ray
-[`AlgorithmConfig`](https://docs.ray.io/en/releases-2.20.0/rllib/rllib-training.html#configuring-rllib-algorithms)
-object.
+The `learner_config` file contains the parameters used to initialize the
+learning algorithm. RL4CC supports two algorithm backends:
 
-Parameters should be grouped in sub-dictionaries following the callbacks
-structure of `AlgorithmConfig`. The most relevant families of parameters are:
+- **Ray RLlib**, used by algorithms such as `PPO`, `DQN`, `SAC`, and `MAPPO`;
+- **MORL-Baselines**, currently used by `EnvelopeQLearning`.
 
-- `framework`, for the Deep Learning framework options;
-- `rollouts`, for parameters related to the configuration of rollout workers,
-  i.e., to how experience trajectories are collected;
-- `evaluation`, to configure the `Algorithm` evaluation;
-- `resources`, to determine which types and how many resources are devoted
-  to experience collection and algorithm training;
-- `training`, to set both common training parameters (e.g., the learning
-  rate) and algorithm-specific properties.
+The backend is selected automatically from the algorithm registered in
+[`AGfactory`](../algorithms/generators_factory.py). Therefore, the
+`learner_config` has the same high-level structure in both cases, while the
+parameters inside the sections are interpreted according to the selected
+backend.
 
-A more comprehensive list is provided in
-[the Ray documentation](https://docs.ray.io/en/releases-2.20.0/rllib/rllib-training.html#configuring-rllib-algorithms).
+> [!IMPORTANT]
+> The `learner_config` is intentionally organized around the same three
+> high-level sections for both backends:
+>
+> - `rollouts`: how much experience is collected for each training iteration;
+> - `evaluation`: how evaluation is configured;
+> - `training`: algorithm-specific training parameters.
+>
+> This common structure does **not** mean that the internal parameters have the
+> same meaning or names in RLlib and MORL-Baselines. RL4CC's algorithm
+> generators translate a set of common, higher-level keys into the parameters
+> expected by the selected implementation. Parameters not translated by RL4CC
+> are passed to the underlying library and must therefore follow that library's
+> documentation.
 
-> [!WARNING]
-> To simplify the management of some parameters related to the experience
-> sampling and training, RL4CC offers the possibility of setting higher-level
-> _suggested_ keywords instead of directly using the ones defined in Ray. These
-> are:
->
-> - In the `rollouts` section:
->
->   - `duration_unit`: it can take the value `episodes`, if rollout workers
->     should collect entire episodes during the experience sampling phase, or
->     `timesteps`, if episodes can be truncated during the experience sampling;
->
->   - `duration_per_worker`: how many episodes/steps should be collected by each
->     rollout worker.
->
-> - In the `training` section:
->
->   - `batch_size`: dimension of each batch extracted from the collected
->     experience (or the replay buffer, if defined) during the training phase;
->
->   - `num_train_batches`: how many batches should be trained in each iteration.
->
-> - in the `resources` section:
->
->   - `num_gpus_master`: number of GPUs assigned to the master node;
->
->   - `num_cpus_master`: number of CPUs assigned to the master node.
->
-> - in the `evaluation` section:
->   - `evaluation_duration_per_worker`: how many episodes/steps should be
->     collected by each evaluation worker.
->
-> These keywords mask a lower-level management performed by Ray, where different
-> algorithms use different parameters to control the same elements. An
-> **expert** user is free to set directly the Ray _protected_ keywords, but the
-> two approaches cannot be mixed.
+#### Common configuration keys
+
+The following keys are interpreted by both RLlib and MORL-Baselines generators.
+
+##### `rollouts`
+
+- `duration_unit`: unit used to express the amount of experience collected
+  during one training iteration. It can be `timesteps` or `episodes`.
+  With `timesteps`, `duration_per_worker` is interpreted directly as a number
+  of environment steps. With `episodes`, RL4CC uses `min_time`, `max_time` and
+  `time_step` from `env_config` to determine the number of steps in one
+  episode.
+- `duration_per_worker`: amount of experience collected per rollout worker,
+  expressed in the unit selected by `duration_unit`.
+- `num_rollout_workers`: number of rollout workers. RLlib can use multiple
+  workers. The current MORL-Baselines integration supports **only one** rollout
+  worker, so this value must be `1` (or omitted, in which case the default is
+  `1`).
+
+>[!WARNING]
+> When implementing multi-agent RL, consider that Ray RLLib allows to decide 
+> if the rollout steps should be counted as *agents' steps* or 
+> *environment's steps*, based on the value of the `count_steps_by` parameter 
+> to be specified in an additional 
+> [`multi_agent` section](https://docs.ray.io/en/releases-2.20.0/?utm_source=ray_io&utm_medium=website&utm_campaign=nav). 
+> The two supported values are: "env_steps", which counts each time the env 
+> is "stepped" (no matter how many multi-agent actions are passed/how many 
+> multi-agent observations have been returned in the previous step), and 
+> "agent_steps", which counts each individual agent step as one step.
+
+##### `evaluation`
+
+- `evaluation_duration_unit`: unit used for the evaluation duration;
+  `timesteps` or `episodes` as for the `rollouts` above.
+- `evaluation_duration_per_worker`: amount of experience collected by each
+  evaluation worker, expressed in `evaluation_duration_unit`.
+- `evaluation_num_workers`: number of evaluation workers. The current
+  MORL-Baselines integration supports **only one** evaluation worker. 
+- `evaluation_config`: additional configuration for the evaluation environment.
+  RL4CC starts from `env_config` and applies the values in this dictionary as
+  overrides. In the MORL-Baselines backend, these values are used to create
+  the separate evaluation environment.
+
+>[!NOTE]
+> The evaluation interval itself is **not** configured in `learner_config`.
+> Set it through `evaluation_interval` in `exp_config`, as described in
+> [Experiment configuration](#experiment-configuration). RL4CC converts that
+> value to the corresponding backend-specific evaluation frequency.
+
+>[!CAUTION]
+> Due to a known issue with the currently supported RLlib API stack, 
+> configuring `evaluation_num_workers` can result in an inconsistent number 
+> of evaluation episodes. It is therefore recommended to omit this key 
+> from the configuration entirely. 
+> See [`ray_issues_to_track.md`](../../ray_issues_to_track.md).
+
+##### `training`
+
+- `batch_size`: size of each training batch. The underlying parameter to which
+  this is translated depends on the algorithm.
+- `num_train_batches`: number of training batches/gradient-update groups
+  performed in one RL4CC training iteration. The exact underlying parameter
+  used by the algorithm is backend-specific.
+
+The two generators also provide common translations for several training
+parameters, including `lr` (learning rate), `grad_clip` (gradient clipping),
+and `hiddens` (network architecture), but their final interpretation is
+determined by the underlying algorithm implementation. In particular, the
+MORL-Baselines generator translates these to `learning_rate`,
+`max_grad_norm`, and `net_arch`, respectively.
 
 > [!CAUTION]
-> There are few elements that, differently from what is explained in the Ray
-> documentation **should NOT** be managed through `learner_config`. These are:
->
-> - `env` and `env_config`, from the `environment` parameters group;
->
-> - `evaluation_interval`, from the `evaluation` parameters group;
->
-> - `logdir`, from the `logger_config` dictionary in the `debugging` parameters
->   group.
->
-> In particular, `env` and `env_config` are indirectly controlled through the
-> [`env_config`](#environment-configuration) configuration, while
-> `evaluation_interval` and `logdir` are set from the [experiment configuration
-> file](#experiment-configuration).
+> `batch_size` and `num_train_batches` are deliberately expressed using
+> RL4CC's common terminology. They are not necessarily passed to the
+> underlying library under the same names. Do not assume that an RLlib
+> parameter can be copied verbatim into a MORL-Baselines configuration, or
+> vice versa.
 
-> [!NOTE]
-> In the `callbacks` section, the `callbacks_class` parameter should correspond
-> to the path to the callbacks class as it would be reported while importing the
-> module (e.g., `"callbacks.base_callbacks.BaseCallbacks"`).
+#### Ray RLlib learner configuration
+
+For a Ray RLlib algorithm, the `learner_config` parameters are used to build
+the corresponding Ray `AlgorithmConfig`.
+
+The sections commonly used by RLlib are:
+
+- `framework`, for the deep-learning framework;
+- `rollouts`, for experience collection;
+- `evaluation`, for evaluation;
+- `resources`, for the resources allocated to the algorithm and rollout workers;
+- `training`, for common and algorithm-specific training parameters;
+- `exploration`, for exploration behaviour;
+- `callbacks`, for RL4CC/RLlib callbacks;
+- `debugging`, for Ray/RLlib debugging and logging options.
+
+A comprehensive description of the RLlib parameters is available in the
+[Ray RLlib configuration documentation](https://docs.ray.io/en/releases-2.20.0/rllib/rllib-training.html#configuring-rllib-algorithms).
+
+RL4CC additionally provides the following higher-level keys:
+
+- `num_gpus_master`: number of GPUs assigned to the master/local worker;
+- `num_cpus_master`: number of CPUs assigned to the master/local worker.
+
+These are translated by RL4CC to the corresponding RLlib resource
+configuration. Other resource parameters should follow the RLlib
+documentation.
 
 > [!CAUTION]
-> Due to a known [issue](../../ray_issues_to_track.md) with RLLib old API 
-> stack (i.e., the one currently supported by RL4CC), setting 
-> `evaluation_num_workers` in the Ray config results in an inconsistent 
-> number of evaluation episodes. 
+> Some RLlib parameters are managed by RL4CC and should not be set directly
+> in `learner_config`:
+>
+> - `env` and `env_config`, which are derived from the
+>   [`env_config`](#environment-configuration);
+> - `evaluation_interval`, which is taken from `exp_config`;
+> - `logdir` inside `logger_config`, which is set from the experiment output
+>   directory.
+>
+> RL4CC's higher-level suggested keys and the corresponding lower-level
+> protected RLlib keys should not be mixed.
 
-Sample `learner_config.json` files for [PPO](learner_config_ppo.json.template) 
-and [DQN](learner_config_dqn.json.template) are provided.
+For RLlib algorithms, sample `learner_config.json` files are provided for
+[PPO](learner_config_ppo.json.template), [DQN](learner_config_dqn.json.template),
+and [MAPPO](learner_config_mappo.json.template).
 
-#### How to use custom Policy models
+##### Custom policy models
 
 Ray supports the use of Torch and TF models using the ModelV2 implementation.
 
-One can easily implement their own custom network by extending either the
+One can implement a custom network by extending either the
 [Torch](../models/base_torch_model.py) or the
-[Tensorflow](../models/base_tf_model.py) Base models, and then registering in
-Ray `ModelCatalog`. We provide two sample custom models as starting points,
-and the instructions to register them can be seen in the
-[models initialization file](../models/__init__.py).
+[Tensorflow](../models/base_tf_model.py) Base model, and then registering it in
+Ray's `ModelCatalog`. RL4CC provides sample custom models and the registration
+instructions in the [models initialization file](../models/__init__.py).
 
-To actually indicate the use of a custom model after building and registering
-it, one must specify the **name** of the model (as it was registered in the
-catalog) and the associated custom model config dictionary in the `training`
-section of the Ray configuration file.
+To select a registered custom model, specify its registered name and the
+associated custom model configuration in the `model` dictionary inside the
+`training` section.
 
-For example, to use the provided Torch-based
-[CustomTorchModel](../models/custom_torch_model.py), which is registered
-under the name `custom_torch_model`, provide in the learner_config.json file,
-under the `model` dictionary in the `training` section, the following
-information:
+For example, for the provided Torch-based
+[`CustomTorchModel`](../models/custom_torch_model.py), registered as
+`custom_torch_model`:
 
-```
-.
-.
-"framework": "torch",
-.
-.
-"training": {
-  .
-  .
-  "model": {
-    "custom_model": "custom_torch_model",
-    "custom_model_config": {
-      "seed": 123,
-      "fun_layers": ["ReLU", "ReLU", "ReLU"],
-      "dropout": true,
-      "dropout_list": [0.02, 0, 0],
-      "n_features": [128, 128, 64]
+```json
+{
+  "framework": "torch",
+  "training": {
+    "model": {
+      "custom_model": "custom_torch_model",
+      "custom_model_config": {
+        "seed": 123,
+        "fun_layers": ["ReLU", "ReLU", "ReLU"],
+        "dropout": true,
+        "dropout_list": [0.02, 0, 0],
+        "n_features": [128, 128, 64]
+      }
     }
-  },
-  .
-  .
+  }
 }
-.
-.
 ```
 
-Examples are reported for both the PPO and DQN algorithms in the the
-corresponding template files.
+Examples are reported in the PPO and DQN template files.
 
 > [!WARNING]
-> The framework the model is based on **must** match the framework passed in 
-> the `learner_config`, otherwise this will result in runtime errors.
+> The framework used by the custom model must match the `framework` selected
+> in `learner_config`, otherwise runtime errors can occur.
 
-> [!NOTE] 
-> A notable example of custom policy is the 
-> [centralized critic model](../models/centralized_critic_model.py) 
-> implemented to support the MAPPO algorithm. This is registered in RL4CC as 
-> `centralizedcritic` and should be selected as shown in the sample 
-> [MAPPO configuration file](../config_files/learner_config_mappo.json.template).
+A notable custom policy is the
+[centralized critic model](../models/centralized_critic_model.py) used by
+MAPPO. It is registered in RL4CC as `centralizedcritic`; see the
+[MAPPO configuration template](learner_config_mappo.json.template).
+
+#### MORL-Baselines learner configuration
+
+For a MORL-Baselines algorithm, RL4CC instantiates the algorithm directly
+through its MORL-specific generator. The current integration registers
+`EnvelopeQLearning`, implemented using MORL-Baselines' `Envelope` algorithm.
+
+MORL-Baselines follows the
+[MO-Gymnasium API](https://github.com/Farama-Foundation/MO-Gymnasium) and
+provides its own algorithm-specific parameters. See the
+[MORL-Baselines documentation](https://lucasalegre.github.io/morl-baselines/)
+for the general API and the
+[Envelope Q-Learning documentation](https://lucasalegre.github.io/morl-baselines/algos/multi_policy/envelope/)
+for the algorithm-specific parameters.
+
+The important distinction is that RL4CC keeps the same `rollouts`,
+`evaluation`, and `training` organization, but the MORL generator translates
+those sections into MORL-Baselines constructor/training parameters.
+
+For example, a minimal Envelope Q-Learning configuration can be written as:
+
+```json
+{
+  "rollouts": {
+    "duration_unit": "timesteps",
+    "duration_per_worker": 360
+  },
+  "training": {
+    "lr": 3e-4,
+    "gamma": 0.98,
+    "batch_size": 64,
+    "num_train_batches": 1,
+    "hiddens": [256, 256, 256, 256],
+    "replay_buffer_config": {
+      "capacity": 2000000
+    },
+    "ref_point": [1.0],
+    "seed": 4850
+  },
+  "exploration": {
+    "initial_epsilon": 1.0,
+    "final_epsilon": 0.05,
+    "epsilon_decay_steps": 50000
+  }
+}
+```
+
+A complete working example is available in
+[`learner_config_envelopeqlearning.json.template`](learner_config_envelopeqlearning.json.template).
+
+For MORL-Baselines, the following RL4CC translations are particularly
+important:
+
+- `rollouts.duration_unit` + `rollouts.duration_per_worker` become the total
+  training horizon (`total_timesteps`, and `total_episodes` when the duration
+  is specified in episodes).
+- `training.lr` becomes `learning_rate`.
+- `training.grad_clip` becomes `max_grad_norm`.
+- `training.hiddens` becomes `net_arch`.
+- `training.num_train_batches` becomes `gradient_updates`.
+- `training.num_steps_sampled_before_learning_starts` becomes
+  `learning_starts`.
+- `training.replay_buffer_config.capacity` becomes `buffer_size`.
+- `training.replay_buffer_config.prioritized_replay_alpha` enables prioritized
+  experience replay and becomes `per_alpha`.
+- `training.target_network_update_freq` becomes `target_net_update_freq`.
+- `training.ref_point` is converted to a NumPy array and is used by RL4CC
+  when computing multi-objective evaluation metrics.
+
+The MORL generator also maps the `exploration` section to the corresponding
+epsilon parameters used by Envelope Q-Learning. If `exploration.explore` is
+set to `false`, epsilon exploration is disabled.
+
+MORL-Baselines-specific parameters that are not translated by RL4CC are passed
+to the `Envelope` implementation using the parameter names expected by
+MORL-Baselines. Consult the
+[Envelope Q-Learning documentation](https://lucasalegre.github.io/morl-baselines/algos/multi_policy/envelope/)
+when adding or changing such parameters.
+
+> [!WARNING]
+> The current MORL-Baselines integration supports only one rollout worker and
+> one evaluation worker. Setting `num_rollout_workers` or
+> `evaluation_num_workers` to a value other than `1` is rejected.
+
+> [!NOTE]
+> `evaluation_interval` is still controlled by `exp_config`, exactly as for
+> RLlib. RL4CC converts it to the MORL-Baselines evaluation frequency.
+> `evaluation_duration_per_worker` is converted to a number of evaluation
+> episodes; when it is expressed in timesteps, RL4CC derives the number of
+> episodes from the episode length specified by `env_config`.
+
+> [!NOTE]
+> MORL-Baselines algorithms are multi-objective algorithms and therefore
+> require a multi-objective environment. The environment must follow the
+> MO-Gymnasium interface and expose the reward vector expected by the selected
+> MORL-Baselines algorithm. Any custom multi-objective environment to be 
+> used with RL4CC should inherit from the provided 
+> [`BaseMultiObjectiveEnvironment`](../environment/base_multiobjective_environment.py)
 
 ### Configure hyperparameter tuning
 
@@ -475,14 +622,17 @@ Additional parameters are:
   `Environment` and `now` is given by
   `datetime.now().strftime('%Y-%m-%d_%H-%M-%S.%f')`. The default base result
   directory if no value is provided here is `~/ray_results`.
-- `from_checkpoint`: path to the directory where the checkpoint to be
-  restored is saved. If this is provided, further information related to the
-  Environment or the Ray Algorithm configuration files are neglected. 
+- `from_checkpoint`: path to the checkpoint to be restored. When using 
+  Ray-based algorithms, if this is provided, further information related to 
+  the environment or the learner configuration are neglected. 
 
 > [!WARNING] 
-> In the case of `TuningExperiment`s, the path is the path to the general 
-> tuning experiment outputs folder within `logdir`, not the path to a 
-> specific checkpoint directory.
+> In the case of `TuningExperiment`, the `from_checkpoint` path is the path to 
+> the general tuning experiment outputs folder within `logdir`, not the path 
+> to a specific checkpoint directory. In the case of a `TrainingExperiment`, 
+> it is the path to a checkpoint directory when working with Ray-based 
+> algorithms, and the path to the checkpoint .tar file when working with 
+> algorithms based on MORL-Baselines
 
 - `env_config_file`: path to the `env_config.json` file described
   [above](#environment-configuration).
@@ -511,7 +661,9 @@ Additional parameters are:
 > If no previously checkpoint is provided, you **must** specify either
 > `env_config_file` or `env_config` but not both. The same applies to
 > Ray config (`learner_config_file` and `learner_config`) and tuner configuration
-> (`tune_config_file` and `tune_config`),
+> (`tune_config_file` and `tune_config`). For multi-objective experiments, 
+> the environment and learner configurations must be provided regardless 
+> the fact that the experiment re-starts from an existing checkpoint.
 
 Example (for a training experiment):
 
