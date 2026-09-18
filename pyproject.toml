@@ -15,13 +15,24 @@ dependencies = []
 
 [project.optional-dependencies]
 ray220 = [
+"cloudpickle",
+  "dm-tree",
+  "fsspec",
+  "gymnasium>=0.28.1",
+  "jsonschema",
+  "lz4",
   "numpy==1.25.0",
   "opencv-python==4.9.0.80",
   "protobuf==7.36.1",
   "pyarrow==12.0.1",
-  "ray[rllib]==2.20.0",
+  "pyyaml",
+  "ray==2.20.0",
+  "rich",
+  "scikit-image",
   "scipy==1.14.1",
-  "torch==2.14.0"
+  "tensorboardX",
+  "torch==2.14.0",
+  "typer"
 ]
 morl = [
   "numpy==1.25.0",
