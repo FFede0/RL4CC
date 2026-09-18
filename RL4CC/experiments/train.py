@@ -18,7 +18,6 @@ from RL4CC.utilities.common import not_defined, defined
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.algorithm import Algorithm
 
-from ray.rllib.policy.policy import Policy
 from datetime import datetime
 
 
@@ -39,7 +38,7 @@ class TrainingExperiment(BaseExperiment):
         "`stopping_criteria` must be provided in `exp_config.json`"
       )
   
-  def run(self) -> Policy:
+  def run(self):
     # define algorithm
     multiagent = False
     if self.env_config is not None and defined("agents", self.env_config):

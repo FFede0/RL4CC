@@ -3,9 +3,13 @@ from RL4CC.utilities.common import compare_dictionaries
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.algorithms.generators_factory import AGfactory
 
-from ray import __version__ as rayver
 from typing import Tuple
 import os
+
+try:
+  from ray import __version__ as rayver
+except ImportError:
+  rayver = "2.20.0"   # "default" version to look for expected outputs
 
 
 def test_default_generator(

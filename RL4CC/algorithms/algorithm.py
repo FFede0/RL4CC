@@ -25,8 +25,6 @@ from RL4CC.algorithms.generators_factory import AGfactory
 from RL4CC.utilities.common import write_config_file
 from RL4CC.log_and_report.rl4cc_logger import Logger
 
-from ray.rllib.algorithms.algorithm import Algorithm as RayAlgorithm
-from ray.rllib.algorithms import AlgorithmConfig
 import os
 
 
@@ -133,24 +131,11 @@ class Algorithm:
     """
     Load the provided `Algorithm` checkpoint
     """
-    if (not os.path.exists(path) or not os.path.isdir(path)):
-      raise FileNotFoundError(
-        f"ERROR: checkpoint path {path} does not exist or is invalid"
-      )
-    # check if the checkpoint is a manual or automatic checkpoint
-    if os.path.exists(os.path.join(path, "MANUAL_CHECKPOINT")):
-      self._load_manual_checkpoint(path)
-    else:
-      self.algo = RayAlgorithm.from_checkpoint(
-        path,
-        policy_ids = policy_ids,
-        policy_mapping_fn = policy_mapping_fn,
-        policies_to_train = policies_to_train
-      )
-    self.algo_config = self.algo.config
-    self.logdir = self.algo.logdir
-    self.logger.warn(
-      f"Algorithm restored from checkpoint; output directory: {self.logdir}"
+    self.backend.load_checkpoint(
+      path, 
+      policy_ids = policy_ids, 
+      policy_mapping_fn = policy_mapping_fn, 
+      policies_to_train = policies_to_train
     )
   
   def train(self) -> dict:

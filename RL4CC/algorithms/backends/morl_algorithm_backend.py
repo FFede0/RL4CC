@@ -203,7 +203,7 @@ class MORLAlgorithmBackend(AlgorithmBackend):
     )
     return last_checkpoint
 
-  def load_checkpoint(self, path: str):
+  def load_checkpoint(self, path: str, **kwargs):
     """
     Load the provided `Algorithm` checkpoint
     """

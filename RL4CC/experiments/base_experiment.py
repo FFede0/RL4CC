@@ -20,7 +20,6 @@ from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.utilities.common import update_json_file
 from RL4CC.utilities.common import NumpyEncoder
 
-from ray.rllib.policy.policy import Policy
 from abc import ABC, abstractmethod
 from datetime import datetime
 import numpy as np
@@ -264,7 +263,7 @@ class BaseExperiment(ABC):
     pass
 
   @abstractmethod
-  def run(self) -> Policy:
+  def run(self):
     pass
 
   @staticmethod

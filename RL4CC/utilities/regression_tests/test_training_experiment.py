@@ -4,11 +4,15 @@ from RL4CC.experiments.train import TrainingExperiment
 from RL4CC.utilities.common import compute_deviation
 from RL4CC.log_and_report.rl4cc_logger import Logger
 
-from ray import __version__ as rayver
 from typing import Tuple
 import pandas as pd
 import json
 import os
+
+try:
+  from ray import __version__ as rayver
+except ImportError:
+  rayver = "2.20.0"   # "default" version to look for expected outputs
 
 
 def get_progress_columns_by_backend(backend: str) -> list:
