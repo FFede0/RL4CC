@@ -24,9 +24,12 @@ ray220 = [
   "torch==2.14.0"
 ]
 morl = [
+  "numpy==1.25.0",
   "gymnasium==1.3.0",
   "mo-gymnasium==1.3.2",
-  "morl-baselines==1.3.0"
+  "morl-baselines==1.3.0",
+  "scipy==1.14.1",
+  "torch==2.14.0"
 ]
 
 [tool.setuptools.packages.find]
