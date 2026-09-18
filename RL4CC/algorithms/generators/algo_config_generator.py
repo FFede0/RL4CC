@@ -14,8 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from RL4CC.algorithms.generators.policies_generator import PoliciesGenerator
-from RL4CC.utilities.common import not_defined
 from RL4CC.log_and_report.rl4cc_logger import Logger
+from RL4CC.utilities.common import not_defined
+from RL4CC.utilities.generators import (
+  _compute_num_steps_per_episode,
+  _validate_key_usage
+)
 
 from ray.rllib.algorithms import AlgorithmConfig
 from ray.tune.registry import get_trainable_cls
@@ -289,61 +293,9 @@ class AlgoConfigGenerator(ABC):
       all_params["logger_config"] = None
   
   def validate_key_usage(self, all_params: dict):
-    return self._validate_key_usage(
+    return _validate_key_usage(
       self._protected_keys, self._suggested_keys, all_params, self.logger
     )
-  
-  @staticmethod
-  def _validate_key_usage(
-      protected_keys: list,
-      suggested_keys: list, 
-      all_params: dict,
-      logger: Logger
-    ) -> Tuple[bool, bool]:
-    """
-    Checks if the user is setting any protected/suggested key and throws
-    appropriate errors/warnings
-    """
-    # check if the user is setting any suggested key
-    using_suggested_keys = any(
-      k in all_params for k,_ , _ in suggested_keys
-    )
-    # check if the user is setting any protected key
-    using_protected_keys = False
-    for pk,_ in protected_keys:
-      if pk in all_params:
-        # prevent the user from improperly setting the environment config
-        if pk == "env" or pk == "env_config":
-          raise KeyError(
-            "ERROR: `env` and `env_config` cannot be manually configured"
-          )
-        # prevent the user from improperly setting the evaluation interval
-        elif pk == "evaluation_interval":
-          raise KeyError(
-            "ERROR: set the evaluation interval from `exp_config.json`"
-          )
-        # prevent the user from manually setting the logging directory
-        elif pk == "logger_config":
-          if "logdir" in all_params[pk]:
-            raise KeyError(
-              "ERROR: set a general logging directory from `exp_config.json`"
-            )
-        else:
-          using_protected_keys = True
-          # prevent the user from simultaneously setting protected and
-          # suggested keys
-          if using_suggested_keys:
-            msg = "ERROR: mixing protected and suggested keys is forbidden"
-            raise KeyError(
-              msg + f" (protected key: `{pk}`)"
-            )
-          # raise a warning otherwise
-          else:
-            pv = all_params[pk]
-            logger.warn(
-              f"manually setting protected key `{pk}` with value: {pv}"
-            )
-    return using_suggested_keys, using_protected_keys
 
   def convert_rollout_parameters(self, all_params: dict, env_config: dict):
     """
@@ -368,7 +320,7 @@ class AlgoConfigGenerator(ABC):
       if unit == "truncate_episodes":
         all_params["rollout_fragment_length"] = duration
       elif unit == "complete_episodes":
-        n_steps = self.compute_num_steps_per_episode(env_config)
+        n_steps = _compute_num_steps_per_episode(env_config)
         all_params["rollout_fragment_length"], _, _ = self.scale_parameter(
           duration, scale_factor = n_steps
         )
@@ -760,26 +712,6 @@ class AlgoConfigGenerator(ABC):
       )
     else:
       raise ValueError(f"Unsupported Ray Tune object: {obj}")
-
-  @staticmethod
-  def compute_num_steps_per_episode(env_config: dict) -> int:
-    """
-    Compute the number of steps per episode based on the environment 
-    configuration
-    """
-    n_steps = None
-    if all(k in env_config for k in ["min_time", "max_time", "time_step"]):
-      min_time = env_config["min_time"]
-      max_time = env_config["max_time"]
-      time_step = env_config["time_step"]
-      n_steps = (max_time - min_time) // time_step
-    else:
-      raise ValueError(
-        "ERROR: not enough parameters to support `episodes` duration. "
-        "Check if env_config.json includes `min_time`, `max_time`, "
-        "`time_step`"
-      )
-    return n_steps
   
   @staticmethod
   def is_tuned(key) -> bool:

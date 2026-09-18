@@ -13,11 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from RL4CC.utilities.generators import _compute_num_steps_per_episode
+from RL4CC.algorithms.generators import MORLAlgorithmGenerator
 from RL4CC.log_and_report.rl4cc_logger import Logger
-from RL4CC.algorithms.generators import (
-  AlgoConfigGenerator,
-  MORLAlgorithmGenerator
-)
 
 from morl_baselines.multi_policy.envelope.envelope import Envelope
 from copy import deepcopy
@@ -88,7 +86,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
         "evaluation_duration_per_worker"
       )
       if unit == "timesteps":
-        nspe = AlgoConfigGenerator.compute_num_steps_per_episode(env_config)
+        nspe = _compute_num_steps_per_episode(env_config)
         all_params["evaluation"]["num_eval_episodes_for_front"] = int(
           np.ceil(duration/nspe)
         )
@@ -145,7 +143,7 @@ class EnvelopeQLearningGenerator(MORLAlgorithmGenerator):
     # -- couting whole episodes
     elif duration_unit == "episodes":
       all_params["total_episodes"] = rollout_params["duration_per_worker"]
-      nspe = AlgoConfigGenerator.compute_num_steps_per_episode(env_config)
+      nspe = _compute_num_steps_per_episode(env_config)
       all_params["total_timesteps"] = nspe * all_params["total_episodes"]
     else:
       raise ValueError(f"Unsupported `duration_unit`: {duration_unit}")

@@ -13,12 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from RL4CC.algorithms.generators.algo_config_generator import (
-  AlgoConfigGenerator
-)
 from RL4CC.environment.base_multiobjective_environment import (
   BaseMultiObjectiveEnvironment
 )
+from RL4CC.utilities.generators import _validate_key_usage
 from RL4CC.log_and_report.rl4cc_logger import Logger
 from RL4CC.utilities.common import NumpyEncoder
 
@@ -132,7 +130,7 @@ class MORLAlgorithmGenerator(ABC):
       # check the presence of protected/suggested keys
       (
         using_suggested_keys, using_protected_keys
-      ) = AlgoConfigGenerator._validate_key_usage(
+      ) = _validate_key_usage(
         self._protected_keys, self._suggested_keys, algo_config, self.logger
       )
       # convert parameters
