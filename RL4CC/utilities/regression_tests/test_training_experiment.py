@@ -96,8 +96,9 @@ def update_experiment_config(exp_config: dict, exp_logdir: str) -> bool:
     # add the checkpoint to the experiment configuration
     last_checkpoint_dir = exp_progress.get("last_checkpoint_dir")
     if last_checkpoint_dir is not None:
-      _ = exp_config.pop("env_config_file")
-      _ = exp_config.pop("learner_config_file")
+      if AGfactory.get_backend(exp_config["algorithm"]) == "ray":
+        _ = exp_config.pop("env_config_file")
+        _ = exp_config.pop("learner_config_file")
       exp_config["from_checkpoint"] = last_checkpoint_dir
       updated = True
   return updated
@@ -119,7 +120,10 @@ def test_training_experiment(
   )
   exp_config = load_config_file(exp_config_file)
   logger.log(f"test experiment from {exp_config_file}")
-  if exp_config is not None:
+  if (
+      exp_config is not None and 
+        AGfactory.is_registered(exp_config["algorithm"])
+    ):
     expected_output_file = os.path.join(
       base_output_folder, f"{name}.csv"
     )
@@ -136,13 +140,8 @@ def test_training_experiment(
       logger.err(
         f"expected output file {expected_output_file} not found"
       )
-  else:
-    logger.err(
-      f"configuration file {exp_config_file} not found"
-    )
-  total_num_tests += 1
-  # resume training experiment from last checkpoint
-  if exp_config is not None:
+    total_num_tests += 1
+    # resume training experiment from last checkpoint
     if update_experiment_config(exp_config, exp_logdir):
       exp_config_file = write_config_file(
         json.dumps(exp_config, indent=2), 
@@ -165,11 +164,11 @@ def test_training_experiment(
         logger.err(
           f"expected output file {expected_output_file} not found"
         )
-    else:
-      logger.err(
-        f"could not update the configuration from {exp_logdir}"
-      )
-  total_num_tests += 1
+    total_num_tests += 1
+  else:
+    logger.err(
+      f"configuration file {exp_config_file} not found or unregistered method"
+    )
   return num_passed_tests, total_num_tests
 
 

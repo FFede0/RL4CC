@@ -45,6 +45,14 @@ class AlgoGeneratorsFactory:
     if not generator:
         raise ValueError(algo)
     return generator.backend
+  
+  def is_registered(self, algo: str):
+    """
+    Check if an algorithm is registered in the factory
+    """
+    if algo in self.algo_generators:
+      return True
+    return False
 
 
 ## Factory initialization
