@@ -1,23 +1,27 @@
-<p align="center">
-<img width="224" height="183" alt="RL4CC1" src="https://github.com/user-attachments/assets/5b16dce5-da15-4cd7-a398-79026cff0c50" />
-</p>
-
 The **R**einforcement **L**earning for the **C**omputing **C**ontinuum library
-provides a common interface to define environments and RL algorithms based
-on the [Ray RLLib](https://docs.ray.io/en/releases-2.20.0/rllib/index.html) library[^1].
+provides a common interface to define single- and multi-agent environments and 
+RL algorithms based on 
+[Ray RLLib](https://docs.ray.io/en/releases-2.20.0/rllib/index.html)[^1], 
+and single-agent multi-objective RL environments and algorithms based on 
+[MORL-Baselines](https://github.com/LucasAlegre/morl-baselines)[^2].
+
+<p align="center">
+<img width="1464" height="961" alt="RL4CC-arch" src="https://github.com/user-attachments/assets/ccb3cd76-5d44-4595-8d07-cbf5c4998ff1" />
+</p>
 
 It includes the following components:
 
-- two simple environments, that should be used as base classes when defining 
+- three simple environments, that should be used as base classes when defining 
   more complex problems. They are created by loading the parameters included in 
   the [`env_config` configuration](RL4CC/config_files/README.md#environment-configuration).
-  The two represent a [single-agent](RL4CC/environment/base_environment.py) 
-  and a [multi-agent](RL4CC/environment/base_multiagent_environment.py) 
+  They represent a [single-agent](RL4CC/environment/base_environment.py), 
+  a [multi-agent](RL4CC/environment/base_multiagent_environment.py), and
+  a [single-agent multi-objective](RL4CC/environment/base_multiobjective_environment.py)  
   environment, respectively.
 
 - an [`Algorithm`](RL4CC/algorithms/algorithm.py) class, used to define RL
   algorithms for training/hyperparameter tuning experiments, supported by a
-  factory of Ray `AlgorithmConfig`
+  factory of Ray `AlgorithmConfig` and MORL-Baselines Algorithm 
   [generators](RL4CC/algorithms/generators_factory.py).
 
 - a simple [`Callbacks`](RL4CC/callbacks/base_callbacks.py) implementation,
@@ -77,27 +81,100 @@ checkpoints) through a Web API that can be deployed as a Docker container.
 Additional information are provided in the 
 ["serve"](#use-rl4cc-to-serve-pre-trained-rl-agents) section.
 
+>[!CAUTION]
+> Hyperparameter tuning is currently based on Ray Tune; therefore, it can be
+> used only when considering RLLib-based RL algorithms. The same holds for
+> custom models and callbacks.
+
 ## Build the RL4CC library
 
-To build the RL4CC library, the RL4CC module needs to be installed as a package,
-so that its classes and functions can imported with `from RL4CC.x.y import z`.
-To install RL4CC as a package, place yourself in the repo main directory (at the 
-same level as the `setup.py`), with the virtual environment that contains the 
-RL4CC dependencies activated.
+RL4CC can be installed either directly from the GitHub repository or from a 
+local clone of the repository.
 
-Then use:  
+RL4CC itself is designed to support multiple versions of Ray. Because 
+different Ray versions may require different versions of their dependencies, 
+RL4CC provides optional dependency profiles corresponding to supported Ray 
+versions.
+
+It is recommended to install RL4CC within a virtual environment, which 
+can be created an activated by running:
 ```
-pip3 install .
+python3.10 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
 ```
-to install RL4CC as a package.  
-Now by checking the installed packages with `pip3 freeze`, you will notice that 
-RL4CC is among the dependencies. 
+
+### Install RL4CC without Ray- or MORL-specific dependencies
+
+If RL4CC is being used without one of the predefined Ray/MORL environments, 
+install the library normally:
+```
+pip install git+https://github.com/FFede0/RL4CC.git
+```
+
+Alternatively, after cloning the repository:
+```
+git clone https://github.com/FFede0/RL4CC.git
+cd RL4CC
+pip install .
+```
+
+### Install RL4CC with ray 2.20
+
+If you intend to use RL4CC with Ray 2.20.0, install the 
+`ray220` dependency profile:
+```
+pip install "RL4CC[ray220] @ git+https://github.com/FFede0/RL4CC.git"
+```
+
+The `ray220` identifier refers to a dependency profile, not to a particular 
+version of the RL4CC source code. Therefore, installing from the GitHub 
+repository always uses the current RL4CC implementation. To select the same 
+dependency profile when installing from a local clone of the repository, run:
+```
+git clone https://github.com/FFede0/RL4CC.git
+cd RL4CC
+pip install ".[ray220]"
+```
+
+### Install RL4CC with morl-baselines 1.3.0
+
+If you intend to use RL4CC with MORL-Baselines 1.3.0, install the 
+`morl` dependency profile:
+```
+pip install "RL4CC[morl] @ git+https://github.com/FFede0/RL4CC.git"
+```
+
+The `morl` identifier refers to a dependency profile, not to a particular 
+version of the RL4CC source code. Therefore, installing from the GitHub 
+repository always uses the current RL4CC implementation. To select the same 
+dependency profile when installing from a local clone of the repository, run:
+```
+git clone https://github.com/FFede0/RL4CC.git
+cd RL4CC
+pip install ".[morl]"
+```
+
+### Install RL4CC with ray and morl-baselines (recommended)
+
+The two profiles above can be combined to install RL4CC together with 
+both Ray 2.20.0 and MORL-Baselines 1.3.0. Run:
+```
+pip install "RL4CC[ray220,morl] @ git+https://github.com/FFede0/RL4CC.git"
+```
+
+or:
+```
+git clone https://github.com/FFede0/RL4CC.git
+cd RL4CC
+pip install ".[ray220,morl]"
+```
 
 > [!NOTE]
-> To download and install the RL4CC library using `pip`, add to your 
-> requirements file `git+https://github.com/FFede0/RL4CC.git` (or 
-> `git+https://github.com/FFede0/RL4CC.git@test_ray2.40.0` to install a 
-> specific branch version).
+> While RL4CC has been tested with Ray versions 2.8.1, 2.10.0, 2.20.0
+> and 2.40.0, a dependency profile is currently provided only for
+> 2.20.0 (the recommended version). Additional profiles will be
+> added in the future and available as, e.g., `ray240`
 
 ## How to start a training experiment
 
@@ -127,27 +204,37 @@ exp.run()
 ### Training experiments with a custom Environment
 
 To use a custom Environment implementation, this needs to be registered in the
-`ray.tune.registry`. As an example, suppose that your code directory follows
-the structure:
+`ray.tune.registry` (if using algorithms based on Ray RLLib) and/or the gymnasium 
+registry (for algorithms based on MORL-Baselines). As an example, suppose that 
+your code directory follows the structure:
 
 ```
 .
-├── RL4CC
 ├── src
 │   ├── __init__.py
 │   └── my_custom_environment.py
 └── main.py
 ```
 
-and that the `src/__init__.py` file includes, similarly to the one reported
-here for the base Environment,
-
+The `src/__init__.py` file must include:
 ```
 from .my_custom_environment import MyCustomEnvironment
 from ray.tune.registry import register_env
 
 register_env("MyCustomEnvironment", lambda config: MyCustomEnvironment(config))
 ```
+
+if `MyCustomEnvironment` inherits from `BaseEnvironment` or 
+`BaseMultiAgentEnvironment`, while it must include:
+```
+from gymnasium.envs.registration import register
+register(
+  id = "MyCustomEnvironment",
+  entry_point = "src.my_custom_environment:MyCustomEnvironment",
+)
+```
+
+if `MyCustomEnvironment` inherits from `BaseMultiObjectiveEnvironment`.
 
 To guarantee that the environment is properly loaded when starting the
 experiment, your `main.py` file should include:
@@ -163,6 +250,9 @@ exp.run()
 i.e., you must ensure that `src/__init__.py` is actually executed.
 
 ### Training experiments with a custom Model
+
+>[!CAUTION]
+> This is currently supported only for RLLib-based RL algorithms.
 
 To use a custom neural network, this needs to be registered in the
 `ray.rllib.models.ModelCatalog`. As an example, suppose that your code
@@ -205,6 +295,10 @@ properly defined, as detailed in the corresponding
 [README](RL4CC/config_files/README.md#how-to-use-custom-policy-models).
 
 ### Training experiments with plots
+
+>[!CAUTION]
+> This is currently supported only for RLLib-based RL algorithms because its
+> implementation relies on the presence of Ray callbacks.
 
 If you want to automatically generate plots during the training, you can use the 
 `TrainingExperimentWithPlots` class, which is a subclass of `TrainingExperiment`. 
@@ -328,6 +422,9 @@ folder. In addition, gossip training stores `who_receives_from_whom.json`,
 which records the random communication pattern used in that round.
 
 ## How to start hyperparameter tuning
+
+>[!CAUTION]
+> This is currently supported only for RLLib-based RL algorithms.
 
 Hyperparameter Tuning is an integration of the Ray Tune, Air, Rllib libraries.
 
@@ -592,25 +689,32 @@ multi-agent setting) and the corresponding chosen action.
 
 ## How to contribute to RL4CC
 
-The RL4CC repository is organized as follows:
-- the branch `main` hosts production-ready releases, i.e. tested code that
-has passed reviews on lower stages;
-- the branch `develop` hosts changes that may not be completely stable.
-This is basically a quality/staging branch. When the changes have been tested
-and are stable, we can make a PR to main;
-- the branch `test` is the collector of the initial merges among all
-developers. From here we move on to `develop`.
+Each developer can create their own branch named `test-[your-initials]` 
+and open a pull request once the proposed change has been implemented.
 
-Each developer can create their own branch named `test-[your-initials]`, 
-from which you can merge to `test`. No direct PR will be accepted on any 
-branch that is not `test`.
+>[!WARNING]
+> Before opening a pull request, check the implemented change does not
+> break the [regression tests](#regression-tests).
 
 ### Regression tests
 
 Regression tests for algorithm generators and training experiments with Ray 
-versions 2.8.1, 2.10.0 and 2.20.0 are available among the 
+versions 2.8.1, 2.10.0 and 2.20.0 and MORL-Baselines are available among the 
 [utilities](RL4CC/utilities/regression_tests/README.md). 
+
+To execute them, run:
+```
+chmod u+x run_regression_tests.sh
+./run_regression_tests.sh
+```
+
+This will install any change of RL4CC and automatically start tests for 
+the registered algorithm generators and training experiments.
 
 [^1] The RL4CC library has been developed and tested considering Ray RLLib 
 versions up to 2.20.0. Carefully select an appropriate version of the 
 official Ray documentation when looking for additional information.
+
+[^2] The RL4CC library has been developed and tested considering 
+MORL-Baselines version 1.3.0. Carefully select an appropriate version of 
+the official documentation when looking for additional information.
