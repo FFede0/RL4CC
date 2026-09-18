@@ -1,9 +1,9 @@
 The **R**einforcement **L**earning for the **C**omputing **C**ontinuum library
 provides a common interface to define single- and multi-agent environments and 
 RL algorithms based on 
-[Ray RLLib](https://docs.ray.io/en/releases-2.20.0/rllib/index.html)[^1], 
+[Ray RLLib](https://docs.ray.io/en/releases-2.20.0/rllib/index.html) <sup id="a1">[[1]](#f1)</sup>, 
 and single-agent multi-objective RL environments and algorithms based on 
-[MORL-Baselines](https://github.com/LucasAlegre/morl-baselines)[^2].
+[MORL-Baselines](https://github.com/LucasAlegre/morl-baselines) <sup id="a2">[[2]](#f2)</sup>.
 
 <p align="center">
 <img width="1464" height="961" alt="RL4CC-arch" src="https://github.com/user-attachments/assets/ccb3cd76-5d44-4595-8d07-cbf5c4998ff1" />
@@ -711,10 +711,10 @@ chmod u+x run_regression_tests.sh
 This will install any change of RL4CC and automatically start tests for 
 the registered algorithm generators and training experiments.
 
-[^1] The RL4CC library has been developed and tested considering Ray RLLib 
+<b id="f1">[1]</b> The RL4CC library has been developed and tested considering Ray RLLib 
 versions up to 2.20.0. Carefully select an appropriate version of the 
-official Ray documentation when looking for additional information.
+official Ray documentation when looking for additional information. [↩](#a1)
 
-[^2] The RL4CC library has been developed and tested considering 
+<b id="f2">[2]</b> The RL4CC library has been developed and tested considering 
 MORL-Baselines version 1.3.0. Carefully select an appropriate version of 
-the official documentation when looking for additional information.
+the official documentation when looking for additional information. [↩](#a2)
