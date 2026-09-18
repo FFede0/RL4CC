@@ -16,7 +16,8 @@
     "target_net_update_freq": 1000,
     "tau": 1,
     "num_steps_sampled_before_learning_starts": 100,
-    "ref_point": [1.0]
+    "ref_point": [1.0],
+    "seed": 4850
   },
   "exploration": {
     "initial_epsilon": 1.0,
