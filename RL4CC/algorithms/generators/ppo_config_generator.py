@@ -44,9 +44,12 @@ class PPOConfigGenerator(AlgoConfigGenerator):
     # train batch size
     if "rollout_fragment_length" in all_params:
       rfl = all_params["rollout_fragment_length"]
-      nw = all_params.get(
-        "num_rollout_workers",
-        max(self.base_algo_config["num_rollout_workers"], 1)
+      nw = max(
+        1,
+        all_params.get(
+          "num_rollout_workers",
+          self.base_algo_config["num_rollout_workers"]
+        )
       )
       if self.is_tuned(rfl):
         all_params["_RL4CC_INTERNALS_num_workers"] = nw
