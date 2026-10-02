@@ -343,9 +343,12 @@ class AlgoConfigGenerator(ABC):
     if unit != "timesteps" and unit != "episodes":
       raise ValueError(f"ERROR: invalid `evaluation_duration_unit` {unit}")
     # duration
-    num_workers = all_params.get(
-      "evaluation_num_workers",
-      max(1, self.base_algo_config["evaluation_num_workers"])
+    num_workers = max(
+      1,
+      all_params.get(
+        "evaluation_num_workers", 
+        self.base_algo_config["evaluation_num_workers"]
+      )
     )
     duration = all_params.get(
       "evaluation_duration",  # needed if the method is called when 
