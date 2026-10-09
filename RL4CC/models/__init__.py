@@ -25,3 +25,9 @@ try:
   ModelCatalog.register_custom_model("centralizedcritic", CustomTorchCCModel)
 except ModuleNotFoundError as error:
   logger.warn(f"Could not register CustomTorchCCModel: No module named {error.name!r}.")
+
+try:
+  from .value_decomp_model import ValueDecompTorchModel
+  ModelCatalog.register_custom_model("value_decomp_q", ValueDecompTorchModel)
+except ModuleNotFoundError as error:
+  logger.warn(f"Could not register ValueDecompTorchModel: No module named {error.name!r}.")
