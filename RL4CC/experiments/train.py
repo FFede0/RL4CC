@@ -93,6 +93,12 @@ class TrainingExperiment(BaseExperiment):
       result = algo.train()
       self.logger.log("iteration completed", 3)
       self.update_progress_file("last_iteration", algo.last_iteration())
+      if it > 1:
+        self.update_progress_file(
+          "avg_time_per_iter_s", (
+            (datetime.now() - start) / (it - 1)
+          ).total_seconds()
+        )
       # save checkpoint at the beginning and every `checkpoint_frequency` 
       # iterations
       if it == 1 or it % self.checkpoint_config["checkpoint_frequency"] == 0:
