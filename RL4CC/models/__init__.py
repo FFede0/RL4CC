@@ -10,6 +10,8 @@ try:
   from .base_torch_model import BaseTorchModel
   from .custom_torch_model import CustomTorchModel
   ModelCatalog.register_custom_model("custom_torch_model", CustomTorchModel)
+  from .custom_torch_model_ac import CustomTorchModelAC
+  ModelCatalog.register_custom_model("custom_torch_model_ac", CustomTorchModelAC)
 except ModuleNotFoundError as error:
   logger.warn(f"Could not register CustomTorchModel: No module named {error.name!r}.")
 

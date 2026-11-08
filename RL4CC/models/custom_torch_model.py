@@ -119,5 +119,9 @@ class CustomTorchModel(BaseTorchModel):
     Implementation of the forward method logic
 
     return: value function
+
+    WARNING: this model has no separate critic. V(s) is the maximum actor
+    logit, so the value loss also updates the policy network. Use
+    `custom_torch_model_ac` (CustomTorchModelAC) for a separate critic.
     """
     return torch.max(self._last_q_values, dim=1)[0]
