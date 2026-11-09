@@ -3,7 +3,9 @@
 > [!NOTE] 
 > The RL4CC library currently supports the Ray implementation of the 
 > PPO, SAC and DQN algorithms. Moreover, it implements the MAPPO algorithm, 
-> i.e., a PPO version that exploits a centralized critic model.
+> i.e., a PPO version that exploits a centralized critic model, and custom 
+> **VDN** / **QMIX** value-decomposition algorithms for cooperative 
+> multi-agent settings (stock RLlib QMIX is not available on Ray 2.20).
 
 General details about the algorithms configuration are provided in the 
 configurations [README](../config_files/README.md#ray-algorithm-configuration) 
@@ -229,6 +231,39 @@ concatenation or mean.
 > [!CAUTION]
 > The centralized critic model implementation is available only for the 
 > Torch module; Tensorflow is currently not supported.
+
+## VDN / QMIX
+
+Custom Torch VDN/QMIX for Ray 2.20 (stock QMIX is missing), registered like
+MAPPO via [`vdn_qmix.py`](vdn_qmix.py),
+[`value_decomp_model.py`](../models/value_decomp_model.py)
+(`value_decomp_q`), and the generators factory.
+
+- VDN: \(Q_{\mathrm{tot}} = \sum_i Q_i\)
+- QMIX: monotonic mixer over agent Q-values + global state
+- Defaults: `lr=5e-4`, `gamma=0.99`, `batch_size=64`, buffer `1e5`,
+  target update every 500, hiddens `[256, 128]`, ε `1.0→0.05` over 10000
+  iters, `mixing_embed_dim=32`
+
+Env: multi-agent, Discrete actions, shared reward. For QMIX expose
+`infos["__common__"]["global_state"]` or `build_global_state()`.
+
+```
+"algorithm": "VDN"   # or "QMIX"
+"training": {
+  "lr": 5e-4,
+  "gamma": 0.99,
+  "batch_size": 64,
+  "mixing_embed_dim": 32,
+  "model": {
+    "fcnet_hiddens": [256, 128],
+    "fcnet_activation": "relu",
+    "custom_model": "value_decomp_q"
+  }
+}
+```
+
+Team rules (majority vote, etc.) stay in the environment.
 
 ## How to add new RL methods
 

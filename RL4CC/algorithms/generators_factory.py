@@ -18,6 +18,10 @@ from RL4CC.algorithms.generators.ppo_config_generator import PPOConfigGenerator
 from RL4CC.algorithms.generators.dqn_config_generator import DQNConfigGenerator
 from RL4CC.algorithms.generators.sac_config_generator import SACConfigGenerator
 from RL4CC.algorithms.generators.mappo_config_generator import MAPPOConfigGenerator
+from RL4CC.algorithms.generators.vdn_qmix_config_generator import (
+  VDNConfigGenerator,
+  QMIXConfigGenerator,
+)
 
 
 
@@ -50,3 +54,5 @@ ACGfactory.register("PPO", PPOConfigGenerator)
 ACGfactory.register("DQN", DQNConfigGenerator)
 ACGfactory.register("SAC", SACConfigGenerator)
 ACGfactory.register("MAPPO", MAPPOConfigGenerator)
+ACGfactory.register("VDN", VDNConfigGenerator)
+ACGfactory.register("QMIX", QMIXConfigGenerator)
