@@ -27,6 +27,12 @@ It includes the following components:
   TensorFlow, that can be used as starting points to implement more complex
   networks if needed.
 
+- an [actor-critic PyTorch model](RL4CC/models/custom_torch_model_ac.py)
+  (`custom_torch_model_ac`), with the same actor as `custom_torch_model` and
+  a separate critic network (hidden layers set by `vf_hiddens` in
+  `custom_model_config`, default `[512, 256]`); in `custom_torch_model` the
+  value function is the maximum actor logit.
+
 - a [`TrainingExperiment`](RL4CC/experiments/train.py) class, to be used as
   entrypoint to define training experiments, as explained in
   the following [section](#how-to-start-a-training-experiment).
