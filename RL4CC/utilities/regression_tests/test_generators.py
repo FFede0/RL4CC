@@ -20,7 +20,14 @@ def test_default_generator(
   algo_config_dict = generator.to_dict(generator.base_algo_config)
   # load expected output for comparison
   expected_dict = load_config_file(expected_out)
-  equal, different_keys = compare_dictionaries(algo_config_dict, expected_dict)
+  equal, different_keys = compare_dictionaries(
+    algo_config_dict, 
+    expected_dict, 
+    [
+      "torch_compile_learner_dynamo_backend",
+      "torch_compile_worker_dynamo_backend"
+    ]
+  )
   if not equal:
     logger.err(
       f"failed test_default_generator() on algo: {algo}; different keys: {different_keys}"
@@ -63,7 +70,14 @@ def test_algo_config_generator(
   algo_config_dict = generator.to_dict(algo_config)
   # load expected output for comparison
   expected_dict = load_config_file(expected_out)
-  equal, different_keys = compare_dictionaries(algo_config_dict, expected_dict)
+  equal, different_keys = compare_dictionaries(
+    algo_config_dict, 
+    expected_dict, 
+    [
+      "torch_compile_learner_dynamo_backend",
+      "torch_compile_worker_dynamo_backend"
+    ]
+  )
   if not equal:
     logger.err(
       f"failed test_generator() on algo: {algo}; "

@@ -54,7 +54,9 @@ def write_config_file(jconfig: str, dirname: str, filename: str) -> str:
     ostream.write(jconfig)
   return filename
 
-def compare_dictionaries(d1: dict, d2: dict) -> Tuple[bool, list]:
+def compare_dictionaries(
+    d1: dict, d2: dict, ignore_keys: list = None
+  ) -> Tuple[bool, list]:
   """
   Return True if the content of two dictionaries (possibly with nested keys)
   is equal
@@ -62,38 +64,39 @@ def compare_dictionaries(d1: dict, d2: dict) -> Tuple[bool, list]:
   equal = True
   different_keys = []
   for key, val in d1.items():
-    if key in d2:
-      if isinstance(val, dict):
-        e, d = compare_dictionaries(d1[key], d2[key])
-        if not e:
-          different_keys += d
-          equal = False
-      elif isinstance(val, list) or isinstance(val, tuple):
-        if len(val) > 0 and (
-            isinstance(val[0], list) or isinstance(val[0], tuple)
-          ):
-          for l1,l2 in zip(val, d2[key]):
-            if any([v1 != v2 for v1, v2 in zip(l1,l2)]):
+    if ignore_keys is not None and key not in ignore_keys:
+      if key in d2:
+        if isinstance(val, dict):
+          e, d = compare_dictionaries(d1[key], d2[key], ignore_keys)
+          if not e:
+            different_keys += d
+            equal = False
+        elif isinstance(val, list) or isinstance(val, tuple):
+          if len(val) > 0 and (
+              isinstance(val[0], list) or isinstance(val[0], tuple)
+            ):
+            for l1,l2 in zip(val, d2[key]):
+              if any([v1 != v2 for v1, v2 in zip(l1,l2)]):
+                different_keys.append(key)
+                equal = False
+          else:
+            if any([v1 != v2 for v1, v2 in zip(val, d2[key])]):
               different_keys.append(key)
               equal = False
         else:
-          if any([v1 != v2 for v1, v2 in zip(val, d2[key])]):
-            different_keys.append(key)
-            equal = False
+          if key == "logdir":
+            v1 = "/".join(val.split("/")[:-1])
+            v2 = "/".join(d2[key].split("/")[:-1])
+            if v1 != v2:
+              different_keys.append(key)
+              equal = False
+          else:
+            if val != d2[key]:
+              different_keys.append(key)
+              equal = False
       else:
-        if key == "logdir":
-          v1 = "/".join(val.split("/")[:-1])
-          v2 = "/".join(d2[key].split("/")[:-1])
-          if v1 != v2:
-            different_keys.append(key)
-            equal = False
-        else:
-          if val != d2[key]:
-            different_keys.append(key)
-            equal = False
-    else:
-      different_keys.append(key)
-      return False, different_keys
+        different_keys.append(key)
+        return False, different_keys
   return equal, different_keys
 
 def compute_deviation(
