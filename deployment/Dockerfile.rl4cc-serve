@@ -1,4 +1,4 @@
-FROM python:3.12.3-slim
+FROM python:3.10-slim
 
 # ------------------------------------------------------------------
 # Environment
@@ -8,9 +8,10 @@ ENV PYTHONUNBUFFERED=1
 # -- RL4CC installation
 ENV RL4CC_URL=https://github.com/FFede0/RL4CC.git
 ENV RL4CC_RAW_URL=https://raw.githubusercontent.com/FFede0/RL4CC
-ENV RL4CC_TAG=test_ray2.40.0
+ARG RL4CC_TAG=serve_train_endpoint
 # -- runtime configuration
-ENV CHECKPOINT_DIR=/app/checkpoints
+ENV INPUT_CHECKPOINT_DIR=/app/models/checkpoint
+ENV OUTPUT_CHECKPOINT_DIR=/app/models/online_checkpoints
 ENV CONFIGURATION_FILE=/app/config/config.json
 ENV LOG_FILE_BASE=/app/logs/rl4cc
 # -- bootstrap modules (comma-separated, optional)
@@ -42,14 +43,27 @@ WORKDIR /app
 # ------------------------------------------------------------------
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir \
-    numpy==2.3.0 \
-    ray[rllib]==2.40.0 \
-    pandas \
+    cloudpickle \
+    dm-tree \
     fastapi \
-    uvicorn \
+    fsspec \
+    gymnasium>=0.28.1 \
+    jsonschema \
+    lz4 \
+    numpy==1.25.0 \
+    opencv-python==4.9.0.80 \
+    pandas \
+    protobuf==7.36.1 \
+    pyarrow==12.0.1 \
     pydantic \
-    gymnasium \
-    cloudpickle
+    pyyaml \
+    ray==2.20.0 \
+    rich \
+    scikit-image \
+    scipy==1.14.1 \
+    torch==2.14.0 \
+    typer \
+    uvicorn
 
 # ------------------------------------------------------------------
 # Install RL4CC from Git
@@ -62,7 +76,7 @@ RUN curl -L \
 # ------------------------------------------------------------------
 # Create directories expected by env variables
 # ------------------------------------------------------------------
-RUN mkdir -p /app/checkpoints /app/config /app/logs
+RUN mkdir -p ${INPUT_CHECKPOINT_DIR} /app/config /app/logs
 
 # ------------------------------------------------------------------
 # Copy additional files from context (and install modules if required)
