@@ -292,7 +292,7 @@ def format_observation(unformatted_obs: dict) -> dict:
       obs_space = algo.algo.env_runner.spaces[agent][0] # [1] is action space, 
                                                         # [0] is obs space.
     except AttributeError:
-      obs_space = algo.algo_config.observation_space
+      obs_space = agent_policy.observation_space
     # -- multi-agent setting
     if agent != DEFAULT_POLICY_ID:
       # ---- dict-like spaces
