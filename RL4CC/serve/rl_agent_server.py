@@ -407,6 +407,7 @@ app = FastAPI()
 algo = Algorithm(
   settings.config["algorithm"], checkpoint_path = settings.INPUT_CHECKPOINT_DIR
 )
+last_iteration = algo.last_iteration()
 algo_lock = RLock()
 
 REPLAY_BUFFER_BUILDERS = {
@@ -475,7 +476,7 @@ def post_checkpoint_request(body: CheckpointRequest):
   logger = build_logger("checkpoint")
   try:
     checkpoint_path = os.path.join(
-      settings.OUTPUT_CHECKPOINT_DIR, str(algo.last_iteration())
+      settings.OUTPUT_CHECKPOINT_DIR, str(last_iteration)
     )
     os.makedirs(checkpoint_path, exist_ok = True)
     with algo_lock:
@@ -529,10 +530,12 @@ def post_train_request(body: TrainRequest):
       ]
       if body.update_target and hasattr(policy, "update_target"):
         policy.update_target()
+      last_iteration += 1
     # prepare response
     response = {
       "status": "Training completed.",
       "algorithm": algo_to_train,
+      "last_iteration": last_iteration,
       "policy_id": body.policy_id,
       "transitions": dqn_batch.count,
       "gradient_steps": body.gradient_steps,
