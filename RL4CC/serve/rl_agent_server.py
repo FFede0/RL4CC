@@ -518,6 +518,7 @@ def post_train_request(body: TrainRequest):
       f"Receiving {len(body.observations)} transition(s) for {algo_to_train}"
     )
     # train
+    global last_iteration
     with algo_lock:
       policy = algo.get_policy(body.policy_id)
       if policy is None:
