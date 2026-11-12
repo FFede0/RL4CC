@@ -430,7 +430,7 @@ required steps are:
 information are provided below)
 2. download the Dockerfile:
 
-```
+```shell
 curl -L \
   https://raw.githubusercontent.com/FFede0/RL4CC/test_ray2.40.0/deployment/Dockerfile.rl4cc-serve \
   -o Dockerfile
@@ -438,14 +438,15 @@ curl -L \
 
 3. build the image:
 
-```
+```shell
 docker build -t rl4cc/serve:26.03.27 .
 ```
 
 4. run the container:
 
-```
-CHECKPOINT_DIR=path_to_the_trained_model
+```shell
+INPUT_CHECKPOINT_DIR=path_to_the_trained_model
+OUTPUT_CHECKPOINT_DIR=path_to_save_updated_models
 CONFIGURATION_FILE=my_exp_file.json
 
 docker run \
@@ -453,18 +454,19 @@ docker run \
   --name agentserver \
   --rm \
   -p 8000:8000 \
-  -v ${CHECKPOINT_DIR}:/app/models/checkpoint \
+  -v ${INPUT_CHECKPOINT_DIR}:/app/models/checkpoint \
+  -v ${OUTPUT_CHECKPOINT_DIR}:/app/models/online_checkpoints \
   -v ${CONFIGURATION_FILE}:/app/config/config.json \
   --shm-size=1g \
   rl4cc/serve:26.03.27
 ```
 
 The service requires the following environment variables:
-- `CHECKPOINT_DIR`: path to the trained model checkpoint; by default, it is 
-set to `/app/models/checkpoint`, but it can be overwritten by adding 
-`-e CHECKPOINT_DIR=some_other_path` to the `docker run` command (**note:** 
-in this case, the destination folder when mounting the volume should be 
-updated accordingly)
+- `INPUT_CHECKPOINT_DIR`: path to the trained model checkpoint; by default, it 
+is set to `/app/models/checkpoint`, but it can be overwritten by adding 
+`-e INPUT_CHECKPOINT_DIR=some_other_path` to the `docker run` command 
+(**note:** in this case, the destination folder when mounting the volume 
+should be updated accordingly)
 - `CONFIGURATION_FILE`: experiment configuration file (ideally in the same 
 format discussed in the 
 [README](RL4CC/config_files/README.md#experiment-configuration)); by default, 
@@ -472,6 +474,10 @@ it is set to `/app/config/config.json`, but it can be overwritten by adding
 `-e CONFIGURATION_FILE=some_other_path` to the `docker run` command (**note:** 
 in this case, the destination folder when mounting the volume should be 
 updated accordingly).
+
+The `OUTPUT_CHECKPOINT_DIR` variable is used only when 
+[saving updated models](#save-the-current-agent-checkpoint), therefore it is 
+not included among the required parameters.
 
 Once running, the service is available at: `http://${HOST}:${PORT}`. The 
 `HOST` and `PORT` environment variables are set at container creation to 
@@ -528,7 +534,7 @@ add `-e APP_BOOTSTRAP_MODULES=register_env` to your `docker run` command.
 
 To check that the service has been correctly deployed, you can run:
 
-```
+```shell
 HOST=0.0.0.0
 PORT=8000
 
@@ -559,7 +565,7 @@ available in the environment.
 Example (single-agent), following the 
 [base environment](RL4CC/environment/base_environment.py):
 
-```
+```shell
 curl -X POST http://localhost:8000/action \
   -H "Content-Type: application/json" \
   -d '{
@@ -575,7 +581,7 @@ curl -X POST http://localhost:8000/action \
 Example (multi-agent), following the 
 [base environment](RL4CC/environment/base_multiagent_environment.py):
 
-```
+```shell
 curl -X POST http://localhost:8000/action \
   -H "Content-Type: application/json" \
   -d '{
@@ -595,6 +601,67 @@ curl -X POST http://localhost:8000/action \
 
 The response is given as a dictionary with a key for each agent (in the 
 multi-agent setting) and the corresponding chosen action.
+
+#### Train a loaded policy
+
+The `/train` endpoint performs online updates of the agent that is already
+loaded by the serving application. Its request body contains batches of
+transitions, while the `algo` used to create them must be provided in the 
+configuration file. 
+
+> [!CAUTION]
+> The endpoint currently supports `DQN` only; other algorithms are rejected 
+> until they provide their own replay-batch builder.
+
+Observations are not defined by the serving application. Each item in
+`observations` and `next_observations` must have the JSON representation of the
+loaded policy's original Gymnasium observation space (for example, a JSON 
+object for a `Dict` space, a JSON list for a `Box` or `Tuple` space). The 
+server checks and flattens them from that space, so it does not depend on a 
+domain-specific function.
+
+For example, for a checkpoint whose observation space is `Box(2,)` and whose
+action space is `Discrete(3)`:
+
+```shell
+curl -X POST http://localhost:8000/train \
+  -H "Content-Type: application/json" \
+  -d '{
+    "observations": [[0.10, 0.25], [0.20, 0.40]],
+    "actions": [1, 2],
+    "rewards": [0.5, -0.1],
+    "next_observations": [[0.20, 0.40], [0.10, 0.20]],
+    "terminateds": [false, true],
+    "gradient_steps": 1
+  }'
+```
+
+`terminateds`, `truncateds`, `infos`, `episode_id`/`episode_ids`, and
+`timesteps` are optional. The endpoint defaults terminal flags to `false`, uses
+one episode ID for the batch, and generates consecutive timesteps if they are
+not supplied. `policy_id` defaults to `default_policy`, `gradient_steps`
+defaults to 1, and `update_target` defaults to `true`. Updates change the model
+in memory; use `/checkpoint` to persist them.
+
+#### Save the current agent checkpoint
+
+The `/checkpoint` endpoint saves the in-memory agent (including the updates
+made by `/train`) on the server and returns the actual directory chosen by
+RLlib. It deliberately accepts no client-provided output path: the server uses
+the writable `OUTPUT_CHECKPOINT_DIR`, saving the new checkpoint in a subfolder 
+`<last training iteration>`
+
+```shell
+curl -X POST http://localhost:8000/checkpoint \
+  -H "Content-Type: application/json" \
+  -d '{"manual": false}'
+```
+
+Use the default `manual: false` for RLlib's standard checkpoint format. Setting
+`manual: true` delegates to RL4CC's `Algorithm.save_checkpoint(manual=True)`
+format. The response contains `checkpoint_path`; it is meaningful to the
+service host/container, so clients should download or mount that directory if
+they need a local copy.
 
 ## How to contribute to RL4CC
 
