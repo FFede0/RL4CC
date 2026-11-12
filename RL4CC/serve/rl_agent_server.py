@@ -378,7 +378,6 @@ class TrainRequest(BaseModel):
   against the restored policy's observation space at request time, rather than
   against a serving-app-specific model.
   """
-  algo: str
   observations: List[Any]
   actions: List[Any]
   rewards: List[float]
