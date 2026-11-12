@@ -431,15 +431,17 @@ information are provided below)
 2. download the Dockerfile:
 
 ```shell
+RL4CC_TAG=serve_train_endpoint
 curl -L \
-  https://raw.githubusercontent.com/FFede0/RL4CC/test_ray2.40.0/deployment/Dockerfile.rl4cc-serve \
+  https://raw.githubusercontent.com/FFede0/RL4CC/${RL4CC_TAG}/deployment/Dockerfile.rl4cc-serve \
   -o Dockerfile
 ```
 
 3. build the image:
 
 ```shell
-docker build -t rl4cc/serve:26.03.27 .
+IMG_TAG=26.11.12
+docker build -t rl4cc/serve:${IMG_TAG} --build-arg RL4CC_TAG=${RL4CC_TAG} .
 ```
 
 4. run the container:
@@ -458,7 +460,7 @@ docker run \
   -v ${OUTPUT_CHECKPOINT_DIR}:/app/models/online_checkpoints \
   -v ${CONFIGURATION_FILE}:/app/config/config.json \
   --shm-size=1g \
-  rl4cc/serve:26.03.27
+  rl4cc/serve:${IMG_TAG}
 ```
 
 The service requires the following environment variables:
