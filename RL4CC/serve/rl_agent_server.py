@@ -288,8 +288,11 @@ def format_observation(unformatted_obs: dict) -> dict:
   observation = {}
   for agent in algo.algo_config.policies:
     agent_policy = algo.get_policy(agent)
-    obs_space = algo.algo.env_runner.spaces[agent][0] # [1] is action space, 
-                                                      # [0] is obs space.
+    try:
+      obs_space = algo.algo.env_runner.spaces[agent][0] # [1] is action space, 
+                                                        # [0] is obs space.
+    except AttributeError:
+      obs_space = algo.algo_config.observation_space
     # -- multi-agent setting
     if agent != DEFAULT_POLICY_ID:
       # ---- dict-like spaces
